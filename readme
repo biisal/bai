@@ -1,43 +1,56 @@
-## Core Feature:
-1. diff view of code changes so dev can accept or reject
-2. lightweight single binary 
-3. Write a file & write pertial 
-4. read file 
-5. Can use bash commands in unix
-6. before changing the file store the state to accept and reject changes
+bAI
+===
 
-pending
-7. chat summerization approches
+A terminal-based AI coding agent. Single binary, TUI interface.
 
----
-## Tech Stack -
-1. Go backend
-2. Bubble tea TUI
-3. Sqlite for Database
+Status: early development. The core chat loop works; the
+coding-agent features below are planned, not shipped yet.
 
+Current
+-------
+- TUI with provider and model selection
+- Streaming chat against OpenAI, Anthropic, or Groq (any
+  OpenAI-compatible endpoint via config)
+- SQLite-backed sessions
 
-## Folder structure
-cmd/... (entry point)
-internal /... (internal packages)
-│   ├── ui/
-│   │   ├── model.go
-│   │   ├── update.go
-│   │   ├── view.go
-│   │   └── diff.go
-│   │
-│   ├── ai/
-│   │   ├── providers/...
-│   │   ├── client.go
-│   │   └── prompts.go
-│   ├── db/
-│   │   └── sqlite.go
-│   │
-│   └── session/
-│       └── session.go
+Planned
+-------
+- Diff view of file changes, with accept/reject per change
+- Read files and write files (including partial writes)
+- Run bash commands
+- File state snapshotted before changes, so you can revert
 
+Requirements
+------------
+- Go 1.26+
+- An API key for at least one supported provider
 
-## deps 
-	github.com/tidwall/gjson v1.19.0 // indirect
-	github.com/tidwall/match v1.2.0 // indirect
-	github.com/tidwall/pretty v1.2.1 // indirect
-	github.com/tidwall/sjson v1.2.5 // indirect
+Build
+-----
+    make build     build the binary into bin/bai
+    make run       build and run
+    make test      run the test suite
+    make clean     remove build artifacts
+
+Config
+------
+Config lives at ~/.config/bai/config.json. Copy config.example.json
+there and fill in your API keys.
+
+    mkdir -p ~/.config/bai
+    cp config.example.json ~/.config/bai/config.json
+
+You can also point to a different file with -config.
+
+Usage
+-----
+    bai                        use the default config
+    bai -config path/to.json   use a specific config
+
+Project layout
+--------------
+    cmd/bai/         entry point and start command
+    internal/agent/  provider gateway and message handling
+    internal/tui/    bubble tea model, view, update
+    internal/db/     sqlite connection and service
+    internal/config/ config loading and defaults
