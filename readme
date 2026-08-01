@@ -1,0 +1,43 @@
+## Core Feature:
+1. diff view of code changes so dev can accept or reject
+2. lightweight single binary 
+3. Write a file & write pertial 
+4. read file 
+5. Can use bash commands in unix
+6. before changing the file store the state to accept and reject changes
+
+pending
+7. chat summerization approches
+
+---
+## Tech Stack -
+1. Go backend
+2. Bubble tea TUI
+3. Sqlite for Database
+
+
+## Folder structure
+cmd/... (entry point)
+internal /... (internal packages)
+│   ├── ui/
+│   │   ├── model.go
+│   │   ├── update.go
+│   │   ├── view.go
+│   │   └── diff.go
+│   │
+│   ├── ai/
+│   │   ├── providers/...
+│   │   ├── client.go
+│   │   └── prompts.go
+│   ├── db/
+│   │   └── sqlite.go
+│   │
+│   └── session/
+│       └── session.go
+
+
+## deps 
+	github.com/tidwall/gjson v1.19.0 // indirect
+	github.com/tidwall/match v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect

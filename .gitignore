@@ -1,0 +1,6 @@
+config.example.json
+.env
+*.db
+bin
+tmp
+bin

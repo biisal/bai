@@ -1,0 +1,140 @@
+// Package config handles loading provider configurations from JSON files.
+package config
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+var ErrNoProviders = errors.New("invalid config file: no providers found")
+
+const (
+	FormatOpenAI = "openai-compatible"
+)
+
+type ProviderConfig struct {
+	ID      string        `json:"id"`
+	Name    string        `json:"name"`
+	APIKey  string        `json:"api_key"`
+	Format  string        `json:"format"`
+	BaseURL string        `json:"base_url"`
+	Models  []ModelConfig `json:"models"`
+}
+
+type ModelConfig struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Context   int    `json:"context"`
+	MaxOutput int    `json:"max_output"`
+}
+
+type Config struct {
+	DatabasePath string
+	Providers    []ProviderConfig `json:"providers"`
+}
+
+func AppConfigDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "./config.json"
+	}
+	return filepath.Join(home, ".config", "bai")
+}
+
+func DefaultConfigPath() string {
+	return filepath.Join(AppConfigDir(), "config.json")
+}
+
+func DefaultDatabasePath() string {
+	return filepath.Join(AppConfigDir(), "bai.db")
+}
+
+func DefaultConfig() *Config {
+	return &Config{
+		Providers: []ProviderConfig{
+			{
+				ID:      "openai",
+				Format:  FormatOpenAI,
+				Name:    "OpenAI",
+				APIKey:  "sk-...",
+				BaseURL: "https://api.openai.com/v1",
+				Models: []ModelConfig{
+					{
+						ID:        "gpt-5.5",
+						Name:      "GPT-5.5",
+						Context:   4096,
+						MaxOutput: 4000,
+					},
+				},
+			},
+		},
+	}
+}
+
+func Load(path string) (*Config, error) {
+	finalPath := DefaultConfigPath()
+	if path != "" {
+		finalPath = path
+	}
+
+	if _, err := os.Stat(finalPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("config file does not exists: %s", finalPath)
+	}
+
+	var config Config
+
+	file, err := os.Open(finalPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	if err := json.NewDecoder(file).Decode(&config); err != nil {
+		prefix := "invalid config file"
+		if errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("%s: empty file", prefix)
+		}
+
+		data, err := json.MarshalIndent(DefaultConfig(), "", "  ")
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, fmt.Errorf("invalid config file: make sure your config looks like:\n%v", string(data))
+	}
+
+	if len(config.Providers) == 0 {
+		return nil, ErrNoProviders
+	}
+
+	var errors []string
+	metProvides := make(map[string]bool)
+	for _, provider := range config.Providers {
+		if provider.ID == "" {
+			errors = append(errors, fmt.Sprintf("id can't be empty for provider: %s", provider.Name))
+		}
+		if provider.BaseURL == "" {
+			errors = append(errors, fmt.Sprintf("base_url can't be empty for provider: %s", provider.Name))
+		}
+		if provider.Format == "" {
+			errors = append(errors, fmt.Sprintf("format can't be empty for provider: %s", provider.Name))
+		}
+
+		if _, ok := metProvides[provider.ID]; ok {
+			errors = append(errors, fmt.Sprintf("provider id must be unique for provider: %s", provider.Name))
+		}
+		metProvides[provider.ID] = true
+	}
+
+	if len(errors) > 0 {
+		return nil, fmt.Errorf("invalid config:\n%s", strings.Join(errors, "\n"))
+	}
+	if config.DatabasePath == "" {
+		config.DatabasePath = DefaultDatabasePath()
+	}
+	return &config, nil
+}
