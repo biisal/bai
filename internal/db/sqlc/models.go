@@ -9,9 +9,18 @@ import (
 	"time"
 )
 
+type ChatCompletion struct {
+	ID             any
+	ConversationID sql.NullInt64
+	Role           sql.NullString
+	Content        sql.NullString
+	Error          sql.NullString
+}
+
 type Conversation struct {
 	ID        int64
 	Title     string
+	Directory string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -23,6 +32,14 @@ type Message struct {
 	Content        string
 	Error          sql.NullString
 	CreatedAt      time.Time
+}
+
+type Provider struct {
+	ID         any
+	Name       string
+	ProviderID sql.NullString
+	ModelID    sql.NullString
+	CreatedAt  time.Time
 }
 
 type ToolCall struct {

@@ -243,6 +243,31 @@ func TestLoad(t *testing.T) {
 				})
 			},
 		},
+		{
+			name:    "set default log_file_path if not set in config",
+			path:    "/tmp/tempfile.json",
+			wantErr: nil,
+			checkFN: func(t *testing.T, config *Config) {
+				logPath := DefaultLogFilePath()
+				if config.LogFilePath != logPath {
+					t.Errorf("config.LogFilePath = %v, want %v", config.LogFilePath, logPath)
+				}
+			},
+			setupFN: func(t *testing.T) {
+				path := "/tmp/tempfile.json"
+				createTempFile(t, path, Config{
+					DatabasePath: "/tmp/test.db",
+					Providers: []ProviderConfig{
+						{
+							ID:      "test",
+							Name:    "test",
+							BaseURL: "https://api.openai.com/v1",
+							Format:  FormatOpenAI,
+						},
+					},
+				})
+			},
+		},
 	}
 
 	for _, tt := range tests {

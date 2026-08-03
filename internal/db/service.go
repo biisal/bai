@@ -8,7 +8,13 @@ import (
 )
 
 type ServiceInterface interface {
-	CreateConversation(ctx context.Context, title string) (int64, error)
+	CreateConversation(ctx context.Context, title string, dir string) (repo.Conversation, error)
+	SaveUserMessage(ctx context.Context, conversationID int64, content string) (int64, error)
+	GetConversatonsByDir(ctx context.Context, dir string) ([]repo.Conversation, error)
+	GetConversation(ctx context.Context, id int64) (repo.Conversation, error)
+	AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error
+	GetProvider(ctx context.Context) (repo.Provider, error)
+	WithTx(tx *sql.Tx) ServiceInterface
 }
 
 type Service struct {
@@ -19,15 +25,22 @@ func New(db *sql.DB) ServiceInterface {
 	return &Service{q: repo.New(db)}
 }
 
-func (s *Service) CreateConversation(ctx context.Context, title string) (int64, error) {
-	return s.q.CreateConversation(ctx, title)
+func (s *Service) WithTx(tx *sql.Tx) ServiceInterface {
+	return &Service{q: repo.New(tx)}
+}
+
+func (s *Service) CreateConversation(ctx context.Context, title, dir string) (repo.Conversation, error) {
+	return s.q.CreateConversation(ctx, repo.CreateConversationParams{
+		Title:     title,
+		Directory: title,
+	})
 }
 
 func (s *Service) GetConversation(ctx context.Context, id int64) (repo.Conversation, error) {
 	return s.q.GetConversation(ctx, id)
 }
 
-func (s *Service) ListConversations(ctx context.Context) ([]repo.Conversation, error) {
+func (s *Service) ListConversations(ctx context.Context) ([]repo.ListConversationsRow, error) {
 	return s.q.ListConversations(ctx)
 }
 
@@ -48,4 +61,18 @@ func (s *Service) SaveUserMessage(ctx context.Context, conversationID int64, con
 		Role:           "user",
 		Content:        content,
 	})
+}
+
+func (s *Service) GetConversatonsByDir(ctx context.Context, dir string) ([]repo.Conversation, error) {
+	return s.q.GetConversationsByDirectory(ctx, dir)
+}
+
+func (s *Service) AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error {
+	return s.q.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
+		Name: name, ProviderID: sql.NullString{String: providerID}, ModelID: sql.NullString{String: modelID},
+	})
+}
+
+func (s *Service) GetProvider(ctx context.Context) (repo.Provider, error) {
+	return s.q.GetProvider(ctx)
 }

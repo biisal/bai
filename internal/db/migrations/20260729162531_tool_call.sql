@@ -1,17 +1,16 @@
 -- +goose Up
-CREATE TABLE tool_call (
-	id SERIAL PRIMARY KEY,
-	call_id TEXT,
-	name TEXT,
-	arguments TEXT,
-	result TEXT DEFAULT NULL,
-	status TEXT NOT NULL DEFAULT 'success'
-	CHECK(status IN ('pending','success','error')),
-	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-	completion_id INTEGER NOT NULL
-	REFERENCES chat_completion(id)
-   	ON DELETE CASCADE
+CREATE TABLE tool_calls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    call_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    arguments TEXT NOT NULL,           
+    result TEXT,                       
+    is_error INTEGER NOT NULL DEFAULT 0,  
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK(status IN ('pending', 'success', 'error')),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- +goose Down
-DROP TABLE tool_call;
+DROP TABLE tool_calls;

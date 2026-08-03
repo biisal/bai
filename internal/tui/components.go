@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/viewport"
 	"charm.land/lipgloss/v2"
@@ -32,6 +30,8 @@ func NewComponent() Component {
 
 	ta.SetHeight(3)
 	ta.SetWidth(30)
+	ta.MinHeight = 3
+	ta.MaxHeight = 6
 
 	s := ta.Styles()
 	s.Focused.CursorLine = lipgloss.NewStyle()
@@ -51,6 +51,14 @@ Type a message and press Enter to send.`)
 	}
 }
 
+func getSize(v string) CompSize {
+	w, h := lipgloss.Size(v)
+	return CompSize{
+		Height: h - 1,
+		Width:  w - 1,
+	}
+}
+
 func (c Component) Input() (string, CompSize) {
 	view := c.textArea.View()
 	w, h := lipgloss.Size(view)
@@ -60,17 +68,18 @@ func (c Component) Input() (string, CompSize) {
 	}
 }
 
-func (c Component) Chats(msg agent.Message) (string, CompSize) {
-	var s strings.Builder
-	for _, v := range c.chats {
-		s.WriteString(v.Content + "\n")
-	}
+func (c Component) UserBubble(msg string, width int) (string, CompSize) {
+	bubbleStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("#35383F")). // muted slate
+		Foreground(lipgloss.Color("#D0D0D8")).
+		Padding(1, 2).
+		Width(width)
 
-	c.viewport.SetContent(s.String())
-	view := c.viewport.View()
-	w, h := lipgloss.Size(view)
-	return view, CompSize{
-		Height: h - 1,
-		Width:  w - 1,
-	}
+	content := bubbleStyle.Render(msg)
+	return content, getSize(content)
+}
+
+func (c Component) ThinkingView(content string) string {
+	view := lipgloss.NewStyle().Foreground(lipgloss.Color("#3C3C3C")).Render(content)
+	return view
 }

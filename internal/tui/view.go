@@ -2,19 +2,13 @@ package tui
 
 import (
 	tea "charm.land/bubbletea/v2"
-	"github.com/biisal/bai/internal/agent"
 )
 
 func (m Model) View() tea.View {
-	v := tea.NewView("")
-	inputView, size := m.componets.Input()
-	viewPort, _ := m.componets.Chats(agent.Message{
-		Content: "test",
-	})
+	inputView, _ := m.componets.Input()
+	m.componets.viewport.SetContent(m.ChatContent.String())
 
-	m.componets.viewport.SetHeight(m.Height - size.Height)
-	v.AltScreen = true
+	v := tea.NewView(m.ChatContent.String() + "\n" + m.ThinkingContent.String() + "\n" + inputView)
 
-	v.SetContent(viewPort + "\n" + inputView)
 	return v
 }

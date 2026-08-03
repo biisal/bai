@@ -7,17 +7,29 @@ package repo
 
 import (
 	"context"
+	"time"
 )
 
 const createConversation = `-- name: CreateConversation :one
-INSERT INTO conversations (title) VALUES (?1) RETURNING id
+INSERT INTO conversations (title , directory) VALUES (?1 , ?2) RETURNING id, title, directory, created_at, updated_at
 `
 
-func (q *Queries) CreateConversation(ctx context.Context, title string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createConversation, title)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+type CreateConversationParams struct {
+	Title     string
+	Directory string
+}
+
+func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error) {
+	row := q.db.QueryRowContext(ctx, createConversation, arg.Title, arg.Directory)
+	var i Conversation
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Directory,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const deleteConversation = `-- name: DeleteConversation :exec
@@ -30,7 +42,7 @@ func (q *Queries) DeleteConversation(ctx context.Context, id int64) error {
 }
 
 const getConversation = `-- name: GetConversation :one
-SELECT id, title, created_at, updated_at FROM conversations WHERE id = ?1
+SELECT id, title, directory, created_at, updated_at FROM conversations WHERE id = ?1
 `
 
 func (q *Queries) GetConversation(ctx context.Context, id int64) (Conversation, error) {
@@ -39,6 +51,7 @@ func (q *Queries) GetConversation(ctx context.Context, id int64) (Conversation, 
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
+		&i.Directory,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -56,12 +69,12 @@ func (q *Queries) GetConversationMessageCount(ctx context.Context, conversationI
 	return count, err
 }
 
-const listConversations = `-- name: ListConversations :many
-SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC
+const getConversationsByDirectory = `-- name: GetConversationsByDirectory :many
+SELECT id, title, directory, created_at, updated_at FROM conversations WHERE directory = ?1
 `
 
-func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error) {
-	rows, err := q.db.QueryContext(ctx, listConversations)
+func (q *Queries) GetConversationsByDirectory(ctx context.Context, directory string) ([]Conversation, error) {
+	rows, err := q.db.QueryContext(ctx, getConversationsByDirectory, directory)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +82,46 @@ func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error)
 	var items []Conversation
 	for rows.Next() {
 		var i Conversation
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Directory,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConversations = `-- name: ListConversations :many
+SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC
+`
+
+type ListConversationsRow struct {
+	ID        int64
+	Title     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (q *Queries) ListConversations(ctx context.Context) ([]ListConversationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listConversations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListConversationsRow
+	for rows.Next() {
+		var i ListConversationsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,

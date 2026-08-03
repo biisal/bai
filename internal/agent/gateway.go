@@ -3,31 +3,33 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/biisal/bai/internal/agent/providers"
 	"github.com/biisal/bai/internal/db"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 )
 
 type Gateway struct {
-	mu        sync.RWMutex
-	providers map[string]providers.Provider
-	model     string
-	active    providers.Provider
-	MsgChan   chan Message
-	db        db.ServiceInterface
+	mu             sync.RWMutex
+	providers      map[string]providers.Provider
+	db             db.ServiceInterface
+	conversation   *repo.Conversation
+	activeProvider providers.Provider
+	activeModel    string
 }
 
-func NewGateway(db db.ServiceInterface, providers map[string]providers.Provider) *Gateway {
+func NewGateway(db db.ServiceInterface, providers map[string]providers.Provider, provideId, modelID string) *Gateway {
 	g := &Gateway{
 		db:        db,
 		providers: providers,
-		MsgChan:   make(chan Message),
 	}
-	for _, provider := range providers {
-		g.active = provider
-		break
+
+	if err := g.SetActive(provideId, modelID); err != nil {
+		return nil
 	}
+
 	return g
 }
 
@@ -39,15 +41,18 @@ func (g *Gateway) SetActive(providerID, modelID string) error {
 	if !ok {
 		return fmt.Errorf("unknown provider: %s", providerID)
 	}
-	g.active = provider
-	g.model = modelID
+	g.activeProvider = provider
+	g.activeModel = modelID
 	return nil
 }
 
 func (g *Gateway) Active() (provider providers.Provider, modelID string) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	return g.active, g.model
+
+	// TODO : can produce bug if provider is not found
+	provider = g.providers[g.activeProvider.ID()]
+	return provider, g.activeModel
 }
 
 func (g *Gateway) Providers() []string {
@@ -67,7 +72,10 @@ func (g *Gateway) Models(providerID string) []string {
 	return nil
 }
 
-func (g *Gateway) StreamChat(ctx context.Context, system string, history []ReplayMessage) (*ProviderResponse, error) {
-	g.active.StreamChat(g.model)
+func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderResponse, error) {
+	if err := g.activeProvider.StreamChat(ctx, g.activeModel, meessage); err != nil {
+		slog.Error("failed to stream chat", "error", err)
+		return nil, err
+	}
 	return nil, nil
 }

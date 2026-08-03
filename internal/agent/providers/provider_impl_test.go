@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/biisal/bai/internal/config"
+	broker "github.com/biisal/bai/internal/pubsub"
 	test_utils "github.com/biisal/bai/utils/tests"
 )
 
@@ -27,7 +28,8 @@ func TestNewFromConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider, err := NewFromConfig(tt.input)
+			b := broker.New()
+			provider, err := NewFromConfig(tt.input, b)
 			test_utils.AssertError(t, err, tt.wantErr)
 			if tt.wantErr == nil && provider == nil {
 				t.Errorf("got nil, want provider")

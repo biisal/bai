@@ -1,20 +1,23 @@
 package providers
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/biisal/bai/internal/config"
+	broker "github.com/biisal/bai/internal/pubsub"
 )
 
 type Provider interface {
-	StreamChat(modelId string)
+	StreamChat(ctx context.Context, modelId string, content string) error
+	ID() string
 }
 
-func NewFromConfig(cfg config.ProviderConfig) (Provider, error) {
+func NewFromConfig(cfg config.ProviderConfig, broker broker.Service) (Provider, error) {
 	switch cfg.Format {
 	case config.FormatOpenAI:
 		{
-			return NewProviderOpenAI(cfg.BaseURL, cfg.APIKey), nil
+			return NewProviderOpenAI(cfg.BaseURL, cfg.APIKey, cfg.ID, broker), nil
 		}
 	}
 

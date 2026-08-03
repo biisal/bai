@@ -1,5 +1,11 @@
 -- +goose Up
-SELECT 'up SQL query';
+CREATE TABLE provider (
+	id SERIAL PRIMARY KEY CHECK (id = 1),
+	name TEXT NOT NULL,
+	provider_id TEXT UNIQUE,
+	model_id TEXT UNIQUE,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 -- +goose Down
-SELECT 'down SQL query';
+DROP TABLE provider;

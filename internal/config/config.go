@@ -34,7 +34,8 @@ type ModelConfig struct {
 }
 
 type Config struct {
-	DatabasePath string
+	DatabasePath string           `json:"database_path"`
+	LogFilePath  string           `json:"log_file_path"`
 	Providers    []ProviderConfig `json:"providers"`
 }
 
@@ -52,6 +53,10 @@ func DefaultConfigPath() string {
 
 func DefaultDatabasePath() string {
 	return filepath.Join(AppConfigDir(), "bai.db")
+}
+
+func DefaultLogFilePath() string {
+	return filepath.Join(AppConfigDir(), "bai.log")
 }
 
 func DefaultConfig() *Config {
@@ -135,6 +140,9 @@ func Load(path string) (*Config, error) {
 	}
 	if config.DatabasePath == "" {
 		config.DatabasePath = DefaultDatabasePath()
+	}
+	if config.LogFilePath == "" {
+		config.LogFilePath = DefaultLogFilePath()
 	}
 	return &config, nil
 }
