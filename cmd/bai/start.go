@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -26,7 +27,13 @@ func start(configPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to set up logger: %w", err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			slog.Error(err.Error())
+			return
+		}
+	}()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -44,6 +51,9 @@ func start(configPath string) error {
 	conn, err := db.Connect(config.DatabasePath)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	if err := db.Migrate(ctx, conn); err != nil {
+		return fmt.Errorf("failed to migrate database: %w", err)
 	}
 	dbService := db.New(conn)
 

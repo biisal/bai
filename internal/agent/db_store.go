@@ -47,3 +47,7 @@ func (g *Gateway) AddOrUpdateProvider(ctx context.Context, name, providerID, mod
 func (g *Gateway) GetProvider(ctx context.Context) (repo.Provider, error) {
 	return g.db.GetProvider(ctx)
 }
+
+func (G *Gateway) GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]repo.Message, error) {
+	return G.db.GetMessagesByConversationID(ctx, conversationID)
+}

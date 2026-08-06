@@ -22,7 +22,9 @@ func createTempFile(t *testing.T, path string, fileContent ...any) {
 
 	t.Cleanup(func() {
 		defer func() {
-			os.Remove(path)
+			if err := os.Remove(path); err != nil {
+				t.Fatal(err)
+			}
 		}()
 	})
 }

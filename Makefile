@@ -28,6 +28,9 @@ release-full:
 lint:
 	golangci-lint run
 
+lint-fix:
+	golangci-lint run --fix
+
 
 clean:
 	rm -rf bin/

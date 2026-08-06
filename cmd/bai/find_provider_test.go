@@ -16,8 +16,6 @@ func getTx(t *testing.T, conn *sql.DB, dbService db.ServiceInterface) db.Service
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	// TODO : create all table
-
 	t.Cleanup(func() {
 		if err := tx.Rollback(); err != nil {
 			t.Fatal(err.Error())
@@ -41,11 +39,14 @@ func TestFindProvider(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	if err := db.Migrate(context.Background(), conn); err != nil {
+		t.Fatalf("migrate db: %v", err)
+	}
 	dbService := db.New(conn)
 	tests := []struct {
 		name           string
 		providers      []config.ProviderConfig
-		setup          func(t *testing.T) db.ServiceInterface
+		setup          func(ctx context.Context, t *testing.T) db.ServiceInterface
 		wantErr        error
 		wantProviderId string
 		wantModelId    string
@@ -53,7 +54,7 @@ func TestFindProvider(t *testing.T) {
 		{
 			wantProviderId: "openai",
 			wantModelId:    "gpt-3.5-turbo",
-			setup: func(t *testing.T) db.ServiceInterface {
+			setup: func(ctx context.Context, t *testing.T) db.ServiceInterface {
 				t.Helper()
 				return getTx(t, conn, dbService)
 			},
@@ -69,17 +70,147 @@ func TestFindProvider(t *testing.T) {
 				},
 			},
 		},
+		{
+			wantProviderId: "openai",
+			wantModelId:    "gpt-3.5-turbo",
+			setup: func(ctx context.Context, t *testing.T) db.ServiceInterface {
+				t.Helper()
+				tx := getTx(t, conn, dbService)
+				if err := tx.AddOrUpdateProvider(ctx, "invalid-name", "invalid-id", "gpt-3.5-turbo"); err != nil {
+					t.Fatal(err)
+				}
+				return tx
+			},
+			name: "Return first provider and model if db record does not exist in config",
+			providers: []config.ProviderConfig{
+				{
+					ID: "openai",
+					Models: []config.ModelConfig{
+						{
+							ID: "gpt-3.5-turbo",
+						},
+					},
+				},
+			},
+		},
+		{
+			wantProviderId: "openai",
+			wantModelId:    "gpt-3.5-turbo",
+			setup: func(ctx context.Context, t *testing.T) db.ServiceInterface {
+				t.Helper()
+				tx := getTx(t, conn, dbService)
+				if err := tx.AddOrUpdateProvider(ctx, "test-name", "openai", "test-model"); err != nil {
+					t.Fatal(err)
+				}
+				return tx
+			},
+			name: "Return first provider and model if db has correct provider but model does not exist in config",
+			providers: []config.ProviderConfig{
+				{
+					ID: "openai",
+					Models: []config.ModelConfig{
+						{
+							ID: "gpt-3.5-turbo",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:           "Return db provider and model if both provider and model available in config",
+			wantProviderId: "openai",
+			wantModelId:    "test-model-available",
+			setup: func(ctx context.Context, t *testing.T) db.ServiceInterface {
+				t.Helper()
+				tx := getTx(t, conn, dbService)
+				if err := tx.AddOrUpdateProvider(ctx, "test-name", "openai", "test-model-available"); err != nil {
+					t.Fatal(err)
+				}
+				return tx
+			},
+			providers: []config.ProviderConfig{
+				{
+					ID: "openai",
+					Models: []config.ModelConfig{
+						{
+							ID: "gpt-3.5-turbo",
+						},
+						{
+							ID: "test-model-available",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:           "returns matched db provider and model when multiple providers",
+			wantProviderId: "openai",
+			wantModelId:    "test-model-available",
+			setup: func(ctx context.Context, t *testing.T) db.ServiceInterface {
+				t.Helper()
+				tx := getTx(t, conn, dbService)
+				if err := tx.AddOrUpdateProvider(ctx, "test-name", "openai", "test-model-available"); err != nil {
+					t.Fatal(err)
+				}
+				return tx
+			},
+			providers: []config.ProviderConfig{
+				{
+					ID: "grok",
+					Models: []config.ModelConfig{
+						{
+							ID: "some-model",
+						},
+					},
+				},
+				{
+					ID: "openai",
+					Models: []config.ModelConfig{
+						{
+							ID: "gpt-3.5-turbo",
+						},
+						{
+							ID: "test-model-available",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "returns error when providers list is empty",
+			wantErr: ErrProviderNotFound,
+			setup: func(ctx context.Context, t *testing.T) db.ServiceInterface {
+				t.Helper()
+				return getTx(t, conn, dbService)
+			},
+			providers: []config.ProviderConfig{},
+		},
+		{
+			name:    "returns error when first provider has no models",
+			wantErr: ErrModelNotFound,
+			setup: func(ctx context.Context, t *testing.T) db.ServiceInterface {
+				t.Helper()
+				return getTx(t, conn, dbService)
+			},
+			providers: []config.ProviderConfig{
+				{
+					ID:     "openai",
+					Models: []config.ModelConfig{},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			qtx := tt.setup(t)
-			gotProvider, gotModelId, err := resolveProvider(ctx, qtx, tt.providers)
+			tx := tt.setup(ctx, t)
+			gotProvider, gotModelId, err := resolveProvider(ctx, tx, tt.providers)
 			test_utils.AssertError(t, err, tt.wantErr)
 
-			t.Log(err.Error())
-
+			if err != nil {
+				t.Log(err.Error())
+			}
 			assertProviderAndModelID(t, gotProvider, gotModelId, tt.wantProviderId, tt.wantModelId)
 		})
 	}

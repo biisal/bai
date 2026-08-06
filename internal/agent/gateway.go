@@ -73,7 +73,18 @@ func (g *Gateway) Models(providerID string) []string {
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderResponse, error) {
-	if err := g.activeProvider.StreamChat(ctx, g.activeModel, meessage); err != nil {
+	messages, err := g.GetMessagesByConversationID(ctx, g.conversation.ID)
+	if err != nil {
+		slog.Error("failed to get messages", "error", err)
+		return nil, err
+	}
+
+	messages = append(messages, repo.Message{
+		Role:    "user",
+		Content: meessage,
+	})
+
+	if err := g.activeProvider.StreamChat(ctx, g.activeModel, messages); err != nil {
 		slog.Error("failed to stream chat", "error", err)
 		return nil, err
 	}

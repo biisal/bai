@@ -2,12 +2,11 @@ package providers
 
 import (
 	"context"
-	"log/slog"
 
+	repo "github.com/biisal/bai/internal/db/sqlc"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
-	"github.com/openai/openai-go/v3/responses"
 )
 
 type ProviderOpenAI struct {
@@ -28,20 +27,31 @@ func (p *ProviderOpenAI) ID() string {
 	return p.providerID
 }
 
-func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, content string) error {
-	stream := p.client.Responses.NewStreaming(ctx, responses.ResponseNewParams{
-		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String(content)},
-		Model: modelId,
+func buildHistory(history []repo.Message) []openai.ChatCompletionMessageParamUnion {
+	var messages []openai.ChatCompletionMessageParamUnion
+	for _, m := range history {
+		if m.Role == "user" {
+			messages = append(messages, openai.UserMessage(m.Content))
+		} else {
+			messages = append(messages, openai.AssistantMessage(m.Content))
+		}
+	}
+	return messages
+}
+
+func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history []repo.Message) error {
+	stream := p.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
+		Messages: buildHistory(history),
+		Model:    modelId,
 	})
 
 	for stream.Next() {
-		data := stream.Current()
-		p.broker.Publish(ctx, broker.Message{Type: broker.EventAgentMessageChunk, Text: data.Text})
-		slog.Info("openai response", "text", data.JSON.Text.Raw())
-		if data.JSON.Text.Valid() {
-			// p.broker.Publish(ctx, broker.Message{Type: broker.EventAgentStopThinking, Text: data.Text})
-			break
-		}
+		current := stream.Current()
+		p.broker.Publish(ctx, broker.Message{
+			Type: broker.EventAgentMessageChunk,
+			// TODO: perse the reasoning content too
+			Text: current.Choices[0].Delta.Content,
+		})
 	}
 
 	if err := stream.Err(); err != nil {

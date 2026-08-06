@@ -9,7 +9,11 @@ func TestConnect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect() failed: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("Close() failed: %v", err)
+		}
+	}()
 
 	if err := db.Ping(); err != nil {
 		t.Fatalf("Ping() failed: %v", err)

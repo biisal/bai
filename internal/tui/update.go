@@ -52,7 +52,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.componets.textArea.SetWidth(msg.Width)
 		m.componets.viewport.SetWidth(msg.Width)
 
-		// m.componets.viewport.SetHeight(m.Height - m.componets.textArea.Height())
+		m.componets.viewport.SetWidth(m.Width)
 
 	case tea.KeyPressMsg:
 		switch msg.String() {

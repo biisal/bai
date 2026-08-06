@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/biisal/bai/internal/config"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
 type Provider interface {
-	StreamChat(ctx context.Context, modelId string, content string) error
+	StreamChat(ctx context.Context, modelId string, history []repo.Message) error
 	ID() string
 }
 

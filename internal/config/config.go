@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,7 +98,12 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			slog.Error(err.Error())
+			return
+		}
+	}()
 	if err := json.NewDecoder(file).Decode(&config); err != nil {
 		prefix := "invalid config file"
 		if errors.Is(err, io.EOF) {

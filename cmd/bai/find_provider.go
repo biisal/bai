@@ -9,12 +9,17 @@ import (
 	"github.com/biisal/bai/internal/db"
 )
 
+var (
+	ErrProviderNotFound = errors.New("provider not found in config")
+	ErrModelNotFound    = errors.New("model not found in config")
+)
+
 func getOrSetProvider(ctx context.Context, svc db.ServiceInterface, providers []config.ProviderConfig) (providerID, modelID string, err error) {
 	if len(providers) == 0 {
-		return "", "", errors.New("no providers configured")
+		return "", "", ErrProviderNotFound
 	}
 	if len(providers[0].Models) == 0 {
-		return "", "", errors.New("no models configured")
+		return "", "", ErrModelNotFound
 	}
 	name := providers[0].Name
 	modelId := providers[0].Models[0].ID
