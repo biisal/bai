@@ -7,9 +7,8 @@ import (
 
 func (m Model) View() tea.View {
 	inputView, _ := m.componets.Input()
-	chatView := lipgloss.NewStyle().Width(m.Width).Render(m.ChatContent.String() + "\n" + m.ThinkingContent.String() + "\n" + inputView)
+	chatView := lipgloss.NewStyle().Render(m.content.Render())
 
-	v := tea.NewView(chatView + inputView)
-
+	v := tea.NewView(chatView + "\n\n" + inputView)
 	return v
 }

@@ -22,27 +22,7 @@ func (m *Model) sendMessage(text string) tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case broker.Message:
-		switch msg.Type {
-		case broker.EventUserMessage:
-			newContent, _ := m.componets.UserBubble(msg.Text, m.Width)
-			m.ChatContent.WriteString(newContent)
-			m.ChatContent.WriteString("\n\n")
-		case broker.EventAgentMessageChunk:
-			m.ChatContent.WriteString(msg.Text)
-		case broker.EventAgentThinking:
-			newContent := m.componets.ThinkingView(msg.Text)
-			m.ThinkingContent.WriteString(newContent)
-		case broker.EventAgentStartThinking:
-			m.ThinkingContent.WriteString("\n\n")
-		case broker.EventAgentStopThinking:
-			m.ChatContent.WriteString(m.ThinkingContent.String())
-			m.ChatContent.WriteString("\n\n")
-			m.ThinkingContent.Reset()
-		case broker.EventAgentError:
-			m.ChatContent.WriteString("\n\n [Error] : ")
-			m.ChatContent.WriteString(msg.Text)
-			m.ChatContent.WriteString("\n\n")
-		}
+		m.content.AddSegment(msg.Type, msg.Text)
 
 		return m, waitForMsg(m.messages)
 	case tea.WindowSizeMsg:
@@ -53,6 +33,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.componets.viewport.SetWidth(msg.Width)
 
 		m.componets.viewport.SetWidth(m.Width)
+		m.content.SetSize(m.Width, m.Height)
+		m.content.ReRender()
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
