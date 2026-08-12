@@ -9,6 +9,6 @@ func (m Model) View() tea.View {
 	inputView, _ := m.componets.Input()
 	chatView := lipgloss.NewStyle().Render(m.content.Render())
 
-	v := tea.NewView(chatView + "\n\n" + inputView)
+	v := tea.NewView(chatView + "\n\n" + inputView + m.commands.View())
 	return v
 }

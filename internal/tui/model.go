@@ -21,10 +21,13 @@ type Model struct {
 	ThinkingContent *strings.Builder
 	ctx             context.Context
 	content         *chatbuilder.Content
+
+	commands *Commands
 }
 
 func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service) *Model {
 	comp := NewComponent()
+	commands := NewCommands()
 	return &Model{
 		gateway:   gateway,
 		messages:  broker.Subscribe(),
@@ -33,6 +36,7 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 		ThinkingContent: &strings.Builder{},
 		broker:          broker,
 		content:         chatbuilder.NewContent(),
+		commands:        commands,
 	}
 }
 
