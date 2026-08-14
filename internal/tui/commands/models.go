@@ -5,19 +5,31 @@ import (
 	"github.com/biisal/bai/internal/config"
 )
 
-type ModelList struct {
+type ModelItem struct {
 	ModelID    string
 	ProviderID string
+}
+
+func (m ModelItem) Title() string {
+	return m.ModelID
+}
+
+func (m ModelItem) Description() string {
+	return m.ModelID
+}
+
+func (m ModelItem) FilterValue() string {
+	return m.ModelID
 }
 
 func parseModels(providers []config.ProviderConfig) []list.Item {
 	var items []list.Item
 	for _, provider := range providers {
 		for _, model := range provider.Models {
-			items = append(items, ListItem[ModelList]{Fields: ModelList{
+			items = append(items, ModelItem{
 				ModelID:    model.ID,
 				ProviderID: provider.ID,
-			}})
+			})
 		}
 	}
 	return items

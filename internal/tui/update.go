@@ -77,15 +77,15 @@ func (m *Model) MatchCommand() tea.Cmd {
 	}
 
 	switch item := m.commands.List.SelectedItem().(type) {
-	case commands.ListItem[commands.CommandItem]:
-		slog.Debug("match_command", "name", item.Fields.Name)
-		newInput := fmt.Sprintf("/%s ", item.Fields.Name)
+	case commands.CommandItem:
+		slog.Debug("match_command", "name", item.Name)
+		newInput := fmt.Sprintf("/%s ", item.Name)
 		m.componets.textArea.SetValue(newInput)
 		m.commands.Sync(newInput)
 		return nil
 
-	case commands.ListItem[commands.ModelList]:
-		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Title(), item.Fields.ProviderID, item.Fields.ModelID); err != nil {
+	case commands.ModelItem:
+		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Title(), item.ProviderID, item.ModelID); err != nil {
 			return nil
 		}
 		m.commands.ShowList = false

@@ -8,97 +8,69 @@ import (
 	"github.com/biisal/bai/internal/config"
 )
 
-type ListItem[T any] struct {
-	Fields T
-}
-
-func (i ListItem[T]) Title() string {
-	switch v := any(i.Fields).(type) {
-	case CommandItem:
-		return v.Name
-	case ModelList:
-		return v.ModelID
-	default:
-		return ""
-	}
-}
-
-func (i ListItem[T]) Description() string {
-	switch v := any(i.Fields).(type) {
-	case CommandItem:
-		return v.Description
-	case ModelList:
-		return v.ModelID
-	default:
-		return ""
-	}
-}
-
-func (i ListItem[T]) FilterValue() string {
-	switch v := any(i.Fields).(type) {
-	case CommandItem:
-		return v.Name
-	case ModelList:
-		return v.ModelID
-	default:
-		return ""
-	}
-}
-
 type CommandItem struct {
-	Name        string
-	Description string
+	Name string
+	Desc string
 }
 
-var listCommandItems = []list.Item{
-	ListItem[CommandItem]{
-		Fields: CommandItem{
-			Name:        "models",
-			Description: "List all available models",
-		},
-	},
-	ListItem[CommandItem]{
-		Fields: CommandItem{
-			Name:        "test",
-			Description: "Test the TUI",
-		},
-	},
+func (i CommandItem) Title() string {
+	return i.Name
 }
 
-type CommandType int
+func (i CommandItem) Description() string {
+	return i.Desc
+}
 
-const (
-	ListCommands CommandType = iota
-	ListModels
-)
+func (i CommandItem) FilterValue() string {
+	return i.Name
+}
+
+func toListItems[T list.Item](items []T) []list.Item {
+	out := make([]list.Item, len(items))
+	for i, it := range items {
+		out[i] = it
+	}
+	return out
+}
+
+var rootCommand = ""
 
 type Commands struct {
 	List     list.Model
-	Current  CommandType
+	Current  string
 	ShowList bool
 	Width    int
-	commands map[CommandType][]list.Item
+	commands map[string][]list.Item
 }
 
 func NewCommands(providers []config.ProviderConfig) *Commands {
-	models := parseModels(providers)
-	commands := make(map[CommandType][]list.Item)
-	commands[ListModels] = models
-	commands[ListCommands] = listCommandItems
+	commands := map[string][]list.Item{
+		"": toListItems([]CommandItem{
+			{
+				Name: "models",
+				Desc: "all the models",
+			},
+		}),
+		"models": toListItems(parseModels(providers)),
+		"nomodels": toListItems([]CommandItem{{
+			Name: "no models",
+			Desc: "this is a test command",
+		}}),
+	}
 
 	listStyles := newStyles(true, 0)
-	list := list.New(commands[ListCommands], itemDelegate{styles: &listStyles}, 5, 10)
+	list := list.New(commands[rootCommand], itemDelegate{styles: &listStyles}, 5, 10)
 	list.SetShowStatusBar(false)
 	list.SetShowTitle(false)
 	list.SetShowHelp(false)
 	return &Commands{
 		List:     list,
-		Current:  ListCommands,
+		Current:  rootCommand,
 		commands: commands,
 	}
 }
 
-func (c *Commands) Update(command CommandType) {
+func (c *Commands) Update(command string) {
 	if c.Current == command {
 		return
 	}
@@ -135,23 +107,21 @@ func (c *Commands) Sync(text string) {
 	if !strings.HasPrefix(text, "/") {
 		return
 	}
-	if after, ok := strings.CutPrefix(text, "/models "); ok { // TODO: change from hardcoded command
-		filterCommand := strings.TrimSpace(after)
-
+	text = text[1:]
+	if cmd, filter, found := strings.Cut(text, " "); found {
+		if _, ok := c.commands[cmd]; !ok {
+			return
+		}
 		c.ShowList = true
-		if filterCommand == "" {
+		if filter == "" {
 			c.List.ResetFilter()
 		} else {
-			c.List.SetFilterText(filterCommand)
+			c.List.SetFilterText(filter)
 		}
-		c.Update(ListModels)
+		c.Update(cmd)
 		return
 	}
-	if strings.HasPrefix(text, "/") && !strings.Contains(text, " ") {
-		c.ShowList = true
-		filterCommand := text[1:]
-		slog.Debug("sync", "filterCommand", filterCommand)
-		c.List.SetFilterText(filterCommand)
-		c.Update(ListCommands)
-	}
+	c.ShowList = true
+	c.Update(rootCommand)
+	c.List.SetFilterText(text)
 }

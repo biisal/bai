@@ -41,10 +41,10 @@ func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	str := fmt.Sprintf("%d. %s - %s", index+1, listItem.FilterValue(), "")
 	switch v := listItem.(type) {
-	case ListItem[ModelList]:
-		str = fmt.Sprintf("%s/%s", v.Fields.ProviderID, v.Fields.ModelID)
-	case ListItem[CommandItem]:
-		str = fmt.Sprintf("%s - %s", v.Fields.Name, v.Fields.Description)
+	case ModelItem:
+		str = fmt.Sprintf("%s/%s", v.ProviderID, v.ModelID)
+	case CommandItem:
+		str = fmt.Sprintf("%s - %s", v.Name, v.Desc)
 	}
 
 	fn := d.styles.item.Render
