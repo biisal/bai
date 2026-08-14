@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -36,6 +34,10 @@ func (m *Model) SetSize(w, h int) {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case broker.Message:
+		switch msg.Type {
+		case broker.EventSystemNotice:
+			// TODO: Update the ui
+		}
 		m.content.AddSegment(msg.Type, msg.Text)
 
 		return m, waitForMsg(m.messages)
@@ -49,34 +51,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			text := m.componets.textArea.Value()
-			m.componets.textArea.SetValue("")
-			return m, m.sendMessage(text)
+			if !m.commands.ShowList {
+				m.componets.textArea.SetValue("")
+				return m, m.sendMessage(text)
+			}
+			item, ok := m.commands.List.SelectedItem().(item[any])
+			if ok && m.commands.ShowList {
+				extras, extrasOk := item.extras.(struct {
+					ProviderID string
+					ModelID    string
+				})
+				if ok && m.commands.current == ListModels && extrasOk {
+					m.gateway.AddOrUpdateProvider(m.ctx, item.title, extras.ProviderID, extras.ModelID)
+					m.broker.Publish(m.ctx, broker.Message{
+						Type: broker.EventAgentResponse,
+						Text: "Model changed",
+					})
+				}
+			}
 
 		default:
 			var textCmd, listCmd tea.Cmd
-			var current Commad
 			m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
 			text := m.componets.textArea.Value()
 
-			m.commands.ShowList, current = showList(text)
+			m.commands.Sync(text)
 
-			m.commands.Update(current)
 			m.commands.List, listCmd = m.commands.List.Update(msg)
 			return m, tea.Batch(textCmd, listCmd)
 		}
 	}
 	return m, nil
-}
-
-func showList(text string) (show bool, command Commad) {
-	if !strings.HasPrefix(text, "/") {
-		return
-	}
-	if strings.HasPrefix(text, "/") && !strings.Contains(text, " ") {
-		return true, ListCommands
-	}
-	if strings.HasPrefix(text, "/models ") {
-		return true, ListModels
-	}
-	return
 }

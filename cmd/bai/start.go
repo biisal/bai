@@ -63,7 +63,7 @@ func start(configPath string) error {
 	}
 
 	gateway := agent.NewGateway(dbService, providersMap, activeProvider, activeModel)
-	p := tea.NewProgram(tui.InitModel(ctx, gateway, b))
+	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, config.Providers))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}
