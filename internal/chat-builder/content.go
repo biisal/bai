@@ -60,6 +60,8 @@ func renderSegment(kind broker.EventType, seg *Segment, width int) string {
 		style = StyleResponse
 	case broker.EventUserMessage:
 		style = StyleUserInput
+	case broker.EventSystemNotice:
+		style = StyleSystemNotice
 	}
 	return style.Width(width).Render(seg.buf.String())
 }

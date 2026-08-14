@@ -1,8 +1,9 @@
-package tui
+package commands
 
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"strings"
 
 	"charm.land/bubbles/v2/list"
@@ -30,11 +31,6 @@ func newStyles(darkBG bool, width int) styles {
 	return s
 }
 
-func (s *styles) UpdateSize(width int) {
-	s.item = s.item.Width(width)
-	s.selectedItem = s.selectedItem.Width(width)
-}
-
 type itemDelegate struct {
 	styles *styles
 }
@@ -44,11 +40,11 @@ func (d itemDelegate) Spacing() int                            { return 0 }
 func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	str := fmt.Sprintf("%d. %s - %s", index+1, listItem.FilterValue(), "")
-	if i, ok := listItem.(item[any]); ok {
-		str = fmt.Sprintf("%d. %s - %s", index+1, i.title, i.desc)
-	}
-	if i, ok := listItem.(item[modelExtras]); ok {
-		str = fmt.Sprintf("%d. (%s/%s)", index+1, i.extras.ModelID, i.extras.ProviderID)
+	switch v := listItem.(type) {
+	case ListItem[ModelList]:
+		str = fmt.Sprintf("%s/%s", v.Fields.ProviderID, v.Fields.ModelID)
+	case ListItem[CommandItem]:
+		str = fmt.Sprintf("%s - %s", v.Fields.Name, v.Fields.Description)
 	}
 
 	fn := d.styles.item.Render
@@ -58,5 +54,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		}
 	}
 
-	fmt.Fprint(w, fn(str))
+	if _, err := fmt.Fprint(w, fn(str)); err != nil {
+		slog.Error("render_item", "error", err)
+	}
 }

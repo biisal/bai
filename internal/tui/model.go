@@ -9,6 +9,7 @@ import (
 	chatbuilder "github.com/biisal/bai/internal/chat-builder"
 	"github.com/biisal/bai/internal/config"
 	broker "github.com/biisal/bai/internal/pubsub"
+	"github.com/biisal/bai/internal/tui/commands"
 )
 
 type Model struct {
@@ -23,12 +24,12 @@ type Model struct {
 	ctx             context.Context
 	content         *chatbuilder.Content
 
-	commands *Commands
+	commands *commands.Commands
 }
 
 func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service, providers []config.ProviderConfig) *Model {
 	comp := NewComponent()
-	commands := NewCommands(providers)
+	commands := commands.NewCommands(providers)
 	return &Model{
 		gateway:   gateway,
 		messages:  broker.Subscribe(),
