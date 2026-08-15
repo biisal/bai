@@ -19,7 +19,6 @@ const (
 )
 
 type ProviderConfig struct {
-	ID      string        `json:"id"`
 	Name    string        `json:"name"`
 	APIKey  string        `json:"api_key"`
 	Format  string        `json:"format"`
@@ -29,7 +28,6 @@ type ProviderConfig struct {
 
 type ModelConfig struct {
 	ID        string `json:"id"`
-	Name      string `json:"name"`
 	Context   int    `json:"context"`
 	MaxOutput int    `json:"max_output"`
 }
@@ -64,7 +62,6 @@ func DefaultConfig() *Config {
 	return &Config{
 		Providers: []ProviderConfig{
 			{
-				ID:      "openai",
 				Format:  FormatOpenAI,
 				Name:    "OpenAI",
 				APIKey:  "sk-...",
@@ -72,7 +69,6 @@ func DefaultConfig() *Config {
 				Models: []ModelConfig{
 					{
 						ID:        "gpt-5.5",
-						Name:      "GPT-5.5",
 						Context:   4096,
 						MaxOutput: 4000,
 					},
@@ -125,9 +121,6 @@ func Load(path string) (*Config, error) {
 	var errors []string
 	metProvides := make(map[string]bool)
 	for _, provider := range config.Providers {
-		if provider.ID == "" {
-			errors = append(errors, fmt.Sprintf("id can't be empty for provider: %s", provider.Name))
-		}
 		if provider.BaseURL == "" {
 			errors = append(errors, fmt.Sprintf("base_url can't be empty for provider: %s", provider.Name))
 		}
@@ -135,10 +128,10 @@ func Load(path string) (*Config, error) {
 			errors = append(errors, fmt.Sprintf("format can't be empty for provider: %s", provider.Name))
 		}
 
-		if _, ok := metProvides[provider.ID]; ok {
+		if _, ok := metProvides[provider.Name]; ok {
 			errors = append(errors, fmt.Sprintf("provider id must be unique for provider: %s", provider.Name))
 		}
-		metProvides[provider.ID] = true
+		metProvides[provider.Name] = true
 	}
 
 	if len(errors) > 0 {

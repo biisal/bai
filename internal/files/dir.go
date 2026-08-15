@@ -1,11 +1,14 @@
 package files
 
-import "os"
+import (
+	"log/slog"
+	"os"
+)
 
 func CurrentDir() string {
 	currentWd, err := os.Getwd()
 	if err != nil {
-		// TODO: show warnign to UI
+		slog.Error("failed to get current dir", "error", err)
 	}
 	return currentWd
 }

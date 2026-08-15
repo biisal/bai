@@ -35,11 +35,10 @@ type Message struct {
 }
 
 type Provider struct {
-	ID         any
-	Name       string
-	ProviderID sql.NullString
-	ModelID    sql.NullString
-	CreatedAt  time.Time
+	ID           any
+	ProviderName sql.NullString
+	ModelID      sql.NullString
+	CreatedAt    time.Time
 }
 
 type ToolCall struct {

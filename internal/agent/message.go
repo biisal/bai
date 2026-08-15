@@ -1,14 +1,11 @@
 package agent
 
-type Role string
-
-const (
-	RoleUser      Role = "user"
-	RoleAssistant Role = "assistant"
+import (
+	"github.com/biisal/bai/internal/db"
 )
 
 type Message struct {
-	Role Role `json:"role"`
+	Role db.Role `json:"role"`
 
 	Content string `json:"content"`
 
@@ -22,8 +19,8 @@ type ToolCall struct {
 }
 
 type ReplayMessage struct {
-	Role    Role   `json:"role"`
-	Content string `json:"content"`
+	Role    db.Role `json:"role"`
+	Content string  `json:"content"`
 
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 

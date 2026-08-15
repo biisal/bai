@@ -70,7 +70,7 @@ func (q *Queries) GetConversationMessageCount(ctx context.Context, conversationI
 }
 
 const getConversationsByDirectory = `-- name: GetConversationsByDirectory :many
-SELECT id, title, directory, created_at, updated_at FROM conversations WHERE directory = ?1
+SELECT id, title, directory, created_at, updated_at FROM conversations WHERE directory = ?1 ORDER by id DESC
 `
 
 func (q *Queries) GetConversationsByDirectory(ctx context.Context, directory string) ([]Conversation, error) {

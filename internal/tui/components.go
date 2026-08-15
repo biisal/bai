@@ -4,7 +4,6 @@ import (
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/viewport"
 	"charm.land/lipgloss/v2"
-	"github.com/biisal/bai/internal/agent"
 )
 
 type CompSize struct {
@@ -15,8 +14,6 @@ type CompSize struct {
 type Component struct {
 	textArea textarea.Model
 	viewport viewport.Model
-
-	chats []agent.Message
 }
 
 func NewComponent() Component {
@@ -51,35 +48,12 @@ Type a message and press Enter to send.`)
 	}
 }
 
-func getSize(v string) CompSize {
-	w, h := lipgloss.Size(v)
-	return CompSize{
-		Height: h - 1,
-		Width:  w - 1,
-	}
-}
-
 func (c Component) Input() (string, CompSize) {
 	view := c.textArea.View()
+	view = lipgloss.NewStyle().MarginTop(1).Render(view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h - 1,
 		Width:  w - 1,
 	}
-}
-
-func (c Component) UserBubble(msg string, width int) (string, CompSize) {
-	bubbleStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#35383F")). // muted slate
-		Foreground(lipgloss.Color("#D0D0D8")).
-		Padding(1, 2).
-		Width(width)
-
-	content := bubbleStyle.Render(msg)
-	return content, getSize(content)
-}
-
-func (c Component) ThinkingView(content string) string {
-	view := lipgloss.NewStyle().Foreground(lipgloss.Color("#3C3C3C")).Render(content)
-	return view
 }

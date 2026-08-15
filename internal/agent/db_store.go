@@ -2,14 +2,20 @@ package agent
 
 import (
 	"context"
+	"log/slog"
 
+	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/files"
 )
 
-func (g *Gateway) AddUserMessageToDB(ctx context.Context, message string) error {
+func (g *Gateway) AddMessageToDB(ctx context.Context, message string, role db.Role) error {
 	if g.conversation == nil {
-		conversation, err := g.AddNewConversation(ctx, message)
+		title := "Untitled Conversation"
+		if message != "" {
+			title = message
+		}
+		conversation, err := g.AddNewConversation(ctx, title)
 		if err != nil {
 			return err
 		}
@@ -17,7 +23,7 @@ func (g *Gateway) AddUserMessageToDB(ctx context.Context, message string) error 
 		g.conversation = &conversation
 		g.mu.RUnlock()
 	}
-	_, err := g.db.SaveUserMessage(ctx, g.conversation.ID, message)
+	_, err := g.db.CreateMessage(ctx, g.conversation.ID, message, role)
 	return err
 }
 
@@ -29,19 +35,28 @@ func (g *Gateway) GetConversationsByCurrentDir(ctx context.Context) ([]repo.Conv
 	return g.db.GetConversatonsByDir(ctx, files.CurrentDir())
 }
 
-func (g *Gateway) SetActiveConversation(ctx context.Context, conversationID int64) error {
-	conversation, err := g.db.GetConversation(ctx, conversationID)
-	if err != nil {
-		return err
+func (g *Gateway) SetActiveConversation(ctx context.Context, conversationID int64, conversation *repo.Conversation) error {
+	if conversation == nil {
+		conv, err := g.db.GetConversation(ctx, conversationID)
+		if err != nil {
+			slog.Error("set_active_conversation", "conversationID", conversationID, "err", err)
+			return err
+		}
+		conversation = &conv
 	}
+
 	g.mu.Lock()
-	g.conversation = &conversation
+	g.conversation = conversation
 	g.mu.Unlock()
 	return nil
 }
 
-func (g *Gateway) AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error {
-	return g.db.AddOrUpdateProvider(ctx, name, providerID, modelID)
+func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error {
+	if err := g.db.AddOrUpdateProvider(ctx, providerName, modelID); err != nil {
+		return err
+	}
+
+	return g.SetActive(providerName, modelID)
 }
 
 func (g *Gateway) GetProvider(ctx context.Context) (repo.Provider, error) {
