@@ -58,7 +58,8 @@ func (m *Model) MatchCommand() tea.Cmd {
 		return nil
 
 	case commands.ModelItem:
-		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Title(), item.ProviderID, item.ModelID); err != nil {
+		slog.Debug("match_model", "provider", item.ProviderID, "model", item.ModelID)
+		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Name, item.ProviderID, item.ModelID); err != nil {
 			return nil
 		}
 		m.commands.ShowList = false

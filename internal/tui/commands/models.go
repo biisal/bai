@@ -8,12 +8,13 @@ import (
 )
 
 type ModelItem struct {
+	Name       string
 	ModelID    string
 	ProviderID string
 }
 
 func (m ModelItem) Title() string {
-	return m.ModelID
+	return m.Name
 }
 
 func (m ModelItem) Description() string {
@@ -30,6 +31,7 @@ func parseModels(providers []config.ProviderConfig) []list.Item {
 	for _, provider := range providers {
 		for _, model := range provider.Models {
 			items = append(items, ModelItem{
+				Name:       provider.Name,
 				ModelID:    model.ID,
 				ProviderID: provider.ID,
 			})

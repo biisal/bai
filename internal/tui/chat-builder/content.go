@@ -92,14 +92,13 @@ func (c *Content) ReRender() {
 func (c *Content) RerenderFromDbConversation(messages []repo.Message) {
 	segments := make([]*Segment, 0, len(messages))
 	for _, msg := range messages {
-		buf := strings.Builder{}
-		buf.WriteString(msg.Content)
+		seg := &Segment{Kind: broker.EventUserMessage, buf: strings.Builder{}}
 		switch msg.Role {
-		case "user": // TODO: replace with constant value
-			segments = append(segments, &Segment{Kind: broker.EventUserMessage, buf: buf})
 		case "assistant":
-			segments = append(segments, &Segment{Kind: broker.EventAgentResponse, buf: buf})
+			seg.Kind = broker.EventAgentResponse
 		}
+		seg.buf.WriteString(msg.Content)
+		segments = append(segments, seg)
 	}
 	c.blocks = segments
 	c.ReRender()
