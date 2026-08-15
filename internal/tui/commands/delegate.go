@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
@@ -23,8 +22,8 @@ type styles struct {
 func newStyles(darkBG bool, width int) styles {
 	var s styles
 	s.title = lipgloss.NewStyle().MarginLeft(2)
-	s.item = lipgloss.NewStyle().PaddingLeft(4).Width(width)
-	s.selectedItem = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(width)
+	s.item = lipgloss.NewStyle().PaddingLeft(4).Width(width).Inline(true)
+	s.selectedItem = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(width).Inline(true)
 	s.pagination = list.DefaultStyles(darkBG).PaginationStyle.PaddingLeft(4)
 	s.help = list.DefaultStyles(darkBG).HelpStyle.PaddingLeft(4).PaddingBottom(1)
 	s.quitText = lipgloss.NewStyle().Margin(1, 0, 2, 4)
@@ -49,14 +48,15 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		str = fmt.Sprintf("%s - %s", v.Name, v.Desc)
 	}
 
-	fn := d.styles.item.Render
+	style := d.styles.item
+	prefix := "  "
+
 	if index == m.Index() {
-		fn = func(s ...string) string {
-			return d.styles.selectedItem.Render(("> " + strings.Join(s, " ")))
-		}
+		style = d.styles.selectedItem
+		prefix = "> "
 	}
 
-	if _, err := fmt.Fprint(w, fn(str)); err != nil {
+	if _, err := fmt.Fprint(w, style.Render(prefix+str)); err != nil {
 		slog.Error("render_item", "error", err)
 	}
 }

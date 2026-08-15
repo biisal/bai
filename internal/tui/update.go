@@ -102,6 +102,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			text := m.componets.textArea.Value()
+			if text == "" {
+				return m, nil
+			}
+
 			m.componets.textArea.SetValue("")
 			if !m.commands.ShowList {
 				return m, m.sendMessage(text)

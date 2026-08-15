@@ -9,8 +9,7 @@ import (
 
 type ServiceInterface interface {
 	CreateConversation(ctx context.Context, title string, dir string) (repo.Conversation, error)
-	SaveUserMessage(ctx context.Context, conversationID int64, content string) (int64, error)
-	SaveAssistantMessage(ctx context.Context, conversationID int64, content string) (int64, error)
+	CreateMessage(ctx context.Context, conversationID int64, content string, role Role) (int64, error)
 	GetConversatonsByDir(ctx context.Context, dir string) ([]repo.Conversation, error)
 	GetConversation(ctx context.Context, id int64) (repo.Conversation, error)
 	AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error
@@ -58,18 +57,17 @@ func (s *Service) DeleteConversation(ctx context.Context, id int64) error {
 	return s.q.DeleteConversation(ctx, id)
 }
 
-func (s *Service) SaveUserMessage(ctx context.Context, conversationID int64, content string) (int64, error) {
-	return s.q.CreateMessage(ctx, repo.CreateMessageParams{
-		ConversationID: conversationID,
-		Role:           "user",
-		Content:        content,
-	})
-}
+type Role string
 
-func (s *Service) SaveAssistantMessage(ctx context.Context, conversationID int64, content string) (int64, error) {
+const (
+	RoleUser      Role = "user"
+	RoleAssistant Role = "assistant"
+)
+
+func (s *Service) CreateMessage(ctx context.Context, conversationID int64, content string, role Role) (int64, error) {
 	return s.q.CreateMessage(ctx, repo.CreateMessageParams{
 		ConversationID: conversationID,
-		Role:           "assistant",
+		Role:           string(role),
 		Content:        content,
 	})
 }

@@ -79,7 +79,7 @@ func (g *Gateway) SetConversation(conversation *repo.Conversation) {
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderResponse, error) {
-	if err := g.AddUserMessageToDB(ctx, meessage); err != nil {
+	if err := g.AddMessageToDB(ctx, meessage, db.RoleUser); err != nil {
 		slog.Error("failed to add user message to db", "error", err)
 		return nil, err
 	}
@@ -100,8 +100,8 @@ func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderRes
 		return nil, err
 	}
 
-	if err := g.AddAssistantMessageToDB(ctx, finalResp); err != nil {
-		slog.Error("failed to add assistant message to db", "error", err)
+	if err := g.AddMessageToDB(ctx, meessage, db.RoleUser); err != nil {
+		slog.Error("failed to add user message to db", "error", err)
 		return nil, err
 	}
 	return &ProviderResponse{

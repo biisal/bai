@@ -4,13 +4,18 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/files"
 )
 
-func (g *Gateway) AddUserMessageToDB(ctx context.Context, message string) error {
+func (g *Gateway) AddMessageToDB(ctx context.Context, message string, role db.Role) error {
 	if g.conversation == nil {
-		conversation, err := g.AddNewConversation(ctx, message)
+		title := "Untitled Conversation"
+		if message != "" {
+			title = message
+		}
+		conversation, err := g.AddNewConversation(ctx, title)
 		if err != nil {
 			return err
 		}
@@ -18,21 +23,7 @@ func (g *Gateway) AddUserMessageToDB(ctx context.Context, message string) error 
 		g.conversation = &conversation
 		g.mu.RUnlock()
 	}
-	_, err := g.db.SaveUserMessage(ctx, g.conversation.ID, message)
-	return err
-}
-
-func (g *Gateway) AddAssistantMessageToDB(ctx context.Context, message string) error {
-	if g.conversation == nil {
-		conversation, err := g.AddNewConversation(ctx, message)
-		if err != nil {
-			return err
-		}
-		g.mu.RLock()
-		g.conversation = &conversation
-		g.mu.RUnlock()
-	}
-	_, err := g.db.SaveAssistantMessage(ctx, g.conversation.ID, message)
+	_, err := g.db.CreateMessage(ctx, g.conversation.ID, message, role)
 	return err
 }
 
