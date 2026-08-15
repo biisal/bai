@@ -63,6 +63,7 @@ func NewCommands(providers []config.ProviderConfig) *Commands {
 	list.SetShowStatusBar(false)
 	list.SetShowTitle(false)
 	list.SetShowHelp(false)
+	list.SetShowFilter(false)
 	return &Commands{
 		List:     list,
 		Current:  rootCommand,

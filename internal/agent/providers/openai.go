@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	broker "github.com/biisal/bai/internal/pubsub"
@@ -69,7 +70,7 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 	}
 
 	if err := stream.Err(); err != nil {
-		p.broker.Publish(ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error()})
+		slog.Error("openai stream error", "error", err)
 		return err
 	}
 

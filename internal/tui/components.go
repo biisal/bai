@@ -48,16 +48,9 @@ Type a message and press Enter to send.`)
 	}
 }
 
-func getSize(v string) CompSize {
-	w, h := lipgloss.Size(v)
-	return CompSize{
-		Height: h - 1,
-		Width:  w - 1,
-	}
-}
-
 func (c Component) Input() (string, CompSize) {
 	view := c.textArea.View()
+	view = lipgloss.NewStyle().MarginTop(1).Render(view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h - 1,

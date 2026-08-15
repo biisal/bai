@@ -6,9 +6,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
-	chatbuilder "github.com/biisal/bai/internal/chat-builder"
 	"github.com/biisal/bai/internal/config"
 	broker "github.com/biisal/bai/internal/pubsub"
+	chatbuilder "github.com/biisal/bai/internal/tui/chat-builder"
 	"github.com/biisal/bai/internal/tui/commands"
 )
 
