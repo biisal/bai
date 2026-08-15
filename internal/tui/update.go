@@ -48,6 +48,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 			return nil
 		}
 		m.commands.ShowList = false
+		slog.Debug("match_conversation", "messages", messages)
 		m.content.RerenderFromDbConversation(messages)
 		return nil
 	case commands.CommandItem:

@@ -1,6 +1,7 @@
 package chatbuilder
 
 import (
+	"log/slog"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -81,6 +82,7 @@ func (c *Content) flushActive() {
 
 func (c *Content) ReRender() {
 	out := strings.Builder{}
+	slog.Info("re-rendering content", "blocks", c.blocks)
 	for _, block := range c.blocks {
 		out.WriteString(renderSegment(block.Kind, block, c.width))
 		out.WriteString("\n\n")
@@ -90,7 +92,7 @@ func (c *Content) ReRender() {
 }
 
 func (c *Content) RerenderFromDbConversation(messages []repo.Message) {
-	segments := make([]*Segment, 0, len(messages))
+	var segments []*Segment
 	for _, msg := range messages {
 		seg := &Segment{Kind: broker.EventUserMessage, buf: strings.Builder{}}
 		switch msg.Role {
@@ -101,5 +103,6 @@ func (c *Content) RerenderFromDbConversation(messages []repo.Message) {
 		segments = append(segments, seg)
 	}
 	c.blocks = segments
+	c.active = nil
 	c.ReRender()
 }

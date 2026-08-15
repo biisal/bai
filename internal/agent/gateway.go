@@ -100,7 +100,7 @@ func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderRes
 		return nil, err
 	}
 
-	if err := g.AddMessageToDB(ctx, meessage, db.RoleUser); err != nil {
+	if err := g.AddMessageToDB(ctx, finalResp, db.RoleAssistant); err != nil {
 		slog.Error("failed to add user message to db", "error", err)
 		return nil, err
 	}
