@@ -31,9 +31,8 @@ func parseModels(providers []config.ProviderConfig) []list.Item {
 	for _, provider := range providers {
 		for _, model := range provider.Models {
 			items = append(items, ModelItem{
-				Name:       provider.Name,
-				ModelID:    model.ID,
-				ProviderID: provider.ID,
+				Name:    provider.Name,
+				ModelID: model.ID,
 			})
 		}
 	}

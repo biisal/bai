@@ -51,12 +51,12 @@ func (g *Gateway) SetActiveConversation(ctx context.Context, conversationID int6
 	return nil
 }
 
-func (g *Gateway) AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error {
-	if err := g.db.AddOrUpdateProvider(ctx, name, providerID, modelID); err != nil {
+func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error {
+	if err := g.db.AddOrUpdateProvider(ctx, providerName, modelID); err != nil {
 		return err
 	}
 
-	return g.SetActive(providerID, modelID)
+	return g.SetActive(providerName, modelID)
 }
 
 func (g *Gateway) GetProvider(ctx context.Context) (repo.Provider, error) {

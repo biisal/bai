@@ -12,7 +12,7 @@ type ServiceInterface interface {
 	CreateMessage(ctx context.Context, conversationID int64, content string, role Role) (int64, error)
 	GetConversatonsByDir(ctx context.Context, dir string) ([]repo.Conversation, error)
 	GetConversation(ctx context.Context, id int64) (repo.Conversation, error)
-	AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error
+	AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error
 	GetProvider(ctx context.Context) (repo.Provider, error)
 
 	GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]repo.Message, error)
@@ -76,9 +76,9 @@ func (s *Service) GetConversatonsByDir(ctx context.Context, dir string) ([]repo.
 	return s.q.GetConversationsByDirectory(ctx, dir)
 }
 
-func (s *Service) AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error {
+func (s *Service) AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error {
 	return s.q.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
-		Name: name, ProviderID: sql.NullString{String: providerID, Valid: true}, ModelID: sql.NullString{String: modelID, Valid: true},
+		ProviderName: sql.NullString{String: providerName, Valid: true}, ModelID: sql.NullString{String: modelID, Valid: true},
 	})
 }
 

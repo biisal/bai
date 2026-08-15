@@ -18,7 +18,7 @@ func NewFromConfig(cfg config.ProviderConfig, broker broker.Service) (Provider, 
 	switch cfg.Format {
 	case config.FormatOpenAI:
 		{
-			return NewProviderOpenAI(cfg.BaseURL, cfg.APIKey, cfg.ID, broker), nil
+			return NewProviderOpenAI(cfg.BaseURL, cfg.APIKey, cfg.Name, broker), nil
 		}
 	}
 

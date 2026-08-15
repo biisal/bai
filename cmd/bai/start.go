@@ -45,7 +45,7 @@ func start(configPath string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create provider: %w", err)
 		}
-		providersMap[providerConfig.ID] = provider
+		providersMap[providerConfig.Name] = provider
 	}
 
 	conn, err := db.Connect(config.DatabasePath)

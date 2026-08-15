@@ -11,22 +11,26 @@ import (
 )
 
 const addOrUpdateProvider = `-- name: AddOrUpdateProvider :exec
-INSERT INTO provider (id , name, provider_id, model_id) VALUES (1 , ?1, ?2, ?3) ON CONFLICT (id) DO UPDATE SET name = ?1, provider_id = ?2, model_id = ?3
+INSERT 
+	INTO provider (id , provider_name, model_id) 
+	VALUES (1 , ?1, ?2) 
+		ON CONFLICT (id) 
+		DO UPDATE 
+		SET provider_name = ?1, model_id = ?2
 `
 
 type AddOrUpdateProviderParams struct {
-	Name       string
-	ProviderID sql.NullString
-	ModelID    sql.NullString
+	ProviderName sql.NullString
+	ModelID      sql.NullString
 }
 
 func (q *Queries) AddOrUpdateProvider(ctx context.Context, arg AddOrUpdateProviderParams) error {
-	_, err := q.db.ExecContext(ctx, addOrUpdateProvider, arg.Name, arg.ProviderID, arg.ModelID)
+	_, err := q.db.ExecContext(ctx, addOrUpdateProvider, arg.ProviderName, arg.ModelID)
 	return err
 }
 
 const getProvider = `-- name: GetProvider :one
-SELECT id, name, provider_id, model_id, created_at FROM provider WHERE id = 1
+SELECT id, provider_name, model_id, created_at FROM provider WHERE id = 1
 `
 
 func (q *Queries) GetProvider(ctx context.Context) (Provider, error) {
@@ -34,8 +38,7 @@ func (q *Queries) GetProvider(ctx context.Context) (Provider, error) {
 	var i Provider
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
-		&i.ProviderID,
+		&i.ProviderName,
 		&i.ModelID,
 		&i.CreatedAt,
 	)

@@ -23,11 +23,10 @@ func getOrSetProvider(ctx context.Context, svc db.ServiceInterface, providers []
 	}
 	name := providers[0].Name
 	modelId := providers[0].Models[0].ID
-	providerId := providers[0].ID
-	if err := svc.AddOrUpdateProvider(ctx, name, providerId, modelId); err != nil {
+	if err := svc.AddOrUpdateProvider(ctx, name, modelId); err != nil {
 		return "", "", err
 	}
-	return providerId, modelId, nil
+	return name, modelId, nil
 }
 
 func resolveProvider(ctx context.Context, svc db.ServiceInterface, providers []config.ProviderConfig) (providerID, modelID string, err error) {
@@ -39,16 +38,16 @@ func resolveProvider(ctx context.Context, svc db.ServiceInterface, providers []c
 		return "", "", err
 	}
 	for _, p := range providers {
-		if p.ID == provider.ProviderID.String {
+		if p.Name == provider.ProviderName.String {
 			for _, model := range p.Models {
 				if model.ID == provider.ModelID.String {
-					return p.ID, model.ID, nil
+					return p.Name, model.ID, nil
 				}
 			}
 			if len(p.Models) == 0 {
 				return getOrSetProvider(ctx, svc, providers)
 			}
-			return p.ID, p.Models[0].ID, nil
+			return p.Name, p.Models[0].ID, nil
 		}
 	}
 	return getOrSetProvider(ctx, svc, providers)

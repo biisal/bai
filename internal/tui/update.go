@@ -59,8 +59,8 @@ func (m *Model) MatchCommand() tea.Cmd {
 		return nil
 
 	case commands.ModelItem:
-		slog.Debug("match_model", "provider", item.ProviderID, "model", item.ModelID)
-		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Name, item.ProviderID, item.ModelID); err != nil {
+		slog.Debug("match_model", "provider", item.Name, "model", item.ModelID)
+		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Name, item.ModelID); err != nil {
 			return nil
 		}
 		m.commands.ShowList = false
@@ -88,6 +88,7 @@ func (m *Model) SetSize(w, h int) {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case broker.Message:
 		m.content.AddSegment(msg.Type, msg.Text)
@@ -99,8 +100,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "ctrl+c":
-			return m, tea.Quit
+		// case "ctrl+c":
+		// 	return m, tea.Quit
 		case "enter":
 			text := m.componets.textArea.Value()
 			if text == "" {
@@ -116,13 +117,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			var textCmd, listCmd tea.Cmd
 			m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
-			text := m.componets.textArea.Value()
-
-			m.commands.Sync(text)
-
+			cmds = append(cmds, textCmd)
 			m.commands.List, listCmd = m.commands.List.Update(msg)
-			return m, tea.Batch(textCmd, listCmd)
+			text := m.componets.textArea.Value()
+			m.commands.Sync(text)
+			cmds = append(cmds, listCmd)
 		}
 	}
-	return m, nil
+	return m, tea.Batch(cmds...)
 }

@@ -75,6 +75,8 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 	list.SetShowTitle(false)
 	list.SetShowHelp(false)
 	list.SetShowFilter(false)
+	list.KeyMap.Quit.SetKeys("ctrl+c") // TODO : find a proper solution
+	list.KeyMap.ForceQuit.SetKeys("ctrl+c")
 	return &Commands{
 		List:     list,
 		Current:  rootCommand,
