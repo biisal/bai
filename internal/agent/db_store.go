@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"log/slog"
 
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/files"
@@ -21,6 +22,20 @@ func (g *Gateway) AddUserMessageToDB(ctx context.Context, message string) error 
 	return err
 }
 
+func (g *Gateway) AddAssistantMessageToDB(ctx context.Context, message string) error {
+	if g.conversation == nil {
+		conversation, err := g.AddNewConversation(ctx, message)
+		if err != nil {
+			return err
+		}
+		g.mu.RLock()
+		g.conversation = &conversation
+		g.mu.RUnlock()
+	}
+	_, err := g.db.SaveAssistantMessage(ctx, g.conversation.ID, message)
+	return err
+}
+
 func (g *Gateway) AddNewConversation(ctx context.Context, title string) (repo.Conversation, error) {
 	return g.db.CreateConversation(ctx, title, files.CurrentDir())
 }
@@ -29,13 +44,18 @@ func (g *Gateway) GetConversationsByCurrentDir(ctx context.Context) ([]repo.Conv
 	return g.db.GetConversatonsByDir(ctx, files.CurrentDir())
 }
 
-func (g *Gateway) SetActiveConversation(ctx context.Context, conversationID int64) error {
-	conversation, err := g.db.GetConversation(ctx, conversationID)
-	if err != nil {
-		return err
+func (g *Gateway) SetActiveConversation(ctx context.Context, conversationID int64, conversation *repo.Conversation) error {
+	if conversation == nil {
+		conv, err := g.db.GetConversation(ctx, conversationID)
+		if err != nil {
+			slog.Error("set_active_conversation", "conversationID", conversationID, "err", err)
+			return err
+		}
+		conversation = &conv
 	}
+
 	g.mu.Lock()
-	g.conversation = &conversation
+	g.conversation = conversation
 	g.mu.Unlock()
 	return nil
 }

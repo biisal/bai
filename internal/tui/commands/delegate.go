@@ -39,8 +39,10 @@ func (d itemDelegate) Height() int                             { return 1 }
 func (d itemDelegate) Spacing() int                            { return 0 }
 func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	str := fmt.Sprintf("%d. %s - %s", index+1, listItem.FilterValue(), "")
+	str := fmt.Sprintf("%d. %s ", index+1, listItem.FilterValue())
 	switch v := listItem.(type) {
+	case ConversationItem:
+		str = fmt.Sprintf("%s - %s", v.Name, v.Description())
 	case ModelItem:
 		str = fmt.Sprintf("%s/%s", v.ProviderID, v.ModelID)
 	case CommandItem:

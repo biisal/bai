@@ -10,6 +10,7 @@ import (
 type ServiceInterface interface {
 	CreateConversation(ctx context.Context, title string, dir string) (repo.Conversation, error)
 	SaveUserMessage(ctx context.Context, conversationID int64, content string) (int64, error)
+	SaveAssistantMessage(ctx context.Context, conversationID int64, content string) (int64, error)
 	GetConversatonsByDir(ctx context.Context, dir string) ([]repo.Conversation, error)
 	GetConversation(ctx context.Context, id int64) (repo.Conversation, error)
 	AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error
@@ -34,7 +35,7 @@ func (s *Service) WithTx(tx *sql.Tx) ServiceInterface {
 func (s *Service) CreateConversation(ctx context.Context, title, dir string) (repo.Conversation, error) {
 	return s.q.CreateConversation(ctx, repo.CreateConversationParams{
 		Title:     title,
-		Directory: title,
+		Directory: dir,
 	})
 }
 
@@ -61,6 +62,14 @@ func (s *Service) SaveUserMessage(ctx context.Context, conversationID int64, con
 	return s.q.CreateMessage(ctx, repo.CreateMessageParams{
 		ConversationID: conversationID,
 		Role:           "user",
+		Content:        content,
+	})
+}
+
+func (s *Service) SaveAssistantMessage(ctx context.Context, conversationID int64, content string) (int64, error) {
+	return s.q.CreateMessage(ctx, repo.CreateMessageParams{
+		ConversationID: conversationID,
+		Role:           "assistant",
 		Content:        content,
 	})
 }

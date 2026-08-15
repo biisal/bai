@@ -35,20 +35,22 @@ func buildHistory(history []repo.Message) []openai.ChatCompletionMessageParamUni
 		if m.Role == "user" {
 			messages = append(messages, openai.UserMessage(m.Content))
 		} else {
+			slog.Debug("assistant message", "content", m.Content)
 			messages = append(messages, openai.AssistantMessage(m.Content))
 		}
 	}
 	return messages
 }
 
-func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history []repo.Message) error {
+func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history []repo.Message) (finalMessage string, err error) {
 	stream := p.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: buildHistory(history),
 		Model:    modelId,
 	})
-
+	var acc openai.ChatCompletionAccumulator
 	for stream.Next() {
 		current := stream.Current()
+		acc.AddChunk(current)
 		if reasoning := reasoningDelta(current.RawJSON()); reasoning != "" {
 			p.broker.Publish(ctx, broker.Message{
 				Type: broker.EventAgentThinking,
@@ -71,10 +73,16 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 
 	if err := stream.Err(); err != nil {
 		slog.Error("openai stream error", "error", err)
-		return err
+		return "", err
 	}
 
-	return nil
+	if len(acc.Choices) > 0 {
+		finalMessage := acc.Choices[0].Message.Content
+		slog.Debug("Full content openai", "content", finalMessage)
+		return finalMessage, nil
+	}
+
+	return "", nil
 }
 
 func reasoningDelta(raw string) string {

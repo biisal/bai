@@ -8,4 +8,5 @@ const (
 	EventAgentResponse
 	EventAgentError
 	EventSystemNotice
+	EventSystemNoticeError
 )

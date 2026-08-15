@@ -1,10 +1,12 @@
 package commands
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 
 	"charm.land/bubbles/v2/list"
+	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
 )
 
@@ -40,26 +42,35 @@ type Commands struct {
 	Current  string
 	ShowList bool
 	Width    int
-	commands map[string][]list.Item
+	commands map[string]func() []list.Item
+	gateway  *agent.Gateway
 }
 
-func NewCommands(providers []config.ProviderConfig) *Commands {
-	commands := map[string][]list.Item{
-		"": toListItems([]CommandItem{
-			{
-				Name: "models",
-				Desc: "all the models",
-			},
-		}),
-		"models": toListItems(parseModels(providers)),
-		"nomodels": toListItems([]CommandItem{{
-			Name: "no models",
-			Desc: "this is a test command",
-		}}),
+func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway *agent.Gateway) *Commands {
+	models := parseModels(providers)
+	commands := map[string]func() []list.Item{
+		"": func() []list.Item {
+			return toListItems([]CommandItem{
+				{
+					Name: "models",
+					Desc: "all the models",
+				},
+				{
+					Name: "sessions",
+					Desc: "show list of conversations",
+				},
+			})
+		},
+		"models": func() []list.Item {
+			return models
+		},
+		"sessions": func() []list.Item {
+			return toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir))
+		},
 	}
 
 	listStyles := newStyles(true, 0)
-	list := list.New(commands[rootCommand], itemDelegate{styles: &listStyles}, 5, 10)
+	list := list.New(commands[rootCommand](), itemDelegate{styles: &listStyles}, 5, 10)
 	list.SetShowStatusBar(false)
 	list.SetShowTitle(false)
 	list.SetShowHelp(false)
@@ -68,6 +79,7 @@ func NewCommands(providers []config.ProviderConfig) *Commands {
 		List:     list,
 		Current:  rootCommand,
 		commands: commands,
+		gateway:  gateway,
 	}
 }
 
@@ -76,14 +88,14 @@ func (c *Commands) Update(command string) {
 		return
 	}
 
-	items, ok := c.commands[command]
+	fn, ok := c.commands[command]
 	if !ok {
 		slog.Warn("update_commands", "command", command)
 		return
 	}
 
 	c.Current = command
-	c.List.SetItems(items)
+	c.List.SetItems(fn())
 	slog.Debug("update", "current", c.Current)
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 type Provider interface {
-	StreamChat(ctx context.Context, modelId string, history []repo.Message) error
+	StreamChat(ctx context.Context, modelId string, history []repo.Message) (finalMessage string, err error)
 	ID() string
 }
 

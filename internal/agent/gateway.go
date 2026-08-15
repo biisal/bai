@@ -72,7 +72,17 @@ func (g *Gateway) Models(providerID string) []string {
 	return nil
 }
 
+func (g *Gateway) SetConversation(conversation *repo.Conversation) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.conversation = conversation
+}
+
 func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderResponse, error) {
+	if err := g.AddUserMessageToDB(ctx, meessage); err != nil {
+		slog.Error("failed to add user message to db", "error", err)
+		return nil, err
+	}
 	messages, err := g.GetMessagesByConversationID(ctx, g.conversation.ID)
 	if err != nil {
 		slog.Error("failed to get messages", "error", err)
@@ -84,9 +94,17 @@ func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderRes
 		Content: meessage,
 	})
 
-	if err := g.activeProvider.StreamChat(ctx, g.activeModel, messages); err != nil {
+	finalResp, err := g.activeProvider.StreamChat(ctx, g.activeModel, messages)
+	if err != nil {
 		slog.Error("failed to stream chat", "error", err)
 		return nil, err
 	}
-	return nil, nil
+
+	if err := g.AddAssistantMessageToDB(ctx, finalResp); err != nil {
+		slog.Error("failed to add assistant message to db", "error", err)
+		return nil, err
+	}
+	return &ProviderResponse{
+		Content: finalResp,
+	}, nil
 }

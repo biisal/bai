@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -62,6 +63,8 @@ func renderSegment(kind broker.EventType, seg *Segment, width int) string {
 		style = StyleUserInput
 	case broker.EventSystemNotice:
 		style = StyleSystemNotice
+	case broker.EventSystemNoticeError:
+		style = StyleSystemNoticeError
 	}
 	return style.Width(width).Render(seg.buf.String())
 }
@@ -84,4 +87,20 @@ func (c *Content) ReRender() {
 	}
 	c.rendered.Reset()
 	c.rendered.WriteString(out.String())
+}
+
+func (c *Content) RerenderFromDbConversation(messages []repo.Message) {
+	segments := make([]*Segment, 0, len(messages))
+	for _, msg := range messages {
+		buf := strings.Builder{}
+		buf.WriteString(msg.Content)
+		switch msg.Role {
+		case "user": // TODO: replace with constant value
+			segments = append(segments, &Segment{Kind: broker.EventUserMessage, buf: buf})
+		case "assistant":
+			segments = append(segments, &Segment{Kind: broker.EventAgentResponse, buf: buf})
+		}
+	}
+	c.blocks = segments
+	c.ReRender()
 }

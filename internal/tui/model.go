@@ -29,7 +29,7 @@ type Model struct {
 
 func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service, providers []config.ProviderConfig) *Model {
 	comp := NewComponent()
-	commands := commands.NewCommands(providers)
+	commands := commands.NewCommands(ctx, providers, gateway)
 	return &Model{
 		gateway:   gateway,
 		messages:  broker.Subscribe(),

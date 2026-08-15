@@ -12,15 +12,65 @@ import (
 func (m *Model) sendMessage(text string) tea.Cmd {
 	return func() tea.Msg {
 		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventUserMessage, Text: text})
-		if err := m.gateway.AddUserMessageToDB(m.ctx, text); err != nil {
-			return broker.Message{Type: broker.EventAgentError, Text: err.Error()}
-		}
-
 		if _, err := m.gateway.StreamChat(m.ctx, text); err != nil {
 			return broker.Message{Type: broker.EventAgentError, Text: err.Error()}
 		}
 		return nil
 	}
+}
+
+func (m *Model) MatchCommand() tea.Cmd {
+	if !m.commands.ShowList {
+		return nil
+	}
+
+	switch item := m.commands.List.SelectedItem().(type) {
+	case commands.ConversationItem:
+		slog.Debug("match_conversation", "name", item.Name)
+
+		messages, err := m.gateway.GetMessagesByConversationID(m.ctx, item.ID)
+		if err != nil {
+			slog.Error("match_conversation_get_messages", "err", err)
+			return func() tea.Msg {
+				m.broker.Publish(m.ctx, broker.Message{
+					Type: broker.EventSystemNoticeError,
+					Text: fmt.Sprintf("Failed to get messages: %v\n", err),
+				})
+				return nil
+			}
+		}
+		if err := m.gateway.SetActiveConversation(m.ctx, item.ID, nil); err != nil {
+			slog.Error("match_conversation_set_active", "err", err)
+			m.broker.Publish(m.ctx, broker.Message{
+				Type: broker.EventSystemNoticeError,
+				Text: fmt.Sprintf("Failed to set active conversation: %v\n", err),
+			})
+			return nil
+		}
+		m.commands.ShowList = false
+		m.content.RerenderFromDbConversation(messages)
+		return nil
+	case commands.CommandItem:
+		slog.Debug("match_command", "name", item.Name)
+		newInput := fmt.Sprintf("/%s ", item.Name)
+		m.componets.textArea.SetValue(newInput)
+		m.commands.Sync(newInput)
+		return nil
+
+	case commands.ModelItem:
+		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Title(), item.ProviderID, item.ModelID); err != nil {
+			return nil
+		}
+		m.commands.ShowList = false
+		return func() tea.Msg {
+			m.broker.Publish(m.ctx, broker.Message{
+				Type: broker.EventSystemNotice,
+				Text: fmt.Sprintf("Model changed to: %s\n", item.Title()),
+			})
+			return nil
+		}
+	}
+	return nil
 }
 
 func (m *Model) SetSize(w, h int) {
@@ -69,33 +119,4 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
-}
-
-func (m *Model) MatchCommand() tea.Cmd {
-	if !m.commands.ShowList {
-		return nil
-	}
-
-	switch item := m.commands.List.SelectedItem().(type) {
-	case commands.CommandItem:
-		slog.Debug("match_command", "name", item.Name)
-		newInput := fmt.Sprintf("/%s ", item.Name)
-		m.componets.textArea.SetValue(newInput)
-		m.commands.Sync(newInput)
-		return nil
-
-	case commands.ModelItem:
-		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Title(), item.ProviderID, item.ModelID); err != nil {
-			return nil
-		}
-		m.commands.ShowList = false
-		return func() tea.Msg {
-			m.broker.Publish(m.ctx, broker.Message{
-				Type: broker.EventSystemNotice,
-				Text: fmt.Sprintf("Model changed to: %s\n", item.Title()),
-			})
-			return nil
-		}
-	}
-	return nil
 }
