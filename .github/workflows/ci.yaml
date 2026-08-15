@@ -55,6 +55,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Make bai config dir
+        run: mkdir -p ~/.config/bai
+
       - name: Run go test
         run: go test ./...
 
