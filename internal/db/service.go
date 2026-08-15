@@ -9,10 +9,10 @@ import (
 
 type ServiceInterface interface {
 	CreateConversation(ctx context.Context, title string, dir string) (repo.Conversation, error)
-	SaveUserMessage(ctx context.Context, conversationID int64, content string) (int64, error)
+	CreateMessage(ctx context.Context, conversationID int64, content string, role Role) (int64, error)
 	GetConversatonsByDir(ctx context.Context, dir string) ([]repo.Conversation, error)
 	GetConversation(ctx context.Context, id int64) (repo.Conversation, error)
-	AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error
+	AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error
 	GetProvider(ctx context.Context) (repo.Provider, error)
 
 	GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]repo.Message, error)
@@ -34,7 +34,7 @@ func (s *Service) WithTx(tx *sql.Tx) ServiceInterface {
 func (s *Service) CreateConversation(ctx context.Context, title, dir string) (repo.Conversation, error) {
 	return s.q.CreateConversation(ctx, repo.CreateConversationParams{
 		Title:     title,
-		Directory: title,
+		Directory: dir,
 	})
 }
 
@@ -57,10 +57,17 @@ func (s *Service) DeleteConversation(ctx context.Context, id int64) error {
 	return s.q.DeleteConversation(ctx, id)
 }
 
-func (s *Service) SaveUserMessage(ctx context.Context, conversationID int64, content string) (int64, error) {
+type Role string
+
+const (
+	RoleUser      Role = "user"
+	RoleAssistant Role = "assistant"
+)
+
+func (s *Service) CreateMessage(ctx context.Context, conversationID int64, content string, role Role) (int64, error) {
 	return s.q.CreateMessage(ctx, repo.CreateMessageParams{
 		ConversationID: conversationID,
-		Role:           "user",
+		Role:           string(role),
 		Content:        content,
 	})
 }
@@ -69,9 +76,9 @@ func (s *Service) GetConversatonsByDir(ctx context.Context, dir string) ([]repo.
 	return s.q.GetConversationsByDirectory(ctx, dir)
 }
 
-func (s *Service) AddOrUpdateProvider(ctx context.Context, name, providerID, modelID string) error {
+func (s *Service) AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error {
 	return s.q.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
-		Name: name, ProviderID: sql.NullString{String: providerID, Valid: true}, ModelID: sql.NullString{String: modelID, Valid: true},
+		ProviderName: sql.NullString{String: providerName, Valid: true}, ModelID: sql.NullString{String: modelID, Valid: true},
 	})
 }
 

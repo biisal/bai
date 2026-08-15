@@ -17,4 +17,4 @@ DELETE FROM conversations WHERE id = ?1;
 SELECT COUNT(*) FROM messages WHERE conversation_id = ?1;
 
 -- name: GetConversationsByDirectory :many
-SELECT * FROM conversations WHERE directory = ?1;
+SELECT * FROM conversations WHERE directory = ?1 ORDER by id DESC;

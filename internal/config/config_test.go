@@ -85,26 +85,7 @@ func TestLoad(t *testing.T) {
 				createTempFile(t, path, Config{
 					Providers: []ProviderConfig{
 						{
-							ID:      "test",
 							BaseURL: "",
-							Format:  FormatOpenAI,
-							Name:    "test",
-						},
-					},
-				})
-			},
-		},
-		{
-			name:    "valid path without id",
-			path:    "/tmp/tempfile.json",
-			wantErr: fmt.Errorf("invalid config:\nid can't be empty for provider: test"),
-			setupFN: func(t *testing.T) {
-				path := "/tmp/tempfile.json"
-				createTempFile(t, path, Config{
-					Providers: []ProviderConfig{
-						{
-							ID:      "",
-							BaseURL: "https://api.openai.com/v1",
 							Format:  FormatOpenAI,
 							Name:    "test",
 						},
@@ -121,7 +102,6 @@ func TestLoad(t *testing.T) {
 				createTempFile(t, path, Config{
 					Providers: []ProviderConfig{
 						{
-							ID:      "test",
 							BaseURL: "https://api.openai.com/v1",
 							Format:  "",
 							Name:    "test",
@@ -131,9 +111,9 @@ func TestLoad(t *testing.T) {
 			},
 		},
 		{
-			name:    "should throw error of list of missing id, base_url and format",
+			name:    "should throw error of list of missing base_url and format",
 			path:    "/tmp/tempfile.json",
-			wantErr: fmt.Errorf("invalid config:\nid can't be empty for provider: test\nbase_url can't be empty for provider: test\nformat can't be empty for provider: test"),
+			wantErr: fmt.Errorf("invalid config:\nbase_url can't be empty for provider: test\nformat can't be empty for provider: test"),
 			setupFN: func(t *testing.T) {
 				path := "/tmp/tempfile.json"
 				createTempFile(t, path, Config{
@@ -146,9 +126,9 @@ func TestLoad(t *testing.T) {
 			},
 		},
 		{
-			name:    "should throw error of list of missing id, base_url and format for different config file",
+			name:    "should throw error of list of missing base_url and format for different config file",
 			path:    "/tmp/tempfile.json",
-			wantErr: fmt.Errorf("invalid config:\nid can't be empty for provider: test\nformat can't be empty for provider: test-2\nbase_url can't be empty for provider: test-3"),
+			wantErr: fmt.Errorf("invalid config:\nformat can't be empty for provider: test-2\nbase_url can't be empty for provider: test-3"),
 			setupFN: func(t *testing.T) {
 				path := "/tmp/tempfile.json"
 				createTempFile(t, path, Config{
@@ -160,12 +140,10 @@ func TestLoad(t *testing.T) {
 						},
 						{
 							Name:    "test-2",
-							ID:      "test-2",
 							BaseURL: "https://api.openai.com/v1",
 						},
 						{
 							Name:   "test-3",
-							ID:     "test-3",
 							Format: FormatOpenAI,
 						},
 					},
@@ -173,22 +151,20 @@ func TestLoad(t *testing.T) {
 			},
 		},
 		{
-			name:    "should throw error when id is duplicated",
+			name:    "should throw error when name is duplicated",
 			path:    "/tmp/tempfile.json",
-			wantErr: fmt.Errorf("invalid config:\nprovider id must be unique for provider: test-2"),
+			wantErr: fmt.Errorf("invalid config:\nprovider id must be unique for provider: test"),
 			setupFN: func(t *testing.T) {
 				path := "/tmp/tempfile.json"
 				createTempFile(t, path, Config{
 					Providers: []ProviderConfig{
 						{
-							ID:      "test",
 							Name:    "test",
 							BaseURL: "https://api.openai.com/v1",
 							Format:  FormatOpenAI,
 						},
 						{
-							ID:      "test",
-							Name:    "test-2",
+							Name:    "test",
 							BaseURL: "https://api.openai.com/v1",
 							Format:  FormatOpenAI,
 						},
@@ -211,7 +187,6 @@ func TestLoad(t *testing.T) {
 				createTempFile(t, path, Config{
 					Providers: []ProviderConfig{
 						{
-							ID:      "test",
 							Name:    "test",
 							BaseURL: "https://api.openai.com/v1",
 							Format:  FormatOpenAI,
@@ -236,7 +211,6 @@ func TestLoad(t *testing.T) {
 					DatabasePath: "/tmp/test.db",
 					Providers: []ProviderConfig{
 						{
-							ID:      "test",
 							Name:    "test",
 							BaseURL: "https://api.openai.com/v1",
 							Format:  FormatOpenAI,
@@ -261,7 +235,6 @@ func TestLoad(t *testing.T) {
 					DatabasePath: "/tmp/test.db",
 					Providers: []ProviderConfig{
 						{
-							ID:      "test",
 							Name:    "test",
 							BaseURL: "https://api.openai.com/v1",
 							Format:  FormatOpenAI,
