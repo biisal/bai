@@ -9,22 +9,20 @@ import (
 )
 
 type ConversationItem struct {
-	ID           int64
-	Name         string
-	Desc         string
+	CreatedAt    string
 	Conversation repo.Conversation
 }
 
 func (ls ConversationItem) Title() string {
-	return ls.Name
+	return ls.Conversation.Title
 }
 
 func (ls ConversationItem) Description() string {
-	return ls.Desc
+	return ls.CreatedAt
 }
 
 func (ls ConversationItem) FilterValue() string {
-	return ls.Name
+	return ls.Conversation.Title
 }
 
 func parseConversations(ctx context.Context, getconversations func(ctx context.Context) ([]repo.Conversation, error)) []list.Item {
@@ -36,9 +34,7 @@ func parseConversations(ctx context.Context, getconversations func(ctx context.C
 	}
 	for _, conv := range conversations {
 		items = append(items, ConversationItem{
-			ID:           conv.ID,
-			Name:         conv.Title,
-			Desc:         conv.CreatedAt.Format("Monday, Jan 2, 2006 at 03:04 PM"),
+			CreatedAt:    conv.CreatedAt.Format("Monday, Jan 2, 2006 at 03:04 PM"),
 			Conversation: conv,
 		})
 	}

@@ -44,6 +44,8 @@ type Commands struct {
 	Width    int
 	commands map[string]func() []list.Item
 	gateway  *agent.Gateway
+
+	lastSynced string
 }
 
 func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway *agent.Gateway) *Commands {
@@ -53,7 +55,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 			return toListItems([]CommandItem{
 				{
 					Name: "models",
-					Desc: "all the models",
+					Desc: "show available models",
 				},
 				{
 					Name: "sessions",
@@ -118,10 +120,17 @@ func (c *Commands) View() string {
 }
 
 func (c *Commands) Sync(text string) {
-	c.ShowList = false
 	if !strings.HasPrefix(text, "/") {
+		c.ShowList = false
+		c.lastSynced = ""
 		return
 	}
+
+	if c.lastSynced == text {
+		return
+	}
+	c.lastSynced = text
+
 	text = text[1:]
 	if cmd, filter, found := strings.Cut(text, " "); found {
 		if _, ok := c.commands[cmd]; !ok {

@@ -26,9 +26,9 @@ func (m *Model) MatchCommand() tea.Cmd {
 
 	switch item := m.commands.List.SelectedItem().(type) {
 	case commands.ConversationItem:
-		slog.Debug("match_conversation", "name", item.Name)
+		slog.Debug("match_conversation", "name", item.Title())
 
-		messages, err := m.gateway.GetMessagesByConversationID(m.ctx, item.ID)
+		messages, err := m.gateway.GetMessagesByConversationID(m.ctx, item.Conversation.ID)
 		if err != nil {
 			slog.Error("match_conversation_get_messages", "err", err)
 			return func() tea.Msg {
@@ -39,7 +39,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 				return nil
 			}
 		}
-		if err := m.gateway.SetActiveConversation(m.ctx, item.ID, nil); err != nil {
+		if err := m.gateway.SetActiveConversation(m.ctx, item.Conversation.ID, nil); err != nil {
 			slog.Error("match_conversation_set_active", "err", err)
 			m.broker.Publish(m.ctx, broker.Message{
 				Type: broker.EventSystemNoticeError,
@@ -100,8 +100,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		// case "ctrl+c":
-		// 	return m, tea.Quit
+		case "ctrl+c":
+			return m, tea.Quit
 		case "enter":
 			text := m.componets.textArea.Value()
 			if text == "" {
@@ -116,12 +116,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		default:
 			var textCmd, listCmd tea.Cmd
+
 			m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
-			cmds = append(cmds, textCmd)
 			m.commands.List, listCmd = m.commands.List.Update(msg)
-			text := m.componets.textArea.Value()
-			m.commands.Sync(text)
-			cmds = append(cmds, listCmd)
+
+			m.commands.Sync(m.componets.textArea.Value())
+
+			cmds = append(cmds, textCmd, listCmd)
 		}
 	}
 	return m, tea.Batch(cmds...)
