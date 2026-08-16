@@ -17,13 +17,18 @@ import (
 	"github.com/biisal/bai/internal/tui"
 )
 
-func start(configPath string) error {
+func start(configPath string, dev bool) error {
 	config, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
+	logLevel := slog.LevelInfo
+	if dev {
+		slog.Info("Starting in dev mode")
+		logLevel = slog.LevelDebug
+	}
 
-	file, err := logger.SetUpLogger(config.LogFilePath)
+	file, err := logger.SetUpLogger(config.LogFilePath, logLevel)
 	if err != nil {
 		return fmt.Errorf("failed to set up logger: %w", err)
 	}

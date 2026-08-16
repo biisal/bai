@@ -2,7 +2,7 @@ GREETING := Hello from bAI!
 SHELL := /bin/bash
 BINARY_PATH := ./bin/bai
 
-.PHONY: default build run test release lint clean install format
+.PHONY: default build run dev test release lint clean install format
 .ONESHELL:
 
 default:
@@ -14,7 +14,10 @@ build:
 
 run: build
 	./${BINARY_PATH}
-
+	
+dev: build
+	./${BINARY_PATH} --dev
+	
 test:
 	go test ./... -failfast
 
