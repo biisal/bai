@@ -8,6 +8,8 @@ package repo
 import (
 	"context"
 	"database/sql"
+
+	"github.com/biisal/bai/internal/domain"
 )
 
 const createMessage = `-- name: CreateMessage :one
@@ -23,7 +25,7 @@ INSERT INTO messages (
 
 type CreateMessageParams struct {
 	ConversationID int64
-	Role           string
+	Role           domain.Role
 	Content        string
 	Error          sql.NullString
 }

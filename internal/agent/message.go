@@ -1,11 +1,11 @@
 package agent
 
 import (
-	"github.com/biisal/bai/internal/db"
+	"github.com/biisal/bai/internal/domain"
 )
 
 type Message struct {
-	Role db.Role `json:"role"`
+	Role domain.Role `json:"role"`
 
 	Content string `json:"content"`
 
@@ -19,8 +19,8 @@ type ToolCall struct {
 }
 
 type ReplayMessage struct {
-	Role    db.Role `json:"role"`
-	Content string  `json:"content"`
+	Role    domain.Role `json:"role"`
+	Content string      `json:"content"`
 
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 

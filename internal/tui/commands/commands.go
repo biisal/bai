@@ -61,6 +61,10 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 					Name: "sessions",
 					Desc: "show list of conversations",
 				},
+				{
+					Name: "exit", // TODO : implement funcionality
+					Desc: "exit the application",
+				},
 			})
 		},
 		"models": func() []list.Item {

@@ -5,11 +5,12 @@ import (
 	"database/sql"
 
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/domain"
 )
 
 type ServiceInterface interface {
 	CreateConversation(ctx context.Context, title string, dir string) (repo.Conversation, error)
-	CreateMessage(ctx context.Context, conversationID int64, content string, role Role) (int64, error)
+	CreateMessage(ctx context.Context, conversationID int64, content string, role domain.Role) (int64, error)
 	GetConversatonsByDir(ctx context.Context, dir string) ([]repo.Conversation, error)
 	GetConversation(ctx context.Context, id int64) (repo.Conversation, error)
 	AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error
@@ -57,17 +58,10 @@ func (s *Service) DeleteConversation(ctx context.Context, id int64) error {
 	return s.q.DeleteConversation(ctx, id)
 }
 
-type Role string
-
-const (
-	RoleUser      Role = "user"
-	RoleAssistant Role = "assistant"
-)
-
-func (s *Service) CreateMessage(ctx context.Context, conversationID int64, content string, role Role) (int64, error) {
+func (s *Service) CreateMessage(ctx context.Context, conversationID int64, content string, role domain.Role) (int64, error) {
 	return s.q.CreateMessage(ctx, repo.CreateMessageParams{
 		ConversationID: conversationID,
-		Role:           string(role),
+		Role:           role,
 		Content:        content,
 	})
 }

@@ -7,3 +7,6 @@ sql:
       go:
         package: "repo"
         out: "./internal/db/sqlc"
+        overrides:
+        - column: "messages.role"
+          go_type: "github.com/biisal/bai/internal/domain.Role"
