@@ -4,12 +4,12 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/domain"
 	"github.com/biisal/bai/internal/files"
 )
 
-func (g *Gateway) AddMessageToDB(ctx context.Context, message string, role db.Role) error {
+func (g *Gateway) AddMessageToDB(ctx context.Context, message string, role domain.Role) error {
 	if g.conversation == nil {
 		title := "Untitled Conversation"
 		if message != "" {

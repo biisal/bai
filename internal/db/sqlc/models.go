@@ -7,6 +7,8 @@ package repo
 import (
 	"database/sql"
 	"time"
+
+	"github.com/biisal/bai/internal/domain"
 )
 
 type ChatCompletion struct {
@@ -28,7 +30,7 @@ type Conversation struct {
 type Message struct {
 	ID             int64
 	ConversationID int64
-	Role           string
+	Role           domain.Role
 	Content        string
 	Error          sql.NullString
 	CreatedAt      time.Time

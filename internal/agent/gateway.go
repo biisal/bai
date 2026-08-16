@@ -9,6 +9,7 @@ import (
 	"github.com/biisal/bai/internal/agent/providers"
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/domain"
 )
 
 type Gateway struct {
@@ -79,7 +80,7 @@ func (g *Gateway) SetConversation(conversation *repo.Conversation) {
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderResponse, error) {
-	if err := g.AddMessageToDB(ctx, meessage, db.RoleUser); err != nil {
+	if err := g.AddMessageToDB(ctx, meessage, domain.RoleUser); err != nil {
 		slog.Error("failed to add user message to db", "error", err)
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderRes
 		return nil, err
 	}
 
-	if err := g.AddMessageToDB(ctx, finalResp, db.RoleAssistant); err != nil {
+	if err := g.AddMessageToDB(ctx, finalResp, domain.RoleAssistant); err != nil {
 		slog.Error("failed to add user message to db", "error", err)
 		return nil, err
 	}

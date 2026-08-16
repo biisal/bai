@@ -107,7 +107,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if text == "" {
 				return m, nil
 			}
-
 			m.componets.textArea.SetValue("")
 			if !m.commands.IsCommand(text) {
 				return m, m.sendMessage(text)

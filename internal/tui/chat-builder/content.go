@@ -6,6 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -43,36 +44,37 @@ func (c *Content) AddSegment(kind broker.EventType, text string) {
 }
 
 func (c *Content) Render() string {
+	if c.active == nil {
+		return c.rendered.String()
+	}
 	var out strings.Builder
 	out.WriteString(c.rendered.String())
-	if c.active != nil {
-		out.WriteString(renderSegment(c.active.Kind, c.active, c.width))
-	}
+	out.WriteString(renderSegment(c.active, c.width))
 	return out.String()
 }
 
-func renderSegment(kind broker.EventType, seg *Segment, width int) string {
+func renderSegment(seg *Segment, width int) string {
 	var style lipgloss.Style
-	switch kind {
+	switch seg.Kind {
 	case broker.EventAgentThinking:
-		style = StyleThinking
+		style = StyleAgentThinking
 	case broker.EventAgentError:
 		style = StyleError
 	case broker.EventAgentResponse:
-		style = StyleResponse
+		style = StyleAgentResponse
 	case broker.EventUserMessage:
 		style = StyleUserInput
 	case broker.EventSystemNotice:
 		style = StyleSystemNotice
 	case broker.EventSystemNoticeError:
-		style = StyleSystemNoticeError
+		style = StyleError
 	}
 	return style.Width(width).Render(seg.buf.String())
 }
 
 func (c *Content) flushActive() {
 	if c.active != nil {
-		c.rendered.WriteString(renderSegment(c.active.Kind, c.active, c.width))
+		c.rendered.WriteString(renderSegment(c.active, c.width))
 		c.blocks = append(c.blocks, c.active)
 	}
 
@@ -84,7 +86,7 @@ func (c *Content) ReRender() {
 	out := strings.Builder{}
 	slog.Info("re-rendering content", "blocks", c.blocks)
 	for _, block := range c.blocks {
-		out.WriteString(renderSegment(block.Kind, block, c.width))
+		out.WriteString(renderSegment(block, c.width))
 		out.WriteString("\n\n")
 	}
 	c.rendered.Reset()
@@ -96,7 +98,7 @@ func (c *Content) RerenderFromDbConversation(messages []repo.Message) {
 	for _, msg := range messages {
 		seg := &Segment{Kind: broker.EventUserMessage, buf: strings.Builder{}}
 		switch msg.Role {
-		case "assistant":
+		case domain.RoleAssistant:
 			seg.Kind = broker.EventAgentResponse
 		}
 		seg.buf.WriteString(msg.Content)
