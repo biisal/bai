@@ -95,6 +95,7 @@ func (c *Commands) Update(command string) {
 	fn, ok := c.commands[command]
 	if !ok {
 		slog.Warn("update_commands", "command", command)
+		c.ShowList = false
 		return
 	}
 
@@ -134,6 +135,7 @@ func (c *Commands) Sync(text string) {
 	text = text[1:]
 	if cmd, filter, found := strings.Cut(text, " "); found {
 		if _, ok := c.commands[cmd]; !ok {
+			c.ShowList = false
 			return
 		}
 		c.ShowList = true
@@ -148,4 +150,17 @@ func (c *Commands) Sync(text string) {
 	c.ShowList = true
 	c.Update(rootCommand)
 	c.List.SetFilterText(text)
+}
+
+func (c *Commands) IsCommand(text string) bool {
+	if !strings.HasPrefix(text, "/") {
+		return false
+	}
+	text = strings.TrimSpace(text[1:])
+	for cmd := range c.commands {
+		if strings.HasPrefix(cmd, text) {
+			return true
+		}
+	}
+	return false
 }

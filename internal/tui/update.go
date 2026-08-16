@@ -59,15 +59,15 @@ func (m *Model) MatchCommand() tea.Cmd {
 		return nil
 
 	case commands.ModelItem:
-		slog.Debug("match_model", "provider", item.Name, "model", item.ModelID)
-		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Name, item.ModelID); err != nil {
+		slog.Debug("match_model", "provider", item.ProviderName, "model", item.ModelID)
+		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.ProviderName, item.ModelID); err != nil {
 			return nil
 		}
 		m.commands.ShowList = false
 		return func() tea.Msg {
 			m.broker.Publish(m.ctx, broker.Message{
 				Type: broker.EventSystemNotice,
-				Text: fmt.Sprintf("Model changed to: %s\n", item.Title()),
+				Text: fmt.Sprintf("Model changed to: %s/%s\n", item.ProviderName, item.ModelID),
 			})
 			return nil
 		}
@@ -109,7 +109,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.componets.textArea.SetValue("")
-			if !m.commands.ShowList {
+			if !m.commands.IsCommand(text) {
 				return m, m.sendMessage(text)
 			}
 			return m, m.MatchCommand()
