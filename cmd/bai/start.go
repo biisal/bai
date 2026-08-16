@@ -24,7 +24,7 @@ func start(configPath string, dev bool) error {
 	}
 	logLevel := slog.LevelInfo
 	if dev {
-		fmt.Println("Starting in dev mode")
+		slog.Info("Starting in dev mode")
 		logLevel = slog.LevelDebug
 	}
 
