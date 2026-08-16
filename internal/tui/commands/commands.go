@@ -44,6 +44,8 @@ type Commands struct {
 	Width    int
 	commands map[string]func() []list.Item
 	gateway  *agent.Gateway
+
+	lastSynced string
 }
 
 func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway *agent.Gateway) *Commands {
@@ -53,7 +55,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 			return toListItems([]CommandItem{
 				{
 					Name: "models",
-					Desc: "all the models",
+					Desc: "show available models",
 				},
 				{
 					Name: "sessions",
@@ -93,6 +95,7 @@ func (c *Commands) Update(command string) {
 	fn, ok := c.commands[command]
 	if !ok {
 		slog.Warn("update_commands", "command", command)
+		c.ShowList = false
 		return
 	}
 
@@ -118,13 +121,21 @@ func (c *Commands) View() string {
 }
 
 func (c *Commands) Sync(text string) {
-	c.ShowList = false
 	if !strings.HasPrefix(text, "/") {
+		c.ShowList = false
+		c.lastSynced = ""
 		return
 	}
+
+	if c.lastSynced == text {
+		return
+	}
+	c.lastSynced = text
+
 	text = text[1:]
 	if cmd, filter, found := strings.Cut(text, " "); found {
 		if _, ok := c.commands[cmd]; !ok {
+			c.ShowList = false
 			return
 		}
 		c.ShowList = true
@@ -139,4 +150,17 @@ func (c *Commands) Sync(text string) {
 	c.ShowList = true
 	c.Update(rootCommand)
 	c.List.SetFilterText(text)
+}
+
+func (c *Commands) IsCommand(text string) bool {
+	if !strings.HasPrefix(text, "/") {
+		return false
+	}
+	text = strings.TrimSpace(text[1:])
+	for cmd := range c.commands {
+		if strings.HasPrefix(cmd, text) {
+			return true
+		}
+	}
+	return false
 }

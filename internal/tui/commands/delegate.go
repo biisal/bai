@@ -41,9 +41,9 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	str := fmt.Sprintf("%d. %s ", index+1, listItem.FilterValue())
 	switch v := listItem.(type) {
 	case ConversationItem:
-		str = fmt.Sprintf("%s - %s", v.Name, v.Description())
+		str = fmt.Sprintf("%s - %s", v.Title(), v.Description())
 	case ModelItem:
-		str = fmt.Sprintf("%s/%s", v.ProviderID, v.ModelID)
+		str = fmt.Sprintf("%s/%s", v.ProviderName, v.ModelID)
 	case CommandItem:
 		str = fmt.Sprintf("%s - %s", v.Name, v.Desc)
 	}

@@ -26,9 +26,9 @@ func (m *Model) MatchCommand() tea.Cmd {
 
 	switch item := m.commands.List.SelectedItem().(type) {
 	case commands.ConversationItem:
-		slog.Debug("match_conversation", "name", item.Name)
+		slog.Debug("match_conversation", "name", item.Title())
 
-		messages, err := m.gateway.GetMessagesByConversationID(m.ctx, item.ID)
+		messages, err := m.gateway.GetMessagesByConversationID(m.ctx, item.Conversation.ID)
 		if err != nil {
 			slog.Error("match_conversation_get_messages", "err", err)
 			return func() tea.Msg {
@@ -39,7 +39,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 				return nil
 			}
 		}
-		if err := m.gateway.SetActiveConversation(m.ctx, item.ID, nil); err != nil {
+		if err := m.gateway.SetActiveConversation(m.ctx, item.Conversation.ID, nil); err != nil {
 			slog.Error("match_conversation_set_active", "err", err)
 			m.broker.Publish(m.ctx, broker.Message{
 				Type: broker.EventSystemNoticeError,
@@ -59,15 +59,15 @@ func (m *Model) MatchCommand() tea.Cmd {
 		return nil
 
 	case commands.ModelItem:
-		slog.Debug("match_model", "provider", item.Name, "model", item.ModelID)
-		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.Name, item.ModelID); err != nil {
+		slog.Debug("match_model", "provider", item.ProviderName, "model", item.ModelID)
+		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.ProviderName, item.ModelID); err != nil {
 			return nil
 		}
 		m.commands.ShowList = false
 		return func() tea.Msg {
 			m.broker.Publish(m.ctx, broker.Message{
 				Type: broker.EventSystemNotice,
-				Text: fmt.Sprintf("Model changed to: %s\n", item.Title()),
+				Text: fmt.Sprintf("Model changed to: %s/%s\n", item.ProviderName, item.ModelID),
 			})
 			return nil
 		}
@@ -100,8 +100,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		// case "ctrl+c":
-		// 	return m, tea.Quit
+		case "ctrl+c":
+			return m, tea.Quit
 		case "enter":
 			text := m.componets.textArea.Value()
 			if text == "" {
@@ -109,19 +109,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.componets.textArea.SetValue("")
-			if !m.commands.ShowList {
+			if !m.commands.IsCommand(text) {
 				return m, m.sendMessage(text)
 			}
 			return m, m.MatchCommand()
 
 		default:
 			var textCmd, listCmd tea.Cmd
+
 			m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
-			cmds = append(cmds, textCmd)
 			m.commands.List, listCmd = m.commands.List.Update(msg)
-			text := m.componets.textArea.Value()
-			m.commands.Sync(text)
-			cmds = append(cmds, listCmd)
+
+			m.commands.Sync(m.componets.textArea.Value())
+
+			cmds = append(cmds, textCmd, listCmd)
 		}
 	}
 	return m, tea.Batch(cmds...)
