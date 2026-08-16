@@ -11,7 +11,7 @@ import (
 	test_utils "github.com/biisal/bai/utils/tests"
 )
 
-func TestGetConversations(t *testing.T) {
+func TestParseConversations(t *testing.T) {
 	layout := "Monday, Jan 2, 2006 at 03:04 PM"
 	mockTimeString := "Monday, Jan 2, 2006 at 03:04 PM"
 	mockTime, err := time.Parse(layout, mockTimeString)
