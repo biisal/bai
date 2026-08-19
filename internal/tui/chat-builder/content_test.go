@@ -145,30 +145,6 @@ func TestNewContent(t *testing.T) {
 	}
 }
 
-// TEST for render content
-// {
-// 			name: "rendered should contain styled text",
-// 			testFn: func(t *testing.T, c *Content) {
-// 				t.Helper()
-// 				text := "test"
-// 				c.AddSegment(broker.EventUserMessage, text)
-// 				if len(c.blocks) != 0 {
-// 					t.Errorf("expected 0 block, got %d", len(c.blocks))
-// 				}
-
-// 				c.width = 0
-// 				styledText := renderSegment(broker.EventUserMessage, c.active, c.width)
-
-// 				c.AddSegment(broker.EventAgentResponse, "") // changing kind to trigger flush
-// 				renderText := c.rendered.String()
-
-// 				if styledText != renderText {
-// 					t.Errorf("expected %q, got %q", styledText, renderText)
-// 				}
-// 			},
-// 		},
-//
-
 func getSb(text string) strings.Builder {
 	sb := strings.Builder{}
 	sb.WriteString(text)
@@ -463,7 +439,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewContent()
 			messages, expectedSegments, want := tt.setup(t)
-			c.RerenderFromDbConversation(messages)
+			c.ReRenderFromDbConversation(messages)
 			if c.rendered.String() != want {
 				t.Errorf("expected %q but got %q", want, c.rendered.String())
 			}

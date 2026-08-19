@@ -73,6 +73,10 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		"sessions": func() []list.Item {
 			return toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir))
 		},
+
+		"exit": func() []list.Item {
+			return nil
+		},
 	}
 
 	listStyles := newStyles(true, 0)
@@ -165,6 +169,27 @@ func (c *Commands) IsCommand(text string) bool {
 		if strings.HasPrefix(cmd, text) {
 			return true
 		}
+	}
+	return false
+}
+
+func (c *Commands) HandleKeyPress(key string) (matched bool) { // TODO: improve this later
+	if !c.ShowList {
+		return false
+	}
+
+	slog.Debug("HandleKeyPress() ", "key", key)
+	matched = true
+	switch key {
+	case "esc":
+		c.ShowList = false
+		return
+	case "ctrl+n":
+		c.List.CursorDown()
+		return
+	case "ctrl+p":
+		c.List.CursorUp()
+		return
 	}
 	return false
 }
