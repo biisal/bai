@@ -1,0 +1,23 @@
+{
+  "providers": [
+    {
+      "name": "OpenAI",
+      "format": "openai-compatible",
+      "api_key": "sk-...",
+      "base_url": "https://api.openai.com/v1",
+      "models": [
+        { "id": "gpt-4o",      "context": 128000, "max_output": 16384 },
+        { "id": "gpt-4o-mini", "context": 128000, "max_output": 16384 }
+      ]
+    },
+    {
+      "name": "Groq",
+      "format": "openai-compatible",
+      "api_key": "gsk_...",
+      "base_url": "https://api.groq.com/openai/v1",
+      "models": [
+        { "id": "llama-3.3-70b-versatile", "context": 128000, "max_output": 32768 }
+      ]
+    }
+  ]
+}

@@ -93,7 +93,7 @@ func (c *Content) ReRender() {
 	c.rendered.WriteString(out.String())
 }
 
-func (c *Content) RerenderFromDbConversation(messages []repo.Message) {
+func (c *Content) ReRenderFromDbConversation(messages []repo.Message) {
 	var segments []*Segment
 	for _, msg := range messages {
 		seg := &Segment{Kind: broker.EventUserMessage, buf: strings.Builder{}}

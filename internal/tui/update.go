@@ -49,9 +49,19 @@ func (m *Model) MatchCommand() tea.Cmd {
 		}
 		m.commands.ShowList = false
 		slog.Debug("match_conversation", "messages", messages)
-		m.content.RerenderFromDbConversation(messages)
+		m.content.ReRenderFromDbConversation(messages)
 		return nil
 	case commands.CommandItem:
+		if item.Name == "exit" {
+			m.commands.ShowList = false
+			m.broker.Publish(m.ctx, broker.Message{
+				Type: broker.EventSystemNotice,
+				Text: "Bye.. See you soon!\n",
+			})
+			return func() tea.Msg {
+				return tea.Quit()
+			}
+		}
 		slog.Debug("match_command", "name", item.Name)
 		newInput := fmt.Sprintf("/%s ", item.Name)
 		m.componets.textArea.SetValue(newInput)
@@ -99,6 +109,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.content.ReRender()
 
 	case tea.KeyPressMsg:
+		if m.commands.HandleKeyPress(msg.String()) {
+			return m, nil
+		}
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
@@ -112,17 +125,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.sendMessage(text)
 			}
 			return m, m.MatchCommand()
-
-		default:
-			var textCmd, listCmd tea.Cmd
-
-			m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
-			m.commands.List, listCmd = m.commands.List.Update(msg)
-
-			m.commands.Sync(m.componets.textArea.Value())
-
-			cmds = append(cmds, textCmd, listCmd)
 		}
 	}
+	var textCmd, listCmd tea.Cmd
+
+	m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
+	m.commands.List, listCmd = m.commands.List.Update(msg)
+
+	m.commands.Sync(m.componets.textArea.Value())
+
+	cmds = append(cmds, textCmd, listCmd)
 	return m, tea.Batch(cmds...)
 }
