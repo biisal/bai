@@ -8,7 +8,14 @@ import (
 
 func (m Model) Footer() string {
 	provider, modelID := m.gateway.Active()
-	return chatbuilder.StyleFooter.Render(provider.ID() + " - " + modelID)
+
+	spinnerView := ""
+
+	if m.showSpinner {
+		spinnerView = m.spinner.View()
+	}
+
+	return chatbuilder.StyleFooter.Render(spinnerView + " " + provider.ID() + " - " + modelID)
 }
 
 func (m Model) View() tea.View {

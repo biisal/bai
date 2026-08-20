@@ -101,23 +101,29 @@ func (c *Content) ReRender() {
 func (c *Content) ReRenderFromDbConversation(messages []domain.Message) {
 	var segments []*Segment
 	for _, msg := range messages {
-		seg := &Segment{Kind: broker.EventUserMessage, buf: strings.Builder{}}
-		switch msg.Role {
-		case domain.RoleAssistant:
-			seg.Kind = broker.EventAgentResponse
-		case domain.RoleUser:
-			seg.Kind = broker.EventUserMessage
-
-		}
 		for _, part := range msg.Parts {
+			var kind broker.EventType
+			switch msg.Role {
+			case domain.RoleUser:
+				kind = broker.EventUserMessage
+			case domain.RoleAssistant:
+				switch part.Type {
+				case domain.PartReasoningType:
+					kind = broker.EventAgentThinking
+				default:
+					kind = broker.EventAgentResponse
+				}
+			}
+
+			seg := &Segment{Kind: kind, buf: strings.Builder{}}
 			switch part.Type {
 			case domain.PartTextType:
 				seg.buf.WriteString(part.Data.(domain.TextPartData).Text)
 			case domain.PartReasoningType:
-				seg.buf.WriteString(part.Data.(domain.TextPartData).Text)
+				seg.buf.WriteString(part.Data.(domain.ReasoningPartData).Thinking)
 			}
+			segments = append(segments, seg)
 		}
-		segments = append(segments, seg)
 	}
 	c.blocks = segments
 	c.active = nil

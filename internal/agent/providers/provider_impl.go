@@ -12,8 +12,9 @@ import (
 )
 
 type StreamResult struct {
-	Text      string
-	ToolCalls []tools.Call
+	Text         string
+	ThinkingText string
+	ToolCalls    []tools.Call
 }
 
 type Provider interface {
