@@ -12,18 +12,14 @@ type Querier interface {
 	AddOrUpdateProvider(ctx context.Context, arg AddOrUpdateProviderParams) error
 	CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (int64, error)
-	CreateToolCall(ctx context.Context, arg CreateToolCallParams) (int64, error)
 	DeleteConversation(ctx context.Context, id int64) error
 	GetConversation(ctx context.Context, id int64) (Conversation, error)
 	GetConversationMessageCount(ctx context.Context, conversationID int64) (int64, error)
 	GetConversationsByDirectory(ctx context.Context, directory string) ([]Conversation, error)
 	GetMessagesByConversation(ctx context.Context, conversationID int64) ([]Message, error)
 	GetProvider(ctx context.Context) (Provider, error)
-	GetToolCallsByConversation(ctx context.Context, conversationID int64) ([]ToolCall, error)
-	GetToolCallsByMessage(ctx context.Context, messageID int64) ([]ToolCall, error)
 	ListConversations(ctx context.Context) ([]ListConversationsRow, error)
 	UpdateConversation(ctx context.Context, arg UpdateConversationParams) error
-	UpdateToolResult(ctx context.Context, arg UpdateToolResultParams) error
 }
 
 var _ Querier = (*Queries)(nil)

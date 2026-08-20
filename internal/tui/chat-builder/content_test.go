@@ -1,13 +1,10 @@
 package chatbuilder
 
 import (
-	"database/sql"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
-	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
 	test_utils "github.com/biisal/bai/utils/tests"
@@ -201,7 +198,7 @@ func Test_renderSegment(t *testing.T) {
 
 func TestContent_flushActive(t *testing.T) {
 	tests := []struct {
-		name   string // description of this test case
+		name   string
 		testFn func(t *testing.T, c *Content)
 	}{
 		{
@@ -380,42 +377,38 @@ func assertBlocks(t *testing.T, expected []*Segment, actual []*Segment) {
 func TestContent_RerenderFromDbConversation(t *testing.T) {
 	tests := []struct {
 		name  string
-		setup func(t *testing.T) (messages []repo.Message, expectedSegments []*Segment, want string)
+		setup func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string)
 	}{
 		{
 			name: "should render empty when no messages",
-			setup: func(t *testing.T) (messages []repo.Message, expectedSegments []*Segment, want string) {
-				messages = []repo.Message{}
+			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
+				messages = []domain.Message{}
 				want = ""
 				return
 			},
 		},
 		{
 			name: "active should be nil after rerender",
-			setup: func(t *testing.T) (messages []repo.Message, expectedSegments []*Segment, want string) {
+			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
 				return
 			},
 		},
 
 		{
 			name: "should render sorted segments from db conversation",
-			setup: func(t *testing.T) (messages []repo.Message, expectedSegments []*Segment, want string) {
-				messages = []repo.Message{
+			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
+				messages = []domain.Message{
 					{
-						ID:             2,
-						ConversationID: 2,
-						Role:           domain.RoleUser,
-						Content:        "test content 2",
-						Error:          sql.NullString{},
-						CreatedAt:      time.Now(),
+						Role: domain.RoleUser,
+						Parts: []domain.Part{
+							{Type: domain.PartTextType, Data: domain.TextPartData{Text: "test content 2"}},
+						},
 					},
 					{
-						ID:             1,
-						ConversationID: 1,
-						Role:           domain.RoleUser,
-						Content:        "test content",
-						Error:          sql.NullString{},
-						CreatedAt:      time.Now(),
+						Role: domain.RoleUser,
+						Parts: []domain.Part{
+							{Type: domain.PartTextType, Data: domain.TextPartData{Text: "test content"}},
+						},
 					},
 				}
 

@@ -9,4 +9,9 @@ const (
 	EventAgentError
 	EventSystemNotice
 	EventSystemNoticeError
+	EventStreamStarted
+	EventToolFileReading
+	EventToolFileWriting
+	EventToolBash
+	EventStreamDone
 )

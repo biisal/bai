@@ -62,7 +62,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 					Desc: "show list of conversations",
 				},
 				{
-					Name: "exit", // TODO : implement funcionality
+					Name: "exit",
 					Desc: "exit the application",
 				},
 			})

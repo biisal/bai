@@ -31,9 +31,10 @@ type Message struct {
 	ID             int64
 	ConversationID int64
 	Role           domain.Role
-	Content        string
+	Parts          string
 	Error          sql.NullString
 	CreatedAt      time.Time
+	FinishedAt     sql.NullTime
 }
 
 type Provider struct {
@@ -41,16 +42,4 @@ type Provider struct {
 	ProviderName sql.NullString
 	ModelID      sql.NullString
 	CreatedAt    time.Time
-}
-
-type ToolCall struct {
-	ID        int64
-	MessageID int64
-	CallID    string
-	Name      string
-	Arguments string
-	Result    sql.NullString
-	IsError   int64
-	Status    string
-	CreatedAt time.Time
 }

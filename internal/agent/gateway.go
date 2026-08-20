@@ -6,24 +6,27 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/agent/providers"
-	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/domain"
+	broker "github.com/biisal/bai/internal/pubsub"
 )
 
 type Gateway struct {
 	mu             sync.RWMutex
+	broker         broker.Service
 	providers      map[string]providers.Provider
-	db             db.ServiceInterface
+	db             repo.Querier
 	conversation   *repo.Conversation
 	activeProvider providers.Provider
 	activeModel    string
 }
 
-func NewGateway(db db.ServiceInterface, providers map[string]providers.Provider, provideId, modelID string) *Gateway {
+func NewGateway(db repo.Querier, b broker.Service, providers map[string]providers.Provider, provideId, modelID string) *Gateway {
 	g := &Gateway{
 		db:        db,
+		broker:    b,
 		providers: providers,
 	}
 
@@ -51,7 +54,6 @@ func (g *Gateway) Active() (provider providers.Provider, modelID string) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 
-	// TODO : can produce bug if provider is not found
 	provider = g.providers[g.activeProvider.ID()]
 	return provider, g.activeModel
 }
@@ -79,8 +81,13 @@ func (g *Gateway) SetConversation(conversation *repo.Conversation) {
 	g.conversation = conversation
 }
 
-func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderResponse, error) {
-	if err := g.AddMessageToDB(ctx, meessage, domain.RoleUser); err != nil {
+func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResponse, error) {
+	if err := g.AddMessageToDB(ctx, domain.Message{
+		Role: domain.RoleUser,
+		Parts: []domain.Part{
+			{Type: domain.PartTextType, Data: domain.TextPartData{Text: message}},
+		},
+	}); err != nil {
 		slog.Error("failed to add user message to db", "error", err)
 		return nil, err
 	}
@@ -90,22 +97,64 @@ func (g *Gateway) StreamChat(ctx context.Context, meessage string) (*ProviderRes
 		return nil, err
 	}
 
-	messages = append(messages, repo.Message{
-		Role:    "user",
-		Content: meessage,
-	})
+	for {
+		g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted})
+		result, err := g.activeProvider.StreamChat(ctx, g.activeModel, messages)
+		if err != nil {
+			slog.Error("failed to stream chat", "error", err)
+			return nil, err
+		}
 
-	finalResp, err := g.activeProvider.StreamChat(ctx, g.activeModel, messages)
-	if err != nil {
-		slog.Error("failed to stream chat", "error", err)
-		return nil, err
-	}
+		assistantMsg := assistantMessageFromResult(result)
+		if err := g.AddMessageToDB(ctx, assistantMsg); err != nil {
+			slog.Error("failed to add assistant message to db", "error", err)
+			return nil, err
+		}
+		messages = append(messages, assistantMsg)
 
-	if err := g.AddMessageToDB(ctx, finalResp, domain.RoleAssistant); err != nil {
-		slog.Error("failed to add user message to db", "error", err)
-		return nil, err
+		if len(result.ToolCalls) == 0 {
+			return &ProviderResponse{Content: result.Text}, nil
+		}
+
+		toolMsg := domain.Message{Role: domain.RoleTool}
+		for _, tc := range result.ToolCalls {
+			out, isErr := tools.Execute(ctx, tc, g.broker)
+			toolMsg.Parts = append(toolMsg.Parts, domain.Part{
+				Type: domain.PartToolResultType,
+				Data: domain.ToolResultPartData{ToolCallID: tc.ID, Name: string(tc.Name), Content: out, IsError: isErr},
+			})
+		}
+		if err := g.AddMessageToDB(ctx, toolMsg); err != nil {
+			slog.Error("failed to add tool result message to db", "error", err)
+			return nil, err
+		}
+		messages = append(messages, toolMsg)
 	}
-	return &ProviderResponse{
-		Content: finalResp,
-	}, nil
+}
+
+type ProviderResponse struct {
+	Content string
+}
+
+func assistantMessageFromResult(result providers.StreamResult) domain.Message {
+	msg := domain.Message{Role: domain.RoleAssistant}
+	if result.Text != "" {
+		msg.Parts = append(msg.Parts, domain.Part{
+			Type: domain.PartTextType,
+			Data: domain.TextPartData{Text: result.Text},
+		})
+	}
+	for _, tc := range result.ToolCalls {
+		msg.Parts = append(msg.Parts, domain.Part{
+			Type: domain.PartToolCallType,
+			Data: domain.ToolCallPartData{
+				ID:               tc.ID,
+				Name:             string(tc.Name),
+				Input:            tc.Args,
+				ProviderExecuted: false,
+				Finished:         true,
+			},
+		})
+	}
+	return msg
 }
