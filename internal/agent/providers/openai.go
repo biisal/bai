@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"strings"
+	"time"
 
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/domain"
@@ -69,6 +71,15 @@ func (p *ProviderOpenAI) buildHistory(history []domain.Message) []openai.ChatCom
 	return messages
 }
 
+const streamFlushInterval = 50 * time.Millisecond
+
+func chunkText(current openai.ChatCompletionChunk) string {
+	if len(current.Choices) == 0 {
+		return ""
+	}
+	return current.Choices[0].Delta.Content
+}
+
 func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history []domain.Message) (result StreamResult, err error) {
 	stream := p.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: p.buildHistory(history),
@@ -77,12 +88,37 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 	})
 	var acc openai.ChatCompletionAccumulator
 
+	var (
+		outputBuilder   strings.Builder
+		thinkingBuilder strings.Builder
+	)
+
+	flush := func() {
+		if thinkingBuilder.Len() > 0 {
+			p.broker.Publish(ctx, broker.Message{
+				Type: broker.EventAgentThinking,
+				Text: thinkingBuilder.String(),
+			})
+			thinkingBuilder.Reset()
+		}
+		if outputBuilder.Len() > 0 {
+			p.broker.Publish(ctx, broker.Message{
+				Type: broker.EventAgentResponse,
+				Text: outputBuilder.String(),
+			})
+			outputBuilder.Reset()
+		}
+	}
+
+	flushTicker := time.NewTicker(streamFlushInterval)
+	defer flushTicker.Stop()
+
 	for stream.Next() {
 		current := stream.Current()
 		acc.AddChunk(current)
 
 		if reasoning := reasoningDelta(current.RawJSON()); reasoning != "" {
-			p.broker.Publish(ctx, broker.Message{Type: broker.EventAgentThinking, Text: reasoning})
+			thinkingBuilder.WriteString(reasoning)
 		}
 
 		if content, ok := acc.JustFinishedContent(); ok {
@@ -97,18 +133,22 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 			})
 		}
 
-		if len(current.Choices) > 0 && current.Choices[0].Delta.Content != "" {
-			p.broker.Publish(ctx, broker.Message{
-				Type: broker.EventAgentResponse,
-				Text: current.Choices[0].Delta.Content,
-			})
+		if text := chunkText(current); text != "" {
+			outputBuilder.WriteString(text)
 		}
 
+		select {
+		case <-flushTicker.C:
+			flush()
+		default:
+		}
 	}
 	if err := stream.Err(); err != nil {
 		slog.Error("openai stream error", "error", err)
 		return result, err
 	}
+
+	flush()
 
 	if len(acc.Choices) > 0 {
 		result.Text = acc.Choices[0].Message.Content
