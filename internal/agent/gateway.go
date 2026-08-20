@@ -105,6 +105,8 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 			return nil, err
 		}
 
+		slog.Info("stream chat result", "text", result.Text, "tool_calls", len(result.ToolCalls))
+
 		assistantMsg := assistantMessageFromResult(result)
 		if err := g.AddMessageToDB(ctx, assistantMsg); err != nil {
 			slog.Error("failed to add assistant message to db", "error", err)
@@ -138,6 +140,12 @@ type ProviderResponse struct {
 
 func assistantMessageFromResult(result providers.StreamResult) domain.Message {
 	msg := domain.Message{Role: domain.RoleAssistant}
+	if result.ThinkingText != "" {
+		msg.Parts = append(msg.Parts, domain.Part{
+			Type: domain.PartReasoningType,
+			Data: domain.ReasoningPartData{Thinking: result.ThinkingText},
+		})
+	}
 	if result.Text != "" {
 		msg.Parts = append(msg.Parts, domain.Part{
 			Type: domain.PartTextType,

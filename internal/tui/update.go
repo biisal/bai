@@ -1,20 +1,23 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/commands"
 )
 
-func (m *Model) sendMessage(text string) tea.Cmd {
+func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	return func() tea.Msg {
 		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventUserMessage, Text: text})
-		if _, err := m.gateway.StreamChat(m.ctx, text); err != nil {
-			return broker.Message{Type: broker.EventAgentError, Text: err.Error()}
+		if _, err := m.gateway.StreamChat(ctx, text); err != nil {
+			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error()})
 		}
+		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventStreamDone})
 		return nil
 	}
 }
@@ -100,9 +103,21 @@ func (m *Model) SetSize(w, h int) {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		if !m.showSpinner {
+			return m, nil
+		}
+		var cmd tea.Cmd
+		slog.Debug("spinner tick", "msg", msg)
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
 	case broker.Message:
 		m.content.AddSegment(msg.Type, msg.Text)
 
+		if msg.Type == broker.EventStreamDone || msg.Type == broker.EventAgentError {
+			m.showSpinner = false
+		}
 		return m, waitForMsg(m.messages)
 	case tea.WindowSizeMsg:
 		m.SetSize(msg.Width, msg.Height)
@@ -113,6 +128,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		switch msg.String() {
+		case "esc":
+			if m.chatCtx == nil {
+				return m, nil
+			}
+			if m.commands.ShowList {
+				m.commands.ShowList = false
+				return m, nil
+			}
+			m.chatCtx.cancel()
+			m.chatCtx = nil
+			return m, nil
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
@@ -122,7 +148,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.componets.textArea.SetValue("")
 			if !m.commands.IsCommand(text) {
-				return m, m.sendMessage(text)
+				ctx, cancel := context.WithCancel(m.ctx)
+				m.chatCtx = &chatContext{ctx: ctx, cancel: cancel}
+				m.showSpinner = true
+				return m, tea.Batch(
+					func() tea.Msg { return m.spinner.Tick() },
+					m.streamChat(ctx, text),
+				)
 			}
 			return m, m.MatchCommand()
 		}

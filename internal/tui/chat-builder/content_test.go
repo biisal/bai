@@ -422,7 +422,29 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 						buf:  getSb("test content"),
 					},
 				}
-				want = renderSegment(expectedSegments[0], 0) + "\n\n" + renderSegment(expectedSegments[1], 1) + "\n\n"
+				want = renderSegment(expectedSegments[0], 0) + "\n\n" + renderSegment(expectedSegments[1], 0) + "\n\n"
+
+				return
+			},
+		},
+		{
+			name: "should render thinking parts as separate thinking segments",
+			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
+				messages = []domain.Message{
+					{
+						Role: domain.RoleAssistant,
+						Parts: []domain.Part{
+							{Type: domain.PartReasoningType, Data: domain.ReasoningPartData{Thinking: "let me think"}},
+							{Type: domain.PartTextType, Data: domain.TextPartData{Text: "the answer"}},
+						},
+					},
+				}
+
+				expectedSegments = []*Segment{
+					{Kind: broker.EventAgentThinking, buf: getSb("let me think")},
+					{Kind: broker.EventAgentResponse, buf: getSb("the answer")},
+				}
+				want = renderSegment(expectedSegments[0], 0) + "\n\n" + renderSegment(expectedSegments[1], 0) + "\n\n"
 
 				return
 			},

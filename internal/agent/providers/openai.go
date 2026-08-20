@@ -95,6 +95,7 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 
 	flush := func() {
 		if thinkingBuilder.Len() > 0 {
+			result.ThinkingText += thinkingBuilder.String()
 			p.broker.Publish(ctx, broker.Message{
 				Type: broker.EventAgentThinking,
 				Text: thinkingBuilder.String(),
