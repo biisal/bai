@@ -12,6 +12,7 @@ import (
 	"github.com/biisal/bai/internal/agent/providers"
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/db"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/logger"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui"
@@ -60,14 +61,14 @@ func start(configPath string, dev bool) error {
 	if err := db.Migrate(ctx, conn); err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}
-	dbService := db.New(conn)
+	dbService := repo.New(conn)
 
 	activeProvider, activeModel, err := resolveProvider(ctx, dbService, config.Providers)
 	if err != nil {
 		return fmt.Errorf("failed to resolve provider: %w", err)
 	}
 
-	gateway := agent.NewGateway(dbService, providersMap, activeProvider, activeModel)
+	gateway := agent.NewGateway(dbService, b, providersMap, activeProvider, activeModel)
 	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, config.Providers))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)

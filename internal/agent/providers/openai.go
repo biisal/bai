@@ -3,76 +3,80 @@ package providers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 
-	"github.com/biisal/bai/internal/agent/tools"
-	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/agent/core/tools"
+	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 )
 
 type ProviderOpenAI struct {
-	baseUrl    string
-	apiKey     string
-	broker     broker.Service
-	client     *openai.Client
-	providerID string
+	baseUrl       string
+	apiKey        string
+	broker        broker.Service
+	client        *openai.Client
+	providerID    string
+	systemMessage openai.ChatCompletionMessageParamUnion
 }
 
-func NewProviderOpenAI(baseURL, apiKey, providerID string, broker broker.Service) Provider {
+func NewProviderOpenAI(baseURL, apiKey, providerID string, broker broker.Service, systemPrompt string) Provider {
 	client := openai.NewClient(option.WithAPIKey(apiKey), option.WithBaseURL(baseURL))
 
-	return &ProviderOpenAI{baseURL, apiKey, broker, &client, providerID}
+	systemMessage := openai.SystemMessage(systemPrompt)
+
+	return &ProviderOpenAI{baseURL, apiKey, broker, &client, providerID, systemMessage}
 }
 
 func (p *ProviderOpenAI) ID() string {
 	return p.providerID
 }
 
-func buildHistory(history []repo.Message) []openai.ChatCompletionMessageParamUnion {
-	var messages []openai.ChatCompletionMessageParamUnion
+func (p *ProviderOpenAI) buildHistory(history []domain.Message) []openai.ChatCompletionMessageParamUnion {
+	var messages []openai.ChatCompletionMessageParamUnion = []openai.ChatCompletionMessageParamUnion{p.systemMessage}
+
 	for _, m := range history {
-		if m.Role == "user" {
-			messages = append(messages, openai.UserMessage(m.Content))
-		} else {
-			slog.Debug("assistant message", "content", m.Content)
-			messages = append(messages, openai.AssistantMessage(m.Content))
+		switch m.Role {
+		case domain.RoleUser:
+			var content []openai.ChatCompletionContentPartUnionParam
+			for _, part := range m.Parts {
+				if part.Type != domain.PartTextType {
+					continue
+				}
+				text, ok := part.Data.(domain.TextPartData)
+				if !ok {
+					continue
+				}
+				content = append(content, openai.TextContentPart(text.Text))
+			}
+			messages = append(messages, openai.UserMessage(content))
+		case domain.RoleAssistant:
+			assistant := openai.ChatCompletionAssistantMessageParam{
+				ToolCalls: p.ToProviderToolCalls(m.Parts),
+			}
+
+			if content := p.ToProviderParts(m.Parts); len(content) > 0 {
+				assistant.Content = openai.ChatCompletionAssistantMessageParamContentUnion{
+					OfArrayOfContentParts: content,
+				}
+			}
+			messages = append(messages, openai.ChatCompletionMessageParamUnion{OfAssistant: &assistant})
+		case domain.RoleTool:
+			messages = append(messages, p.ToProviderToolResults(m.Parts)...)
 		}
 	}
 	return messages
 }
 
-func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history []repo.Message) (finalMessage string, err error) {
+func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history []domain.Message) (result StreamResult, err error) {
 	stream := p.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Messages: buildHistory(history),
+		Messages: p.buildHistory(history),
 		Model:    modelId,
-		Tools: []openai.ChatCompletionToolUnionParam{
-			openai.ChatCompletionFunctionTool(
-				openai.FunctionDefinitionParam{
-					Name:        "read_file",
-					Description: openai.String("Read a file from the filesystem using path, offset, and limit"),
-					Parameters: openai.FunctionParameters{
-						"type": "object",
-						"properties": map[string]any{
-							"path": map[string]string{
-								"type": "string",
-							},
-							"offset": map[string]string{
-								"type": "integer",
-							},
-							"limit": map[string]string{
-								"type": "integer",
-							},
-						},
-						"required": []string{"path"},
-					},
-				},
-			),
-		},
+		Tools:    buildOpenAIToolParams(tools.Definitions),
 	})
 	var acc openai.ChatCompletionAccumulator
+
 	for stream.Next() {
 		current := stream.Current()
 		acc.AddChunk(current)
@@ -86,33 +90,10 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 		}
 
 		if tool, ok := acc.JustFinishedToolCall(); ok {
-			var args map[string]any
-			if err := json.Unmarshal([]byte(tool.Arguments), &args); err != nil {
-				return "", err
-			}
-			path, _ := args["path"].(string)
-			var offset, limit int64
-			if v, ok := args["offset"].(float64); ok {
-				offset = int64(v)
-			}
-			if v, ok := args["limit"].(float64); ok {
-				limit = int64(v)
-			}
-
-			var result string
-			content, err := tools.ReadFile(path, offset, limit)
-			if err != nil {
-				result = fmt.Sprintf("error reading file: %v", err)
-			} else {
-				result = content
-			}
-			p.broker.Publish(ctx, broker.Message{
-				Type: broker.EventAgentResponse,
-				Text: result,
-			})
-
-			history = append(history, repo.Message{
-				Role: openai.ToolMessage(),
+			result.ToolCalls = append(result.ToolCalls, tools.Call{
+				ID:   tool.ID,
+				Name: tools.ToolType(tool.Name),
+				Args: json.RawMessage(tool.Arguments),
 			})
 		}
 
@@ -126,16 +107,15 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 	}
 	if err := stream.Err(); err != nil {
 		slog.Error("openai stream error", "error", err)
-		return "", err
+		return result, err
 	}
 
 	if len(acc.Choices) > 0 {
-		finalMessage := acc.Choices[0].Message.Content
-		slog.Debug("Full content openai", "content", finalMessage)
-		return finalMessage, nil
+		result.Text = acc.Choices[0].Message.Content
+		slog.Debug("Full content openai", "content", result.Text)
 	}
 
-	return "", nil
+	return result, nil
 }
 
 func reasoningDelta(raw string) string {
@@ -158,4 +138,63 @@ func reasoningDelta(raw string) string {
 		return d.ReasoningContent
 	}
 	return d.Reasoning
+}
+
+func (p *ProviderOpenAI) ToProviderParts(parts []domain.Part) []openai.ChatCompletionAssistantMessageParamContentArrayOfContentPartUnion {
+	content := make([]openai.ChatCompletionAssistantMessageParamContentArrayOfContentPartUnion, 0, len(parts))
+	for _, part := range parts {
+		switch part.Type {
+		case domain.PartTextType:
+			text, ok := part.Data.(domain.TextPartData)
+			if !ok {
+				continue
+			}
+			content = append(content, openai.ChatCompletionAssistantMessageParamContentArrayOfContentPartUnion{
+				OfText: &openai.ChatCompletionContentPartTextParam{Text: text.Text},
+			})
+		}
+	}
+	return content
+}
+
+func (p *ProviderOpenAI) ToProviderToolCalls(parts []domain.Part) []openai.ChatCompletionMessageToolCallUnionParam {
+	var toolCalls []openai.ChatCompletionMessageToolCallUnionParam
+	for _, part := range parts {
+		if part.Type != domain.PartToolCallType {
+			continue
+		}
+		tc, ok := part.Data.(domain.ToolCallPartData)
+		if !ok {
+			continue
+		}
+		toolCalls = append(toolCalls, openai.ChatCompletionMessageToolCallUnionParam{
+			OfFunction: &openai.ChatCompletionMessageFunctionToolCallParam{
+				ID: tc.ID,
+				Function: openai.ChatCompletionMessageFunctionToolCallFunctionParam{
+					Name:      tc.Name,
+					Arguments: string(tc.Input),
+				},
+			},
+		})
+	}
+	return toolCalls
+}
+
+func (p *ProviderOpenAI) ToProviderToolResults(parts []domain.Part) []openai.ChatCompletionMessageParamUnion {
+	var messages []openai.ChatCompletionMessageParamUnion
+	for _, part := range parts {
+		if part.Type != domain.PartToolResultType {
+			continue
+		}
+		tr, ok := part.Data.(domain.ToolResultPartData)
+		if !ok {
+			continue
+		}
+		content := tr.Content
+		if tr.Data != "" {
+			content += tr.Data
+		}
+		messages = append(messages, openai.ToolMessage(content, tr.ToolCallID))
+	}
+	return messages
 }

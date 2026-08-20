@@ -62,7 +62,6 @@ func (s *Service) CreateMessage(ctx context.Context, conversationID int64, conte
 	return s.q.CreateMessage(ctx, repo.CreateMessageParams{
 		ConversationID: conversationID,
 		Role:           role,
-		Content:        content,
 	})
 }
 

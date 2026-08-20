@@ -31,7 +31,7 @@ func NewComponent() Component {
 	ta.MaxHeight = 6
 
 	s := ta.Styles()
-	s.Focused.CursorLine = lipgloss.NewStyle()
+	s.Cursor.Blink = false
 	ta.SetStyles(s)
 
 	ta.ShowLineNumbers = false

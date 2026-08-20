@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -68,6 +67,12 @@ func renderSegment(seg *Segment, width int) string {
 		style = StyleSystemNotice
 	case broker.EventSystemNoticeError:
 		style = StyleError
+	case broker.EventToolFileReading:
+		style = StyleToolFileReading
+	case broker.EventToolFileWriting:
+		style = StyleToolFileWriting
+	case broker.EventToolBash:
+		style = StyleToolBash
 	}
 	return style.Width(width).Render(seg.buf.String())
 }
@@ -93,15 +98,25 @@ func (c *Content) ReRender() {
 	c.rendered.WriteString(out.String())
 }
 
-func (c *Content) ReRenderFromDbConversation(messages []repo.Message) {
+func (c *Content) ReRenderFromDbConversation(messages []domain.Message) {
 	var segments []*Segment
 	for _, msg := range messages {
 		seg := &Segment{Kind: broker.EventUserMessage, buf: strings.Builder{}}
 		switch msg.Role {
 		case domain.RoleAssistant:
 			seg.Kind = broker.EventAgentResponse
+		case domain.RoleUser:
+			seg.Kind = broker.EventUserMessage
+
 		}
-		seg.buf.WriteString(msg.Content)
+		for _, part := range msg.Parts {
+			switch part.Type {
+			case domain.PartTextType:
+				seg.buf.WriteString(part.Data.(domain.TextPartData).Text)
+			case domain.PartReasoningType:
+				seg.buf.WriteString(part.Data.(domain.TextPartData).Text)
+			}
+		}
 		segments = append(segments, seg)
 	}
 	c.blocks = segments

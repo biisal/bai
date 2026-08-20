@@ -1,4 +1,3 @@
-// Package config handles loading provider configurations from JSON files.
 package config
 
 import (

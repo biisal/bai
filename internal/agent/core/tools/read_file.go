@@ -36,7 +36,7 @@ func ReadFile(path string, offset int64, limit int64) (string, error) {
 	}
 
 	scanner := bufio.NewScanner(file)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024) // allow long lines up to 1MB
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
 	var lineNum int64
 	var out []byte
