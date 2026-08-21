@@ -124,6 +124,9 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 
 		toolMsg := domain.Message{Role: domain.RoleTool}
 		for _, tc := range result.ToolCalls {
+
+			slog.Info("tool_call", "tc", tc)
+
 			out, isErr := tools.Execute(ctx, tc, g.broker)
 			toolMsg.Parts = append(toolMsg.Parts, domain.Part{
 				Type: domain.PartToolResultType,

@@ -1,13 +1,19 @@
 package chatbuilder
 
 import (
+	"encoding/json"
 	"log/slog"
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
+
+func bashWithDollarPrefix(text string) string {
+	return "$ " + text
+}
 
 type Segment struct {
 	Kind broker.EventType
@@ -56,6 +62,7 @@ func (c *Content) Render() string {
 
 func renderSegment(seg *Segment, width int) string {
 	var style lipgloss.Style
+	content := seg.buf.String()
 	switch seg.Kind {
 	case broker.EventAgentThinking:
 		style = StyleAgentThinking
@@ -75,8 +82,9 @@ func renderSegment(seg *Segment, width int) string {
 		style = StyleToolFileWriting
 	case broker.EventToolBash:
 		style = StyleToolBash
+		content = bashWithDollarPrefix(content)
 	}
-	return style.Render(seg.buf.String())
+	return style.Render(content)
 }
 
 func (c *Content) flushActive() {
@@ -108,10 +116,14 @@ func (c *Content) ReRenderFromDbConversation(messages []domain.Message) {
 			switch msg.Role {
 			case domain.RoleUser:
 				kind = broker.EventUserMessage
+			case domain.RoleTool:
+				kind = broker.EventToolBash
 			case domain.RoleAssistant:
 				switch part.Type {
 				case domain.PartReasoningType:
 					kind = broker.EventAgentThinking
+				case domain.PartToolCallType:
+					kind = broker.EventToolBash // TODO: update this to proper tool
 				default:
 					kind = broker.EventAgentResponse
 				}
@@ -119,6 +131,24 @@ func (c *Content) ReRenderFromDbConversation(messages []domain.Message) {
 
 			seg := &Segment{Kind: kind, buf: strings.Builder{}}
 			switch part.Type {
+			case domain.PartToolResultType:
+				continue
+			case domain.PartToolCallType:
+				if tc, ok := part.Data.(domain.ToolCallPartData); ok {
+					switch tc.Name {
+					case string(tools.BashTool): // TODO: orgasnize this
+						var args struct {
+							Command string `json:"command"`
+						}
+						if err := json.Unmarshal(tc.Input, &args); err == nil && args.Command != "" {
+							seg.buf.WriteString(args.Command)
+						} else {
+							seg.buf.WriteString(string(tc.Input))
+						}
+					default:
+						seg.buf.WriteString(string(tc.Input))
+					}
+				}
 			case domain.PartTextType:
 				seg.buf.WriteString(part.Data.(domain.TextPartData).Text)
 			case domain.PartReasoningType:
