@@ -177,7 +177,7 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 		if args.Command == "" {
 			return fmt.Sprintf("error: missing required argument \"command\" for %s", call.Name), true
 		}
-		b.Publish(ctx, broker.Message{Type: broker.EventToolBash, Text: fmt.Sprintf("$%s", args.Command)})
+		b.Publish(ctx, broker.Message{Type: broker.EventToolBash, Text: args.Command})
 		return executeBash(ctx, args.Command, args.Timeout)
 	default:
 		return fmt.Sprintf("unknown tool: %s", call.Name), true
