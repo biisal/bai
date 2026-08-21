@@ -109,7 +109,7 @@ func MarshalParts(parts []Part) ([]byte, error) {
 
 	envelopes := make([]envelope, 0, len(parts))
 	for _, part := range parts {
-		envelopes = append(envelopes, envelope{Type: part.Type, Data: part.Data})
+		envelopes = append(envelopes, envelope(part))
 	}
 	return json.Marshal(envelopes)
 }

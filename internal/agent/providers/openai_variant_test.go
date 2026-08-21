@@ -37,7 +37,7 @@ func TestOpenAIMiddleware(t *testing.T) {
 
 	t.Run("sets spec headers", func(t *testing.T) {
 		var got http.Header
-		variantMiddleware(spec, "sk-real")(newReq(t), captureNext(&got))
+		_, _ = variantMiddleware(spec, "sk-real")(newReq(t), captureNext(&got))
 		if v := got.Get("x-test"); v != "1" {
 			t.Errorf("x-test = %q, want %q", v, "1")
 		}
@@ -48,7 +48,7 @@ func TestOpenAIMiddleware(t *testing.T) {
 
 	t.Run("empty api key falls back to public bearer", func(t *testing.T) {
 		var got http.Header
-		variantMiddleware(spec, "")(newReq(t), captureNext(&got))
+		_, _ = variantMiddleware(spec, "")(newReq(t), captureNext(&got))
 		if auth := got.Get("Authorization"); auth != "Bearer public" {
 			t.Errorf("Authorization = %q, want %q", auth, "Bearer public")
 		}
@@ -58,7 +58,7 @@ func TestOpenAIMiddleware(t *testing.T) {
 		var got http.Header
 		req := newReq(t)
 		req.Header.Set("Authorization", "Bearer sk-real")
-		variantMiddleware(spec, "sk-real")(req, captureNext(&got))
+		_, _ = variantMiddleware(spec, "sk-real")(req, captureNext(&got))
 		if auth := got.Get("Authorization"); auth != "Bearer sk-real" {
 			t.Errorf("Authorization = %q, want untouched %q", auth, "Bearer sk-real")
 		}
@@ -67,7 +67,7 @@ func TestOpenAIMiddleware(t *testing.T) {
 	t.Run("spec without fallback leaves auth alone", func(t *testing.T) {
 		noAuth := &variant.Spec{Headers: spec.Headers}
 		var got http.Header
-		variantMiddleware(noAuth, "")(newReq(t), captureNext(&got))
+		_, _ = variantMiddleware(noAuth, "")(newReq(t), captureNext(&got))
 		if auth := got.Get("Authorization"); auth != "" {
 			t.Errorf("Authorization = %q, want empty", auth)
 		}

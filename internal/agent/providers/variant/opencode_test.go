@@ -62,8 +62,9 @@ func TestOcIDFormat(t *testing.T) {
 	}
 
 	// Two calls should practically never collide.
-	if ocID("msg") == ocID("msg") {
-		t.Error("ocID() produced identical IDs twice")
+	first, second := ocID("msg"), ocID("msg")
+	if first == second {
+		t.Errorf("ocID() produced identical IDs twice: %q", first)
 	}
 }
 
