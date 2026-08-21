@@ -1,8 +1,16 @@
 package tui
 
 import (
+	"log/slog"
+	"time"
+
+	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/biisal/bai/internal/agent/providers"
+	chatbuilder "github.com/biisal/bai/internal/tui/chat-builder"
 )
 
 type CompSize struct {
@@ -10,18 +18,25 @@ type CompSize struct {
 	Width  int
 }
 
-type Component struct {
-	textArea textarea.Model
+type Spinner struct {
+	model       spinner.Model
+	showSpinner bool
 }
 
-func NewComponent() Component {
+type Component struct {
+	textArea     textarea.Model
+	chatViewPort viewport.Model
+
+	spinner Spinner
+}
+
+func NewComponent() *Component {
 	ta := textarea.New()
 	ta.Placeholder = "Send a message..."
 	ta.SetVirtualCursor(true)
 	ta.Focus()
 
 	ta.Prompt = "┃ "
-	ta.CharLimit = 280
 
 	ta.SetHeight(3)
 	ta.SetWidth(30)
@@ -35,9 +50,34 @@ func NewComponent() Component {
 
 	ta.ShowLineNumbers = false
 
-	return Component{
-		textArea: ta,
+	vp := viewport.New()
+
+	sp := spinner.New()
+	sp.Spinner = spinner.MiniDot
+	sp.Spinner.FPS = time.Second / 4
+
+	return &Component{
+		textArea:     ta,
+		chatViewPort: vp,
+
+		spinner: Spinner{model: sp},
 	}
+}
+
+func (c *Component) SetChatContent(content string) {
+	c.chatViewPort.SetContent(content)
+}
+
+func (c *Component) ScrollChatToBottom() {
+	c.chatViewPort.GotoBottom()
+}
+
+func (c *Component) ChatViewPort(height int) string {
+	c.chatViewPort.SetHeight(height)
+	if c.chatViewPort.PastBottom() {
+		c.chatViewPort.GotoBottom()
+	}
+	return c.chatViewPort.View()
 }
 
 func (c Component) Input() (string, CompSize) {
@@ -45,7 +85,32 @@ func (c Component) Input() (string, CompSize) {
 	view = lipgloss.NewStyle().MarginTop(1).Render(view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
-		Height: h - 1,
-		Width:  w - 1,
+		Height: h,
+		Width:  w,
 	}
+}
+
+type FooterProps struct {
+	Provider providers.Provider
+	ModelID  string
+}
+
+func (c Component) Footer(props FooterProps) string {
+	spinnerView := ""
+
+	if c.spinner.showSpinner {
+		spinnerView = c.spinner.model.View()
+	}
+
+	return chatbuilder.StyleFooter.Render(spinnerView + " " + props.Provider.ID() + " - " + props.ModelID)
+}
+
+func (c *Component) handleSpinnerTick(msg spinner.TickMsg) tea.Cmd {
+	if !c.spinner.showSpinner {
+		return nil
+	}
+	var cmd tea.Cmd
+	slog.Debug("spinner tick", "msg", msg)
+	c.spinner.model, cmd = c.spinner.model.Update(msg)
+	return cmd
 }

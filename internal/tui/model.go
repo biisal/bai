@@ -4,9 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"strings"
-	"time"
 
-	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
@@ -24,7 +22,7 @@ type Model struct {
 	gateway         *agent.Gateway
 	broker          broker.Service
 	messages        <-chan broker.Message
-	componets       Component
+	componets       *Component
 	Width           int
 	Height          int
 	ChatContent     *strings.Builder
@@ -34,9 +32,6 @@ type Model struct {
 
 	chatCtx *chatContext
 
-	spinner     spinner.Model
-	showSpinner bool
-
 	commands *commands.Commands
 }
 
@@ -44,9 +39,6 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 	comp := NewComponent()
 	commands := commands.NewCommands(ctx, providers, gateway)
 
-	s := spinner.New()
-	s.Spinner = spinner.MiniDot
-	s.Spinner.FPS = time.Second / 4
 	return &Model{
 		gateway:   gateway,
 		messages:  broker.Subscribe(),
@@ -56,8 +48,6 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 		broker:          broker,
 		content:         chatbuilder.NewContent(),
 		commands:        commands,
-		spinner:         s,
-		showSpinner:     false,
 	}
 }
 
