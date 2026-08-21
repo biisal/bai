@@ -60,7 +60,7 @@ func variantMiddleware(spec *variant.Spec, apiKey string) option.Middleware {
 }
 
 func (p *ProviderOpenAI) buildHistory(history []domain.Message) []openai.ChatCompletionMessageParamUnion {
-	var messages []openai.ChatCompletionMessageParamUnion = []openai.ChatCompletionMessageParamUnion{p.systemMessage}
+	messages := []openai.ChatCompletionMessageParamUnion{p.systemMessage}
 
 	for _, m := range history {
 		switch m.Role {

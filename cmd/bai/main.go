@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -13,7 +14,9 @@ import (
 
 func init() {
 	go func() {
-		http.ListenAndServe("localhost:6060", nil)
+		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+			slog.Warn("pprof server stopped", "error", err)
+		}
 	}()
 }
 

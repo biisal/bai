@@ -24,7 +24,7 @@ func ReadFile(path string, offset int64, limit int64) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot open %q: %w", path, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if offset <= 0 {
 		offset = 1

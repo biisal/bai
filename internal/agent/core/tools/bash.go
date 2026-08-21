@@ -95,10 +95,7 @@ func truncateOutput(out string) string {
 	}
 
 	if !strings.Contains(s, "\n") {
-		lastLine := out
-		if strings.HasSuffix(lastLine, "\n") {
-			lastLine = lastLine[:len(lastLine)-1]
-		}
+		lastLine := strings.TrimSuffix(out, "\n")
 		if i := strings.LastIndex(lastLine, "\n"); i >= 0 {
 			lastLine = lastLine[i+1:]
 		}
@@ -117,12 +114,12 @@ func saveFullOutput(out string) (string, error) {
 	}
 	name := f.Name()
 	if _, err := f.WriteString(out); err != nil {
-		f.Close()
-		os.Remove(name)
+		_ = f.Close()
+		_ = os.Remove(name)
 		return "", err
 	}
 	if err := f.Close(); err != nil {
-		os.Remove(name)
+		_ = os.Remove(name)
 		return "", err
 	}
 	return name, nil
