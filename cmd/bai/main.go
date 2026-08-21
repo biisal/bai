@@ -3,10 +3,19 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
+
+	_ "net/http/pprof"
 
 	"github.com/biisal/bai/internal/config"
 )
+
+func init() {
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
+}
 
 func main() {
 	configFilePath := flag.String("config", config.DefaultConfigPath(), "path to config file")

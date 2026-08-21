@@ -93,14 +93,13 @@ func (m *Model) SetSize(w, h int) {
 	m.Height = h
 
 	m.componets.textArea.SetWidth(w)
-	m.componets.viewport.SetWidth(w)
 
-	m.componets.viewport.SetWidth(w)
 	m.content.SetSize(w, h)
 	m.commands.SetSize(w)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	slog.Debug("update", "msg", msg)
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case spinner.TickMsg:

@@ -18,10 +18,13 @@ const (
 )
 
 type ProviderConfig struct {
-	Name    string        `json:"name"`
-	APIKey  string        `json:"api_key"`
-	Format  string        `json:"format"`
-	BaseURL string        `json:"base_url"`
+	Name    string `json:"name"`
+	APIKey  string `json:"api_key"`
+	Format  string `json:"format"`
+	BaseURL string `json:"base_url"`
+	// Variant layers provider-specific quirks (custom headers, auth
+	// fallbacks, session tracking) on top of a format. Optional.
+	Variant string        `json:"variant"`
 	Models  []ModelConfig `json:"models"`
 }
 

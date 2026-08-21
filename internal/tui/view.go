@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"log/slog"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	chatbuilder "github.com/biisal/bai/internal/tui/chat-builder"
@@ -20,8 +22,9 @@ func (m Model) Footer() string {
 
 func (m Model) View() tea.View {
 	inputView, _ := m.componets.Input()
-	chatView := lipgloss.NewStyle().Render(m.content.Render())
+	chatView := m.content.Render()
 
 	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, chatView, inputView, m.commands.View(), m.Footer()))
+	slog.Debug("view", "width", m.Width, "height", m.Height)
 	return v
 }
