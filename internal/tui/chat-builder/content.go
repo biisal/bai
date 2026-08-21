@@ -25,6 +25,8 @@ type Content struct {
 func (c *Content) SetSize(width, height int) {
 	c.width = width
 	c.height = height
+
+	updateStyleWidth(width)
 }
 
 func NewContent() *Content {
@@ -74,7 +76,7 @@ func renderSegment(seg *Segment, width int) string {
 	case broker.EventToolBash:
 		style = StyleToolBash
 	}
-	return style.Width(width).Render(seg.buf.String())
+	return style.Render(seg.buf.String())
 }
 
 func (c *Content) flushActive() {

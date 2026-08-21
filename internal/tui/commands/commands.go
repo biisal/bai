@@ -65,6 +65,10 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 					Name: "exit",
 					Desc: "exit the application",
 				},
+				{
+					Name: "new",
+					Desc: "create a new conversation",
+				},
 			})
 		},
 		"models": func() []list.Item {
@@ -75,6 +79,9 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		},
 
 		"exit": func() []list.Item {
+			return nil
+		},
+		"new": func() []list.Item {
 			return nil
 		},
 	}
@@ -184,10 +191,10 @@ func (c *Commands) HandleKeyPress(key string) (matched bool) { // TODO: improve 
 	case "esc":
 		c.ShowList = false
 		return
-	case "ctrl+n":
+	case "ctrl+n", "down":
 		c.List.CursorDown()
 		return
-	case "ctrl+p":
+	case "ctrl+p", "up":
 		c.List.CursorUp()
 		return
 	}

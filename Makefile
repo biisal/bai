@@ -1,6 +1,7 @@
 GREETING := Hello from bAI!
 SHELL := /bin/bash
 BINARY_PATH := ./bin/bai
+INSTALL_PATH := ~/.local/bin
 
 .PHONY: default build run dev watch test release lint lint-fix clean install format format-check db-generate
 .ONESHELL:
@@ -11,6 +12,10 @@ default:
 build:
 	go build -o ${BINARY_PATH} ./cmd/bai/...
 	echo "build was successful"
+
+install: build
+	@mv ${BINARY_PATH} ${INSTALL_PATH} 
+	echo "installed to ${INSTALL_PATH}"
 
 run: build
 	./${BINARY_PATH}
@@ -40,9 +45,6 @@ lint-fix:
 clean:
 	rm -rf bin/
 	rm -rf tmp/
-
-install:
-	go mod download
 
 format:
 	gofmt -w .

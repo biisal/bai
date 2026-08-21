@@ -15,3 +15,15 @@ var (
 	StyleSystemNotice  = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 	StyleFooter        = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 )
+
+func updateStyleWidth(w int) {
+	StyleAgentThinking = StyleAgentThinking.Width(w)
+	StyleToolFileReading = StyleToolFileReading.Width(w)
+	StyleToolFileWriting = StyleToolFileWriting.Width(w)
+	StyleToolBash = StyleToolBash.Width(w)
+	StyleAgentResponse = StyleAgentResponse.Width(w)
+	StyleError = StyleError.Width(w)
+	StyleUserInput = StyleUserInput.Width(w)
+	StyleSystemNotice = StyleSystemNotice.Width(w)
+	StyleFooter = StyleFooter.Width(w)
+}
