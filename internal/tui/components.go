@@ -2,7 +2,6 @@ package tui
 
 import (
 	"charm.land/bubbles/v2/textarea"
-	"charm.land/bubbles/v2/viewport"
 	"charm.land/lipgloss/v2"
 )
 
@@ -13,7 +12,6 @@ type CompSize struct {
 
 type Component struct {
 	textArea textarea.Model
-	viewport viewport.Model
 }
 
 func NewComponent() Component {
@@ -32,18 +30,12 @@ func NewComponent() Component {
 
 	s := ta.Styles()
 	s.Cursor.Blink = false
+	s.Focused.CursorLine = lipgloss.NewStyle()
 	ta.SetStyles(s)
 
 	ta.ShowLineNumbers = false
 
-	vp := viewport.New(viewport.WithWidth(30), viewport.WithHeight(5))
-	vp.SetContent(`Welcome to the chat room!
-Type a message and press Enter to send.`)
-	vp.KeyMap.Left.SetEnabled(false)
-	vp.KeyMap.Right.SetEnabled(false)
-
 	return Component{
-		viewport: vp,
 		textArea: ta,
 	}
 }

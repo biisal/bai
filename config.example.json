@@ -11,6 +11,16 @@
       ]
     },
     {
+      "name": "OpenCode",
+      "format": "openai-compatible",
+      "variant": "opencode",
+      "api_key": "",
+      "base_url": "https://opencode.ai/zen/v1",
+      "models": [
+        { "id": "grok-code", "context": 256000, "max_output": 32768 }
+      ]
+    },
+    {
       "name": "Groq",
       "format": "openai-compatible",
       "api_key": "gsk_...",

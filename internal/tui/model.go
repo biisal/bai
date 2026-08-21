@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -61,6 +62,7 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 }
 
 func waitForMsg(msgChan <-chan broker.Message) tea.Cmd {
+	slog.Debug("waitForMsg", "msgChan", msgChan)
 	return func() tea.Msg {
 		return <-msgChan
 	}

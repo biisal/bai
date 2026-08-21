@@ -97,7 +97,11 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 		return nil, err
 	}
 
-	for {
+	for round := 0; ; round++ {
+		if round > 0 {
+			slog.Debug("agent loop: next round after tool calls", "round", round,
+				"history_len", len(messages))
+		}
 		g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted})
 		result, err := g.activeProvider.StreamChat(ctx, g.activeModel, messages)
 		if err != nil {

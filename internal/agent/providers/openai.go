@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/biisal/bai/internal/agent/core/tools"
+	"github.com/biisal/bai/internal/agent/providers/variant"
 	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/openai/openai-go/v3"
@@ -23,8 +25,11 @@ type ProviderOpenAI struct {
 	systemMessage openai.ChatCompletionMessageParamUnion
 }
 
-func NewProviderOpenAI(baseURL, apiKey, providerID string, broker broker.Service, systemPrompt string) Provider {
-	client := openai.NewClient(option.WithAPIKey(apiKey), option.WithBaseURL(baseURL))
+func NewProviderOpenAI(baseURL, apiKey, providerID string, broker broker.Service, systemPrompt string, extraOpts ...option.RequestOption) Provider {
+	opts := append([]option.RequestOption{
+		option.WithAPIKey(apiKey), option.WithBaseURL(baseURL),
+	}, extraOpts...)
+	client := openai.NewClient(opts...)
 
 	systemMessage := openai.SystemMessage(systemPrompt)
 
@@ -33,6 +38,25 @@ func NewProviderOpenAI(baseURL, apiKey, providerID string, broker broker.Service
 
 func (p *ProviderOpenAI) ID() string {
 	return p.providerID
+}
+
+func applyVariant(spec *variant.Spec, apiKey string) []option.RequestOption {
+	if spec == nil {
+		return nil
+	}
+	return []option.RequestOption{option.WithMiddleware(variantMiddleware(spec, apiKey))}
+}
+
+func variantMiddleware(spec *variant.Spec, apiKey string) option.Middleware {
+	return func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
+		for _, h := range spec.Headers {
+			req.Header.Set(h.Key, h.Value())
+		}
+		if apiKey == "" && spec.AuthFallback != "" {
+			req.Header.Set("Authorization", spec.AuthScheme+" "+spec.AuthFallback)
+		}
+		return next(req)
+	}
 }
 
 func (p *ProviderOpenAI) buildHistory(history []domain.Message) []openai.ChatCompletionMessageParamUnion {
@@ -81,17 +105,31 @@ func chunkText(current openai.ChatCompletionChunk) string {
 }
 
 func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history []domain.Message) (result StreamResult, err error) {
-	stream := p.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Messages: p.buildHistory(history),
-		Model:    modelId,
-		Tools:    buildOpenAIToolParams(tools.Definitions),
-	})
+	stream := p.client.Chat.Completions.NewStreaming(
+		ctx, openai.ChatCompletionNewParams{
+			Messages:      p.buildHistory(history),
+			Model:         modelId,
+			Tools:         buildOpenAIToolParams(tools.Definitions),
+			StreamOptions: openai.ChatCompletionStreamOptionsParam{},
+		},
+	)
 	var acc openai.ChatCompletionAccumulator
 
 	var (
 		outputBuilder   strings.Builder
 		thinkingBuilder strings.Builder
 	)
+
+	// Loop diagnostics: if the stream loop spins (CPU leak), these
+	// counters make it visible in the log as an abnormal chunk rate.
+	var (
+		chunkCount     int
+		emptyChunk     int
+		loopStart      = time.Now()
+		lastRateLog    = loopStart
+		chunksAtLastLn = 0
+	)
+	const chunkRateLogEvery = 2 * time.Second
 
 	flush := func() {
 		if thinkingBuilder.Len() > 0 {
@@ -117,9 +155,26 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 	for stream.Next() {
 		current := stream.Current()
 		acc.AddChunk(current)
+		chunkCount++
 
-		if reasoning := reasoningDelta(current.RawJSON()); reasoning != "" {
-			thinkingBuilder.WriteString(reasoning)
+		if text := chunkText(current); text == "" && !hasReasoning(current.RawJSON()) {
+			emptyChunk++
+		}
+
+		if time.Since(lastRateLog) >= chunkRateLogEvery {
+			slog.Debug("stream loop rate",
+				"chunks", chunkCount,
+				"chunks_per_sec", (chunkCount-chunksAtLastLn)*int(time.Second)/int(chunkRateLogEvery),
+				"empty_chunks", emptyChunk,
+				"elapsed", time.Since(loopStart).Round(time.Millisecond))
+			lastRateLog = time.Now()
+			chunksAtLastLn = chunkCount
+		}
+
+		if hasReasoning(current.RawJSON()) {
+			if reasoning := reasoningDelta(current.RawJSON()); reasoning != "" {
+				thinkingBuilder.WriteString(reasoning)
+			}
 		}
 
 		if content, ok := acc.JustFinishedContent(); ok {
@@ -151,12 +206,24 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 
 	flush()
 
+	slog.Debug("stream loop done",
+		"chunks", chunkCount,
+		"empty_chunks", emptyChunk,
+		"elapsed", time.Since(loopStart).Round(time.Millisecond),
+		"tool_calls", len(result.ToolCalls))
+
 	if len(acc.Choices) > 0 {
 		result.Text = acc.Choices[0].Message.Content
 		slog.Debug("Full content openai", "content", result.Text)
 	}
 
 	return result, nil
+}
+
+// hasReasoning reports whether a raw chunk JSON carries reasoning
+// content, without unmarshalling into a struct.
+func hasReasoning(raw string) bool {
+	return strings.Contains(raw, "reasoning")
 }
 
 func reasoningDelta(raw string) string {
