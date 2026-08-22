@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -38,10 +39,8 @@ func NewComponent() *Component {
 
 	ta.Prompt = "┃ "
 
-	ta.SetHeight(3)
-	ta.SetWidth(30)
-	ta.MinHeight = 3
-	ta.MaxHeight = 6
+	ta.SetHeight(1)
+	ta.MaxHeight = 15
 
 	s := ta.Styles()
 	s.Cursor.Blink = false
@@ -81,8 +80,22 @@ func (c *Component) ChatViewPort(height int) string {
 }
 
 func (c Component) Input() (string, CompSize) {
+	lineCount := c.textArea.LineInfo().Height
+	taHeight := c.textArea.Height()
+	if lineCount > taHeight {
+		c.textArea.SetHeight(lineCount)
+	}
 	view := c.textArea.View()
-	view = lipgloss.NewStyle().MarginTop(1).Render(view)
+	extraLines := lineCount - taHeight - c.textArea.MaxHeight
+
+	extraLinesView := ""
+
+	if extraLines > 0 {
+		extraLinesView = fmt.Sprintf("%d More ^", extraLines)
+	}
+
+	view = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false).BorderTopForeground(lipgloss.Color("6")).Render(view)
+	view = lipgloss.JoinVertical(lipgloss.Top, extraLinesView, view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h,

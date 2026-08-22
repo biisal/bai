@@ -70,16 +70,12 @@ func (m *Model) MatchCommand() tea.Cmd {
 		case "new":
 			m.gateway.SetConversation(nil)
 			m.content.ReRenderFromDbConversation(nil)
-			m.componets.textArea.SetValue("")
-			m.commands.ShowList = false
 			m.broker.Publish(m.ctx, broker.Message{
 				Type: broker.EventSystemNotice,
 				Text: "New conversation started.",
 			})
-			return func() tea.Msg {
-				return nil
-			}
-
+			m.commands.ShowList = false
+			return nil
 		}
 		slog.Debug("match_command", "name", item.Name)
 		newInput := fmt.Sprintf("/%s ", item.Name)
