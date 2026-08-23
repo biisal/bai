@@ -8,13 +8,15 @@ package repo
 import (
 	"context"
 	"database/sql"
+
+	"github.com/biisal/bai/internal/domain"
 )
 
 const createMessage = `-- name: CreateMessage :one
 INSERT INTO messages (
     conversation_id,
     role,
-    content,
+    parts,
     error
 ) VALUES (
     ?1, ?2, ?3, ?4
@@ -23,8 +25,8 @@ INSERT INTO messages (
 
 type CreateMessageParams struct {
 	ConversationID int64
-	Role           string
-	Content        string
+	Role           domain.Role
+	Parts          string
 	Error          sql.NullString
 }
 
@@ -32,7 +34,7 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (i
 	row := q.db.QueryRowContext(ctx, createMessage,
 		arg.ConversationID,
 		arg.Role,
-		arg.Content,
+		arg.Parts,
 		arg.Error,
 	)
 	var id int64
@@ -40,47 +42,8 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (i
 	return id, err
 }
 
-const createToolCall = `-- name: CreateToolCall :one
-INSERT INTO tool_calls (
-    message_id,
-    call_id,
-    name,
-    arguments,
-    result,
-    is_error,
-    status
-) VALUES (
-    ?1, ?2, ?3, ?4, ?5, ?6, ?7
-) RETURNING id
-`
-
-type CreateToolCallParams struct {
-	MessageID int64
-	CallID    string
-	Name      string
-	Arguments string
-	Result    sql.NullString
-	IsError   int64
-	Status    string
-}
-
-func (q *Queries) CreateToolCall(ctx context.Context, arg CreateToolCallParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createToolCall,
-		arg.MessageID,
-		arg.CallID,
-		arg.Name,
-		arg.Arguments,
-		arg.Result,
-		arg.IsError,
-		arg.Status,
-	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
 const getMessagesByConversation = `-- name: GetMessagesByConversation :many
-SELECT id, conversation_id, role, content, error, created_at
+SELECT id, conversation_id, role, parts, error, created_at, finished_at
 FROM messages
 WHERE conversation_id = ?1
 ORDER BY id ASC
@@ -99,9 +62,10 @@ func (q *Queries) GetMessagesByConversation(ctx context.Context, conversationID 
 			&i.ID,
 			&i.ConversationID,
 			&i.Role,
-			&i.Content,
+			&i.Parts,
 			&i.Error,
 			&i.CreatedAt,
+			&i.FinishedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -114,112 +78,4 @@ func (q *Queries) GetMessagesByConversation(ctx context.Context, conversationID 
 		return nil, err
 	}
 	return items, nil
-}
-
-const getToolCallsByConversation = `-- name: GetToolCallsByConversation :many
-SELECT tc.id, tc.message_id, tc.call_id, tc.name, tc.arguments,
-       tc.result, tc.is_error, tc.status, tc.created_at
-FROM tool_calls tc
-JOIN messages m ON m.id = tc.message_id
-WHERE m.conversation_id = ?1
-ORDER BY tc.id ASC
-`
-
-func (q *Queries) GetToolCallsByConversation(ctx context.Context, conversationID int64) ([]ToolCall, error) {
-	rows, err := q.db.QueryContext(ctx, getToolCallsByConversation, conversationID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ToolCall
-	for rows.Next() {
-		var i ToolCall
-		if err := rows.Scan(
-			&i.ID,
-			&i.MessageID,
-			&i.CallID,
-			&i.Name,
-			&i.Arguments,
-			&i.Result,
-			&i.IsError,
-			&i.Status,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getToolCallsByMessage = `-- name: GetToolCallsByMessage :many
-SELECT id, message_id, call_id, name, arguments,
-       result, is_error, status, created_at
-FROM tool_calls
-WHERE message_id = ?1
-ORDER BY id ASC
-`
-
-func (q *Queries) GetToolCallsByMessage(ctx context.Context, messageID int64) ([]ToolCall, error) {
-	rows, err := q.db.QueryContext(ctx, getToolCallsByMessage, messageID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ToolCall
-	for rows.Next() {
-		var i ToolCall
-		if err := rows.Scan(
-			&i.ID,
-			&i.MessageID,
-			&i.CallID,
-			&i.Name,
-			&i.Arguments,
-			&i.Result,
-			&i.IsError,
-			&i.Status,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const updateToolResult = `-- name: UpdateToolResult :exec
-UPDATE tool_calls
-SET result = ?1,
-    is_error = ?2,
-    status = ?3
-WHERE call_id = ?4
-`
-
-type UpdateToolResultParams struct {
-	Result  sql.NullString
-	IsError int64
-	Status  string
-	CallID  string
-}
-
-func (q *Queries) UpdateToolResult(ctx context.Context, arg UpdateToolResultParams) error {
-	_, err := q.db.ExecContext(ctx, updateToolResult,
-		arg.Result,
-		arg.IsError,
-		arg.Status,
-		arg.CallID,
-	)
-	return err
 }

@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/biisal/bai/internal/config"
-	"github.com/biisal/bai/internal/db"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 )
 
 var (
@@ -14,7 +14,7 @@ var (
 	ErrModelNotFound    = errors.New("model not found in config")
 )
 
-func getOrSetProvider(ctx context.Context, svc db.ServiceInterface, providers []config.ProviderConfig) (providerID, modelID string, err error) {
+func getOrSetProvider(ctx context.Context, svc repo.Querier, providers []config.ProviderConfig) (providerID, modelID string, err error) {
 	if len(providers) == 0 {
 		return "", "", ErrProviderNotFound
 	}
@@ -23,13 +23,16 @@ func getOrSetProvider(ctx context.Context, svc db.ServiceInterface, providers []
 	}
 	name := providers[0].Name
 	modelId := providers[0].Models[0].ID
-	if err := svc.AddOrUpdateProvider(ctx, name, modelId); err != nil {
+	if err := svc.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
+		ProviderName: sql.NullString{String: name, Valid: true},
+		ModelID:      sql.NullString{String: modelId, Valid: true},
+	}); err != nil {
 		return "", "", err
 	}
 	return name, modelId, nil
 }
 
-func resolveProvider(ctx context.Context, svc db.ServiceInterface, providers []config.ProviderConfig) (providerID, modelID string, err error) {
+func resolveProvider(ctx context.Context, svc repo.Querier, providers []config.ProviderConfig) (providerID, modelID string, err error) {
 	provider, err := svc.GetProvider(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

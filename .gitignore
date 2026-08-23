@@ -1,5 +1,4 @@
 .DS_Store
-config.example.json
 .env
 *.db
 bin

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/biisal/bai/internal/agent/providers/variant"
 	"github.com/biisal/bai/internal/config"
 	broker "github.com/biisal/bai/internal/pubsub"
 	test_utils "github.com/biisal/bai/utils/tests"
@@ -23,6 +24,24 @@ func TestNewFromConfig(t *testing.T) {
 			},
 			name:    "should throw error when invalid format provided",
 			wantErr: fmt.Errorf("unknown provider format: invalid-provider, hint use one of: %s", []string{config.FormatOpenAI}),
+		},
+		{
+			input: config.ProviderConfig{
+				Format:  config.FormatOpenAI,
+				Variant: "nope",
+				APIKey:  "sk-...",
+				BaseURL: "https://api.openai.com/v1",
+			},
+			name:    "should throw error when unknown variant provided",
+			wantErr: fmt.Errorf("unknown provider variant: nope, hint use one of: %s", variant.Names()),
+		},
+		{
+			input: config.ProviderConfig{
+				Format:  config.FormatOpenAI,
+				Variant: variant.OpenCode,
+				BaseURL: "https://opencode.ai/zen/v1",
+			},
+			name: "should build provider with opencode variant and empty api key",
 		},
 	}
 
