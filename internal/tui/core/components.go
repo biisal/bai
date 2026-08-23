@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"log/slog"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -119,7 +118,6 @@ func (c *Component) handleSpinnerTick(msg spinner.TickMsg) tea.Cmd {
 		return nil
 	}
 	var cmd tea.Cmd
-	slog.Debug("spinner tick", "msg", msg)
 	c.spinner.model, cmd = c.spinner.model.Update(msg)
 	return cmd
 }

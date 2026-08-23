@@ -150,10 +150,6 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 			}
 		}
 
-		if content, ok := acc.JustFinishedContent(); ok {
-			slog.Debug("content finished", "content", content)
-		}
-
 		if tool, ok := acc.JustFinishedToolCall(); ok {
 			result.ToolCalls = append(result.ToolCalls, tools.Call{
 				ID:   tool.ID,
@@ -181,7 +177,6 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 
 	if len(acc.Choices) > 0 {
 		result.Text = acc.Choices[0].Message.Content
-		slog.Debug("Full content openai", "content", result.Text)
 	}
 
 	return result, nil
