@@ -66,11 +66,11 @@ func (m *Model) MatchCommand() tea.Cmd {
 		}
 
 		return m.commands.ExecuteCommand(item.Name, commands.CommandContext{
-			Gateway:   m.gateway,
-			Broker:    m.broker,
-			Content:   m.content,
+			Gateway:    m.gateway,
+			Broker:     m.broker,
+			Content:    m.content,
 			Components: m.componets,
-			ShowList:  &m.commands.ShowList,
+			ShowList:   &m.commands.ShowList,
 		})
 
 	case commands.ModelItem:
