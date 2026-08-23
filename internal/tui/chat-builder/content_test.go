@@ -188,7 +188,7 @@ func Test_renderSegment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := renderSegment(tt.seg, tt.width)
+			got := renderSegment(tt.seg)
 			if got != tt.want {
 				t.Errorf("renderSegment() = %q, want %q", got, tt.want)
 			}
@@ -229,7 +229,7 @@ func TestContent_flushActive(t *testing.T) {
 				}
 				c.flushActive()
 
-				styled := StyleUserInput.Render(text) + "\n\n"
+				styled := StyleUserInput.Render(text) + "\n"
 
 				if c.rendered.String() != styled {
 					t.Errorf("flushActive() = %s, want %s", c.rendered.String(), styled)
@@ -287,7 +287,7 @@ func TestContent_Render(t *testing.T) {
 				seg := &Segment{Kind: broker.EventAgentResponse, buf: getSb("test_agent_response")}
 				c.active = seg
 				c.rendered.WriteString("test_rendered")
-				return "test_rendered" + renderSegment(seg, c.width)
+				return "test_rendered" + renderSegment(seg)
 			},
 		},
 		{
@@ -299,7 +299,7 @@ func TestContent_Render(t *testing.T) {
 				}
 				c.active = seg
 
-				return renderSegment(seg, c.width)
+				return renderSegment(seg)
 			},
 		},
 	}
@@ -333,7 +333,7 @@ func TestContent_ReRender(t *testing.T) {
 		renderdSegString := strings.Builder{}
 
 		for _, block := range c.blocks {
-			renderdSegString.WriteString(renderSegment(block, c.width))
+			renderdSegString.WriteString(renderSegment(block))
 			renderdSegString.WriteString("\n\n")
 		}
 
@@ -422,7 +422,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 						buf:  getSb("test content"),
 					},
 				}
-				want = renderSegment(expectedSegments[0], 0) + "\n\n" + renderSegment(expectedSegments[1], 0) + "\n\n"
+				want = renderSegment(expectedSegments[0]) + "\n\n" + renderSegment(expectedSegments[1]) + "\n\n"
 
 				return
 			},
@@ -444,7 +444,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 					{Kind: broker.EventAgentThinking, buf: getSb("let me think")},
 					{Kind: broker.EventAgentResponse, buf: getSb("the answer")},
 				}
-				want = renderSegment(expectedSegments[0], 0) + "\n\n" + renderSegment(expectedSegments[1], 0) + "\n\n"
+				want = renderSegment(expectedSegments[0]) + "\n\n" + renderSegment(expectedSegments[1]) + "\n\n"
 
 				return
 			},

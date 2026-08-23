@@ -56,11 +56,11 @@ func (c *Content) Render() string {
 	}
 	var out strings.Builder
 	out.WriteString(c.rendered.String())
-	out.WriteString(renderSegment(c.active, c.width))
+	out.WriteString(renderSegment(c.active))
 	return out.String()
 }
 
-func renderSegment(seg *Segment, width int) string {
+func renderSegment(seg *Segment) string {
 	var style lipgloss.Style
 	content := seg.buf.String()
 	switch seg.Kind {
@@ -89,7 +89,7 @@ func renderSegment(seg *Segment, width int) string {
 
 func (c *Content) flushActive() {
 	if c.active != nil {
-		c.rendered.WriteString(renderSegment(c.active, c.width))
+		c.rendered.WriteString(renderSegment(c.active))
 		c.blocks = append(c.blocks, c.active)
 	}
 
@@ -101,7 +101,7 @@ func (c *Content) ReRender() {
 	out := strings.Builder{}
 	slog.Info("re-rendering content", "blocks", c.blocks)
 	for _, block := range c.blocks {
-		out.WriteString(renderSegment(block, c.width))
+		out.WriteString(renderSegment(block))
 		out.WriteString("\n\n")
 	}
 	c.rendered.Reset()
