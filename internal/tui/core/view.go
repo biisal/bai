@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"log/slog"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -40,6 +39,5 @@ func (m Model) View() tea.View {
 	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, rows...))
 	v.AltScreen = true
 	v.MouseMode = tea.MouseModeCellMotion
-	slog.Debug("view", "width", m.Width, "height", m.Height)
 	return v
 }

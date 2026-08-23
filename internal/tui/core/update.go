@@ -29,8 +29,6 @@ func (m *Model) MatchCommand() tea.Cmd {
 
 	switch item := m.commands.List.SelectedItem().(type) {
 	case commands.ConversationItem:
-		slog.Debug("match_conversation", "name", item.Title())
-
 		messages, err := m.gateway.GetMessagesByConversationID(m.ctx, item.Conversation.ID)
 		if err != nil {
 			slog.Error("match_conversation_get_messages", "err", err)
@@ -51,40 +49,27 @@ func (m *Model) MatchCommand() tea.Cmd {
 			return nil
 		}
 		m.commands.ShowList = false
-		slog.Debug("match_conversation", "messages", messages)
 		m.content.ReRenderFromDbConversation(messages)
 		m.componets.SetChatContent(m.content.Render())
 		m.componets.ScrollChatToBottom()
 		return nil
 	case commands.CommandItem:
-		switch item.Name {
-		case "exit":
-			m.commands.ShowList = false
-			m.broker.Publish(m.ctx, broker.Message{
-				Type: broker.EventSystemNotice,
-				Text: "Bye.. See you soon!\n",
-			})
-			return func() tea.Msg {
-				return tea.Quit()
-			}
-		case "new":
-			m.gateway.SetConversation(nil)
-			m.content.ReRenderFromDbConversation(nil)
-			m.broker.Publish(m.ctx, broker.Message{
-				Type: broker.EventSystemNotice,
-				Text: "New conversation started.",
-			})
-			m.commands.ShowList = false
+		if item.Name == "models" || item.Name == "sessions" {
+				newInput := fmt.Sprintf("/%s ", item.Name)
+			m.componets.textArea.SetValue(newInput)
+			m.commands.Sync(newInput)
 			return nil
 		}
-		slog.Debug("match_command", "name", item.Name)
-		newInput := fmt.Sprintf("/%s ", item.Name)
-		m.componets.textArea.SetValue(newInput)
-		m.commands.Sync(newInput)
-		return nil
+
+		return m.commands.ExecuteCommand(item.Name, commands.CommandContext{
+			Gateway:    m.gateway,
+			Broker:     m.broker,
+			Content:    m.content,
+			Components: m.componets,
+			ShowList:   &m.commands.ShowList,
+		})
 
 	case commands.ModelItem:
-		slog.Debug("match_model", "provider", item.ProviderName, "model", item.ModelID)
 		if err := m.gateway.AddOrUpdateProvider(m.ctx, item.ProviderName, item.ModelID); err != nil {
 			return nil
 		}
@@ -114,7 +99,6 @@ func (m *Model) SetSize(w, h int) {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	slog.Debug("update", "msg", msg)
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case spinner.TickMsg:
