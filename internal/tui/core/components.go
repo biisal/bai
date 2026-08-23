@@ -11,7 +11,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/biisal/bai/internal/agent/providers"
-	"github.com/biisal/bai/internal/files"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
@@ -93,12 +92,7 @@ func (c *Component) ChatViewPort(height int) string {
 func (c *Component) Input() (string, CompSize) {
 	view := c.textArea.View()
 
-	top := styles.StyleFooter.Render(
-		files.CurrentDirWithGitCache,
-	)
 	view = styles.StyleInput.Render(view)
-
-	view = lipgloss.JoinVertical(lipgloss.Center, top, view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h,
