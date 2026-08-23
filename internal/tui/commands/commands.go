@@ -116,6 +116,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 			desc: "create a new conversation",
 			fn: func(c CommandContext) tea.Cmd {
 				c.Gateway.SetConversation(nil)
+				c.Components.SetValue("")
 				c.Content.ReRenderFromDbConversation(nil)
 				c.Broker.Publish(ctx, broker.Message{
 					Type: broker.EventSystemNotice,
@@ -226,7 +227,7 @@ func (c *Commands) Sync(text string) {
 		return
 	}
 
-	if c.lastSynced == text {
+	if c.lastSynced == text && c.ShowList {
 		return
 	}
 	c.lastSynced = text

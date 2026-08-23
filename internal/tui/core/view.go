@@ -5,6 +5,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/biisal/bai/internal/files"
+	"github.com/biisal/bai/internal/tui/styles"
 )
 
 func (m Model) View() tea.View {
@@ -23,18 +25,24 @@ func (m Model) View() tea.View {
 
 	footerHeight := lipgloss.Height(footer)
 
-	rows := []string{"", inputView}
+	dirInfo := styles.StyleFooter.Render(files.CurrentDirWithGitCache)
+	rows := []string{dirInfo, "", inputView}
 	totalHeight := intputSize.Height + footerHeight
 	if commandsView != "" {
 		rows = append(rows, commandsView)
 		totalHeight += lipgloss.Height(commandsView)
 	}
 
-	viewPortHeight := m.Height - totalHeight
-	chatView := m.componets.ChatViewPort(viewPortHeight)
-	rows[0] = chatView
-
 	rows = append(rows, footer)
+
+	viewPortHeight := m.Height - totalHeight
+
+	dirHeight := lipgloss.Height(dirInfo)
+	viewPortHeight -= dirHeight
+
+	chatView := m.componets.ChatViewPort(viewPortHeight)
+
+	rows[1] = chatView
 
 	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, rows...))
 	v.AltScreen = true
