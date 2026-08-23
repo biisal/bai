@@ -69,16 +69,16 @@ func NewComponent() *Component {
 	}
 }
 
+func (c *Component) SetValue(value string) {
+	c.textArea.SetValue(value)
+}
+
 func (c *Component) SetChatContent(content string) {
 	c.chatViewPort.SetContent(content)
 }
 
 func (c *Component) ScrollChatToBottom() {
 	c.chatViewPort.GotoBottom()
-}
-
-func (c *Component) SetValue(value string) {
-	c.textArea.SetValue(value)
 }
 
 func (c *Component) ChatViewPort(height int) string {

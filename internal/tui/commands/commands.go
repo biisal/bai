@@ -57,11 +57,11 @@ type Commands struct {
 }
 
 type CommandContext struct {
-	Gateway   *agent.Gateway
-	Broker    broker.Service
-	Content   Content
+	Gateway    *agent.Gateway
+	Broker     broker.Service
+	Content    Content
 	Components Components
-	ShowList  *bool
+	ShowList   *bool
 }
 
 type Content interface {
