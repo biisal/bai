@@ -120,17 +120,6 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 		thinkingBuilder strings.Builder
 	)
 
-	// Loop diagnostics: if the stream loop spins (CPU leak), these
-	// counters make it visible in the log as an abnormal chunk rate.
-	var (
-		chunkCount     int
-		emptyChunk     int
-		loopStart      = time.Now()
-		lastRateLog    = loopStart
-		chunksAtLastLn = 0
-	)
-	const chunkRateLogEvery = 2 * time.Second
-
 	flush := func() {
 		if thinkingBuilder.Len() > 0 {
 			result.ThinkingText += thinkingBuilder.String()
@@ -155,30 +144,10 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 	for stream.Next() {
 		current := stream.Current()
 		acc.AddChunk(current)
-		chunkCount++
-
-		if text := chunkText(current); text == "" && !hasReasoning(current.RawJSON()) {
-			emptyChunk++
-		}
-
-		if time.Since(lastRateLog) >= chunkRateLogEvery {
-			slog.Debug("stream loop rate",
-				"chunks", chunkCount,
-				"chunks_per_sec", (chunkCount-chunksAtLastLn)*int(time.Second)/int(chunkRateLogEvery),
-				"empty_chunks", emptyChunk,
-				"elapsed", time.Since(loopStart).Round(time.Millisecond))
-			lastRateLog = time.Now()
-			chunksAtLastLn = chunkCount
-		}
-
 		if hasReasoning(current.RawJSON()) {
 			if reasoning := reasoningDelta(current.RawJSON()); reasoning != "" {
 				thinkingBuilder.WriteString(reasoning)
 			}
-		}
-
-		if content, ok := acc.JustFinishedContent(); ok {
-			slog.Debug("content finished", "content", content)
 		}
 
 		if tool, ok := acc.JustFinishedToolCall(); ok {
@@ -206,15 +175,8 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 
 	flush()
 
-	slog.Debug("stream loop done",
-		"chunks", chunkCount,
-		"empty_chunks", emptyChunk,
-		"elapsed", time.Since(loopStart).Round(time.Millisecond),
-		"tool_calls", len(result.ToolCalls))
-
 	if len(acc.Choices) > 0 {
 		result.Text = acc.Choices[0].Message.Content
-		slog.Debug("Full content openai", "content", result.Text)
 	}
 
 	return result, nil

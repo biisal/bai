@@ -7,8 +7,11 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/domain"
+	broker "github.com/biisal/bai/internal/pubsub"
 )
 
 type CommandItem struct {
@@ -46,12 +49,35 @@ type Commands struct {
 	commands map[string]*commandEntry
 	gateway  *agent.Gateway
 
+	models    []list.Item
+	sessions  []list.Item
+	rootItems []list.Item
+
 	lastSynced string
+}
+
+type CommandContext struct {
+	Gateway    *agent.Gateway
+	Broker     broker.Service
+	Content    Content
+	Components Components
+	ShowList   *bool
+}
+
+type Content interface {
+	ReRenderFromDbConversation(messages []domain.Message)
+	Render() string
+}
+
+type Components interface {
+	SetChatContent(content string)
+	ScrollChatToBottom()
+	SetValue(value string)
 }
 
 type commandEntry struct {
 	desc string
-	fn   func() []list.Item
+	fn   func(ctx CommandContext) tea.Cmd
 }
 
 func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway *agent.Gateway) *Commands {
@@ -63,19 +89,41 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		},
 		"models": {
 			desc: "show available models",
-			fn:   func() []list.Item { return models },
+			fn: func(c CommandContext) tea.Cmd {
+				return nil
+			},
 		},
 		"sessions": {
 			desc: "show list of conversations",
-			fn:   func() []list.Item { return toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir)) },
+			fn: func(c CommandContext) tea.Cmd {
+				return nil
+			},
 		},
 		"exit": {
 			desc: "exit the application",
-			fn:   func() []list.Item { return nil },
+			fn: func(c CommandContext) tea.Cmd {
+				*c.ShowList = false
+				c.Broker.Publish(ctx, broker.Message{
+					Type: broker.EventSystemNotice,
+					Text: "Bye.. See you soon!\n",
+				})
+				return func() tea.Msg {
+					return tea.Quit()
+				}
+			},
 		},
 		"new": {
 			desc: "create a new conversation",
-			fn:   func() []list.Item { return nil },
+			fn: func(c CommandContext) tea.Cmd {
+				c.Gateway.SetConversation(nil)
+				c.Content.ReRenderFromDbConversation(nil)
+				c.Broker.Publish(ctx, broker.Message{
+					Type: broker.EventSystemNotice,
+					Text: "New conversation started.",
+				})
+				*c.ShowList = false
+				return nil
+			},
 		},
 	}
 
@@ -89,9 +137,9 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		rootItems = append(rootItems, CommandItem{Name: name, Desc: entry.desc})
 	}
 
-	commands[""].fn = func() []list.Item { return rootItems }
+	commands[""].fn = nil
 
-	l := list.New(commands[rootCommand].fn(), itemDelegate{styles: &listStyles}, 5, 10)
+	l := list.New(rootItems, itemDelegate{styles: &listStyles}, 5, 10)
 	l.SetShowStatusBar(false)
 	l.SetShowTitle(false)
 	l.SetShowHelp(false)
@@ -102,28 +150,58 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		CursorDown: key.NewBinding(key.WithKeys("ctrl+n", "down", "tab")),
 	}
 	return &Commands{
-		List:     l,
-		Current:  rootCommand,
-		commands: commands,
-		gateway:  gateway,
+		List:      l,
+		Current:   rootCommand,
+		commands:  commands,
+		gateway:   gateway,
+		models:    models,
+		sessions:  toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir)),
+		rootItems: rootItems,
 	}
 }
 
-func (c *Commands) Update(command string) {
+func (c *Commands) Update(command string, cmdCtx CommandContext) tea.Cmd {
 	if c.Current == command {
-		return
+		return nil
 	}
 
-	fn, ok := c.commands[command]
+	entry, ok := c.commands[command]
 	if !ok {
 		slog.Warn("update_commands", "command", command)
 		c.ShowList = false
-		return
+		return nil
 	}
 
 	c.Current = command
-	c.List.SetItems(fn.fn())
-	slog.Debug("update", "current", c.Current)
+	c.List.SetItems(c.getItems(command))
+
+	if entry.fn != nil {
+		return entry.fn(cmdCtx)
+	}
+	return nil
+}
+
+func (c *Commands) ExecuteCommand(command string, cmdCtx CommandContext) tea.Cmd {
+	entry, ok := c.commands[command]
+	if !ok {
+		return nil
+	}
+
+	if entry.fn != nil {
+		return entry.fn(cmdCtx)
+	}
+	return nil
+}
+
+func (c *Commands) getItems(command string) []list.Item {
+	switch command {
+	case "models":
+		return c.models
+	case "sessions":
+		return c.sessions
+	default:
+		return c.rootItems
+	}
 }
 
 func (c *Commands) SetSize(width int) {
@@ -138,7 +216,6 @@ func (c *Commands) View() string {
 		return ""
 	}
 	c.List.SetWidth(c.Width)
-	slog.Debug("view", "current", c.Current)
 	return c.List.View()
 }
 
@@ -161,16 +238,18 @@ func (c *Commands) Sync(text string) {
 			return
 		}
 		c.ShowList = true
+		c.Current = cmd
+		c.List.SetItems(c.getItems(cmd))
 		if filter == "" {
 			c.List.ResetFilter()
 		} else {
 			c.List.SetFilterText(filter)
 		}
-		c.Update(cmd)
 		return
 	}
 	c.ShowList = true
-	c.Update(rootCommand)
+	c.Current = rootCommand
+	c.List.SetItems(c.rootItems)
 	c.List.SetFilterText(text)
 }
 
