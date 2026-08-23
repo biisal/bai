@@ -15,7 +15,7 @@ import (
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/logger"
 	broker "github.com/biisal/bai/internal/pubsub"
-	"github.com/biisal/bai/internal/tui"
+	tui "github.com/biisal/bai/internal/tui/core"
 )
 
 func start(configPath string, dev bool) error {
