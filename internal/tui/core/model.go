@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -12,11 +13,16 @@ import (
 	"github.com/biisal/bai/internal/tui/commands"
 )
 
+type chatContext struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
 type Model struct {
 	gateway         *agent.Gateway
 	broker          broker.Service
 	messages        <-chan broker.Message
-	componets       Component
+	componets       *Component
 	Width           int
 	Height          int
 	ChatContent     *strings.Builder
@@ -24,12 +30,15 @@ type Model struct {
 	ctx             context.Context
 	content         *chatbuilder.Content
 
+	chatCtx *chatContext
+
 	commands *commands.Commands
 }
 
 func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service, providers []config.ProviderConfig) *Model {
 	comp := NewComponent()
 	commands := commands.NewCommands(ctx, providers, gateway)
+
 	return &Model{
 		gateway:   gateway,
 		messages:  broker.Subscribe(),
@@ -43,13 +52,12 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 }
 
 func waitForMsg(msgChan <-chan broker.Message) tea.Cmd {
+	slog.Debug("waitForMsg", "msgChan", msgChan)
 	return func() tea.Msg {
 		return <-msgChan
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(
-		waitForMsg(m.messages),
-	)
+	return waitForMsg(m.messages)
 }

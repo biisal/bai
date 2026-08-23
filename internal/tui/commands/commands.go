@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
@@ -42,45 +43,66 @@ type Commands struct {
 	Current  string
 	ShowList bool
 	Width    int
-	commands map[string]func() []list.Item
+	commands map[string]*commandEntry
 	gateway  *agent.Gateway
 
 	lastSynced string
 }
 
+type commandEntry struct {
+	desc string
+	fn   func() []list.Item
+}
+
 func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway *agent.Gateway) *Commands {
 	models := parseModels(providers)
-	commands := map[string]func() []list.Item{
-		"": func() []list.Item {
-			return toListItems([]CommandItem{
-				{
-					Name: "models",
-					Desc: "show available models",
-				},
-				{
-					Name: "sessions",
-					Desc: "show list of conversations",
-				},
-			})
+	commands := map[string]*commandEntry{
+		"": {
+			desc: "root",
+			fn:   nil,
 		},
-		"models": func() []list.Item {
-			return models
+		"models": {
+			desc: "show available models",
+			fn:   func() []list.Item { return models },
 		},
-		"sessions": func() []list.Item {
-			return toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir))
+		"sessions": {
+			desc: "show list of conversations",
+			fn:   func() []list.Item { return toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir)) },
+		},
+		"exit": {
+			desc: "exit the application",
+			fn:   func() []list.Item { return nil },
+		},
+		"new": {
+			desc: "create a new conversation",
+			fn:   func() []list.Item { return nil },
 		},
 	}
 
 	listStyles := newStyles(true, 0)
-	list := list.New(commands[rootCommand](), itemDelegate{styles: &listStyles}, 5, 10)
-	list.SetShowStatusBar(false)
-	list.SetShowTitle(false)
-	list.SetShowHelp(false)
-	list.SetShowFilter(false)
-	list.KeyMap.Quit.SetKeys("ctrl+c") // TODO : find a proper solution
-	list.KeyMap.ForceQuit.SetKeys("ctrl+c")
+
+	rootItems := make([]list.Item, 0)
+	for name, entry := range commands {
+		if name == "" {
+			continue
+		}
+		rootItems = append(rootItems, CommandItem{Name: name, Desc: entry.desc})
+	}
+
+	commands[""].fn = func() []list.Item { return rootItems }
+
+	l := list.New(commands[rootCommand].fn(), itemDelegate{styles: &listStyles}, 5, 10)
+	l.SetShowStatusBar(false)
+	l.SetShowTitle(false)
+	l.SetShowHelp(false)
+	l.SetShowFilter(false)
+
+	l.KeyMap = list.KeyMap{
+		CursorUp:   key.NewBinding(key.WithKeys("ctrl+p", "up", "shift+tab")),
+		CursorDown: key.NewBinding(key.WithKeys("ctrl+n", "down", "tab")),
+	}
 	return &Commands{
-		List:     list,
+		List:     l,
 		Current:  rootCommand,
 		commands: commands,
 		gateway:  gateway,
@@ -100,7 +122,7 @@ func (c *Commands) Update(command string) {
 	}
 
 	c.Current = command
-	c.List.SetItems(fn())
+	c.List.SetItems(fn.fn())
 	slog.Debug("update", "current", c.Current)
 }
 

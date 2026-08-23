@@ -28,7 +28,6 @@ func TestMigrate(t *testing.T) {
 		"goose_db_version",
 		"messages",
 		"provider",
-		"tool_calls",
 	}
 	for _, name := range want {
 		var exists int

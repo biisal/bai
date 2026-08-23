@@ -1,20 +1,23 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/commands"
 )
 
-func (m *Model) sendMessage(text string) tea.Cmd {
+func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	return func() tea.Msg {
 		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventUserMessage, Text: text})
-		if _, err := m.gateway.StreamChat(m.ctx, text); err != nil {
-			return broker.Message{Type: broker.EventAgentError, Text: err.Error()}
+		if _, err := m.gateway.StreamChat(ctx, text); err != nil {
+			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error()})
 		}
+		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventStreamDone})
 		return nil
 	}
 }
@@ -49,9 +52,31 @@ func (m *Model) MatchCommand() tea.Cmd {
 		}
 		m.commands.ShowList = false
 		slog.Debug("match_conversation", "messages", messages)
-		m.content.RerenderFromDbConversation(messages)
+		m.content.ReRenderFromDbConversation(messages)
+		m.componets.SetChatContent(m.content.Render())
+		m.componets.ScrollChatToBottom()
 		return nil
 	case commands.CommandItem:
+		switch item.Name {
+		case "exit":
+			m.commands.ShowList = false
+			m.broker.Publish(m.ctx, broker.Message{
+				Type: broker.EventSystemNotice,
+				Text: "Bye.. See you soon!\n",
+			})
+			return func() tea.Msg {
+				return tea.Quit()
+			}
+		case "new":
+			m.gateway.SetConversation(nil)
+			m.content.ReRenderFromDbConversation(nil)
+			m.broker.Publish(m.ctx, broker.Message{
+				Type: broker.EventSystemNotice,
+				Text: "New conversation started.",
+			})
+			m.commands.ShowList = false
+			return nil
+		}
 		slog.Debug("match_command", "name", item.Name)
 		newInput := fmt.Sprintf("/%s ", item.Name)
 		m.componets.textArea.SetValue(newInput)
@@ -80,26 +105,43 @@ func (m *Model) SetSize(w, h int) {
 	m.Height = h
 
 	m.componets.textArea.SetWidth(w)
-	m.componets.viewport.SetWidth(w)
 
-	m.componets.viewport.SetWidth(w)
-	m.content.SetSize(w, h)
+	// using viewport
+	m.content.SetSize(w-1, h)
 	m.commands.SetSize(w)
+
+	m.componets.chatViewPort.SetWidth(w)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	slog.Debug("update", "msg", msg)
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		return m, m.componets.handleSpinnerTick(msg)
+
 	case broker.Message:
 		m.content.AddSegment(msg.Type, msg.Text)
+		m.componets.SetChatContent(m.content.Render())
+		m.componets.ScrollChatToBottom()
 
+		if msg.Type == broker.EventStreamDone || msg.Type == broker.EventAgentError {
+			m.componets.spinner.showSpinner = false
+		}
 		return m, waitForMsg(m.messages)
 	case tea.WindowSizeMsg:
 		m.SetSize(msg.Width, msg.Height)
 		m.content.ReRender()
+		m.componets.SetChatContent(m.content.Render())
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
+		case "esc":
+			if m.chatCtx != nil {
+				m.chatCtx.cancel()
+				m.chatCtx = nil
+				return m, nil
+			}
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
@@ -107,23 +149,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if text == "" {
 				return m, nil
 			}
-
 			m.componets.textArea.SetValue("")
 			if !m.commands.IsCommand(text) {
-				return m, m.sendMessage(text)
+				ctx, cancel := context.WithCancel(m.ctx)
+				m.chatCtx = &chatContext{ctx: ctx, cancel: cancel}
+				m.componets.spinner.showSpinner = true
+				return m, tea.Batch(
+					func() tea.Msg { return m.componets.spinner.model.Tick() },
+					m.streamChat(ctx, text),
+				)
 			}
 			return m, m.MatchCommand()
-
-		default:
-			var textCmd, listCmd tea.Cmd
-
-			m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
-			m.commands.List, listCmd = m.commands.List.Update(msg)
-
-			m.commands.Sync(m.componets.textArea.Value())
-
-			cmds = append(cmds, textCmd, listCmd)
 		}
 	}
+	var textCmd, listCmd, vpCmd tea.Cmd
+
+	m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
+	m.commands.List, listCmd = m.commands.List.Update(msg)
+	m.componets.chatViewPort, vpCmd = m.componets.chatViewPort.Update(msg)
+
+	m.commands.Sync(m.componets.textArea.Value())
+
+	cmds = append(cmds, textCmd, listCmd, vpCmd)
 	return m, tea.Batch(cmds...)
 }
