@@ -84,7 +84,8 @@ func TestExecuteBash_TruncationSavesFullOutput(t *testing.T) {
 }
 
 func TestExecuteBash_BytesTruncation(t *testing.T) {
-	cmd := "printf '" + strings.Repeat("a", 300000) + "'"
+	// Use dd to generate ~300KB of output without a huge command string
+	cmd := "dd if=/dev/zero bs=1024 count=300 2>/dev/null | tr '\\0' 'a'"
 	content, isErr := executeBash(context.Background(), cmd, nil)
 	if isErr {
 		t.Fatalf("unexpected error: %s", content)
