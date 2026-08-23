@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -41,6 +40,7 @@ func NewComponent() *Component {
 
 	ta.SetHeight(1)
 	ta.MaxHeight = 15
+	ta.DynamicHeight = true
 
 	s := ta.Styles()
 	s.Cursor.Blink = false
@@ -50,6 +50,8 @@ func NewComponent() *Component {
 	ta.ShowLineNumbers = false
 
 	vp := viewport.New()
+	vp.SelectedHighlightStyle = lipgloss.NewStyle().Background(lipgloss.Color("236"))
+	vp.KeyMap = viewport.KeyMap{}
 
 	sp := spinner.New()
 	sp.Spinner = spinner.MiniDot
@@ -79,23 +81,9 @@ func (c *Component) ChatViewPort(height int) string {
 	return c.chatViewPort.View()
 }
 
-func (c Component) Input() (string, CompSize) {
-	lineCount := c.textArea.LineInfo().Height
-	taHeight := c.textArea.Height()
-	if lineCount > taHeight {
-		c.textArea.SetHeight(lineCount)
-	}
+func (c *Component) Input() (string, CompSize) {
 	view := c.textArea.View()
-	extraLines := lineCount - taHeight - c.textArea.MaxHeight
-
-	extraLinesView := ""
-
-	if extraLines > 0 {
-		extraLinesView = fmt.Sprintf("%d More ^", extraLines)
-	}
-
 	view = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false).BorderTopForeground(lipgloss.Color("6")).Render(view)
-	view = lipgloss.JoinVertical(lipgloss.Top, extraLinesView, view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h,
