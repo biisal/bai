@@ -174,7 +174,6 @@ func (c *Commands) Update(command string, cmdCtx CommandContext) tea.Cmd {
 
 	c.Current = command
 	c.List.SetItems(c.getItems(command))
-	slog.Debug("update", "current", c.Current)
 
 	if entry.fn != nil {
 		return entry.fn(cmdCtx)
@@ -217,7 +216,6 @@ func (c *Commands) View() string {
 		return ""
 	}
 	c.List.SetWidth(c.Width)
-	slog.Debug("view", "current", c.Current)
 	return c.List.View()
 }
 
