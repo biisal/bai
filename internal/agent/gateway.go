@@ -105,8 +105,6 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 			return nil, err
 		}
 
-		slog.Info("stream chat result", "text", result.Text, "tool_calls", len(result.ToolCalls))
-
 		assistantMsg := assistantMessageFromResult(result)
 		if err := g.AddMessageToDB(ctx, assistantMsg); err != nil {
 			slog.Error("failed to add assistant message to db", "error", err)
@@ -120,8 +118,6 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 
 		toolMsg := domain.Message{Role: domain.RoleTool}
 		for _, tc := range result.ToolCalls {
-
-			slog.Info("tool_call", "tc", tc)
 
 			out, isErr := tools.Execute(ctx, tc, g.broker)
 			toolMsg.Parts = append(toolMsg.Parts, domain.Part{

@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"log/slog"
-
 	"charm.land/bubbles/v2/list"
 	"github.com/biisal/bai/internal/config"
 )
@@ -25,7 +23,6 @@ func (m ModelItem) FilterValue() string {
 }
 
 func parseModels(providers []config.ProviderConfig) []list.Item {
-	slog.Info("persing models", "providers count", len(providers))
 	var items []list.Item
 	for _, provider := range providers {
 		for _, model := range provider.Models {

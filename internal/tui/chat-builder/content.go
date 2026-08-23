@@ -2,7 +2,6 @@ package chatbuilder
 
 import (
 	"encoding/json"
-	"log/slog"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -44,6 +43,9 @@ func NewContent() *Content {
 }
 
 func (c *Content) AddSegment(kind broker.EventType, text string) {
+	if text == "" {
+		return
+	}
 	if c.active == nil || c.active.Kind != kind {
 		c.flushActive()
 		c.active = &Segment{Kind: kind, buf: strings.Builder{}}
@@ -100,7 +102,6 @@ func (c *Content) flushActive() {
 
 func (c *Content) ReRender() {
 	out := strings.Builder{}
-	slog.Info("re-rendering content", "blocks", c.blocks)
 	for _, block := range c.blocks {
 		out.WriteString(renderSegment(block))
 		out.WriteString("\n\n")

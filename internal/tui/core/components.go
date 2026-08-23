@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -90,6 +91,7 @@ func (c *Component) ChatViewPort(height int) string {
 
 func (c *Component) Input() (string, CompSize) {
 	view := c.textArea.View()
+
 	view = styles.StyleInput.Render(view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
@@ -104,13 +106,13 @@ type FooterProps struct {
 }
 
 func (c Component) Footer(props FooterProps) string {
-	spinnerView := ""
-
+	parts := []string{}
 	if c.spinner.showSpinner {
-		spinnerView = c.spinner.model.View()
+		parts = append(parts, c.spinner.model.View(), "ESC to interrupt")
 	}
+	parts = append(parts, props.Provider.ID()+" - "+props.ModelID)
 
-	return styles.StyleFooter.Render(spinnerView + " " + props.Provider.ID() + " - " + props.ModelID)
+	return styles.StyleFooter.Render(strings.Join(parts, " | "))
 }
 
 func (c *Component) handleSpinnerTick(msg spinner.TickMsg) tea.Cmd {
