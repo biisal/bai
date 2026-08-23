@@ -55,7 +55,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 		return nil
 	case commands.CommandItem:
 		if item.Name == "models" || item.Name == "sessions" {
-				newInput := fmt.Sprintf("/%s ", item.Name)
+			newInput := fmt.Sprintf("/%s ", item.Name)
 			m.componets.textArea.SetValue(newInput)
 			m.commands.Sync(newInput)
 			return nil

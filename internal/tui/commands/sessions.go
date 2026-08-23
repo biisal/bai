@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"log/slog"
 
 	"charm.land/bubbles/v2/list"
 	repo "github.com/biisal/bai/internal/db/sqlc"
@@ -26,7 +25,6 @@ func (ls ConversationItem) FilterValue() string {
 }
 
 func parseConversations(ctx context.Context, getconversations func(ctx context.Context) ([]repo.Conversation, error)) []list.Item {
-	slog.Info("parseConversations", "ctx", ctx)
 	var items []list.Item
 	conversations, err := getconversations(ctx)
 	if err != nil {
@@ -38,6 +36,5 @@ func parseConversations(ctx context.Context, getconversations func(ctx context.C
 			Conversation: conv,
 		})
 	}
-	slog.Info("conversatons", "items", len(items))
 	return items
 }
