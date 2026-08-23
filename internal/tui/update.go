@@ -135,21 +135,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.componets.SetChatContent(m.content.Render())
 
 	case tea.KeyPressMsg:
-		if m.commands.HandleKeyPress(msg.String()) {
-			return m, nil
-		}
 		switch msg.String() {
 		case "esc":
-			if m.chatCtx == nil {
+			if m.chatCtx != nil {
+				m.chatCtx.cancel()
+				m.chatCtx = nil
 				return m, nil
 			}
-			if m.commands.ShowList {
-				m.commands.ShowList = false
-				return m, nil
-			}
-			m.chatCtx.cancel()
-			m.chatCtx = nil
-			return m, nil
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":

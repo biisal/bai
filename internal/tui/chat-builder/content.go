@@ -93,7 +93,7 @@ func (c *Content) flushActive() {
 		c.blocks = append(c.blocks, c.active)
 	}
 
-	c.rendered.WriteString("\n\n")
+	c.rendered.WriteString("\n")
 	c.active = nil
 }
 
@@ -145,8 +145,13 @@ func (c *Content) ReRenderFromDbConversation(messages []domain.Message) {
 						} else {
 							seg.buf.WriteString(string(tc.Input))
 						}
-					default:
-						seg.buf.WriteString(string(tc.Input))
+					case string(tools.EditFileTool):
+						var args struct {
+							Path string `json:"path"`
+						}
+						if err := json.Unmarshal(tc.Input, &args); err == nil && args.Path != "" {
+							seg.buf.WriteString(args.Path)
+						}
 					}
 				}
 			case domain.PartTextType:
