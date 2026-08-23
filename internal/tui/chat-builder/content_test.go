@@ -7,6 +7,7 @@ import (
 
 	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
+	"github.com/biisal/bai/internal/tui/styles"
 	test_utils "github.com/biisal/bai/utils/tests"
 )
 
@@ -159,31 +160,31 @@ func Test_renderSegment(t *testing.T) {
 			name:  "apply user input style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventUserMessage},
 			width: 0,
-			want:  StyleUserInput.Render("test_text"),
+			want:  styles.StyleUserInput.Render("test_text"),
 		},
 		{
 			name:  "apply agent response style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventAgentResponse},
 			width: 0,
-			want:  StyleAgentResponse.Render("test_text"),
+			want:  styles.StyleAgentResponse.Render("test_text"),
 		},
 		{
 			name:  "apply error style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventAgentError},
 			width: 0,
-			want:  StyleError.Render("test_text"),
+			want:  styles.StyleError.Render("test_text"),
 		},
 		{
 			name:  "apply agent thinking style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventAgentThinking},
 			width: 0,
-			want:  StyleAgentThinking.Render("test_text"),
+			want:  styles.StyleAgentThinking.Render("test_text"),
 		},
 		{
 			name:  "apply system notice style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventSystemNotice},
 			width: 0,
-			want:  StyleSystemNotice.Render("test_text"),
+			want:  styles.StyleSystemNotice.Render("test_text"),
 		},
 	}
 	for _, tt := range tests {
@@ -229,7 +230,7 @@ func TestContent_flushActive(t *testing.T) {
 				}
 				c.flushActive()
 
-				styled := StyleUserInput.Render(text) + "\n"
+				styled := styles.StyleUserInput.Render(text) + "\n"
 
 				if c.rendered.String() != styled {
 					t.Errorf("flushActive() = %s, want %s", c.rendered.String(), styled)

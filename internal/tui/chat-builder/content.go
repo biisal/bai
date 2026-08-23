@@ -9,6 +9,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
+	"github.com/biisal/bai/internal/tui/styles"
 )
 
 func bashWithDollarPrefix(text string) string {
@@ -32,7 +33,7 @@ func (c *Content) SetSize(width, height int) {
 	c.width = width
 	c.height = height
 
-	updateStyleWidth(width)
+	styles.UpdateChatStyleWidth(width)
 }
 
 func NewContent() *Content {
@@ -65,23 +66,23 @@ func renderSegment(seg *Segment) string {
 	content := seg.buf.String()
 	switch seg.Kind {
 	case broker.EventAgentThinking:
-		style = StyleAgentThinking
+		style = styles.StyleAgentThinking
 	case broker.EventAgentError:
-		style = StyleError
+		style = styles.StyleError
 	case broker.EventAgentResponse:
-		style = StyleAgentResponse
+		style = styles.StyleAgentResponse
 	case broker.EventUserMessage:
-		style = StyleUserInput
+		style = styles.StyleUserInput
 	case broker.EventSystemNotice:
-		style = StyleSystemNotice
+		style = styles.StyleSystemNotice
 	case broker.EventSystemNoticeError:
-		style = StyleError
+		style = styles.StyleError
 	case broker.EventToolFileReading:
-		style = StyleToolFileReading
+		style = styles.StyleToolFileReading
 	case broker.EventToolFileWriting:
-		style = StyleToolFileWriting
+		style = styles.StyleToolFileWriting
 	case broker.EventToolBash:
-		style = StyleToolBash
+		style = styles.StyleToolBash
 		content = bashWithDollarPrefix(content)
 	}
 	return style.Render(content)

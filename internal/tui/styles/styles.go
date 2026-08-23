@@ -1,4 +1,4 @@
-package chatbuilder
+package styles
 
 import "charm.land/lipgloss/v2"
 
@@ -14,9 +14,12 @@ var (
 	StyleUserInput     = lipgloss.NewStyle().Padding(1).Background(lipgloss.Color("236"))
 	StyleSystemNotice  = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 	StyleFooter        = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+
+	StyleViewportSelectedHighlight = lipgloss.NewStyle().Background(lipgloss.Color("236"))
+	StyleInput                     = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false).BorderTopForeground(lipgloss.Color("6"))
 )
 
-func updateStyleWidth(w int) {
+func UpdateChatStyleWidth(w int) {
 	StyleAgentThinking = StyleAgentThinking.Width(w)
 	StyleToolFileReading = StyleToolFileReading.Width(w)
 	StyleToolFileWriting = StyleToolFileWriting.Width(w)

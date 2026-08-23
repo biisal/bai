@@ -4,13 +4,14 @@ import (
 	"log/slog"
 	"time"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/biisal/bai/internal/agent/providers"
-	chatbuilder "github.com/biisal/bai/internal/tui/chat-builder"
+	"github.com/biisal/bai/internal/tui/styles"
 )
 
 type CompSize struct {
@@ -48,9 +49,12 @@ func NewComponent() *Component {
 	ta.SetStyles(s)
 
 	ta.ShowLineNumbers = false
+	textKeymap := textarea.DefaultKeyMap()
+	textKeymap.InsertNewline = key.NewBinding(key.WithKeys("shift+enter", "ctrl+j"))
+	ta.KeyMap = textKeymap
 
 	vp := viewport.New()
-	vp.SelectedHighlightStyle = lipgloss.NewStyle().Background(lipgloss.Color("236"))
+	vp.SelectedHighlightStyle = styles.StyleViewportSelectedHighlight
 	vp.KeyMap = viewport.KeyMap{}
 
 	sp := spinner.New()
@@ -83,7 +87,7 @@ func (c *Component) ChatViewPort(height int) string {
 
 func (c *Component) Input() (string, CompSize) {
 	view := c.textArea.View()
-	view = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false).BorderTopForeground(lipgloss.Color("6")).Render(view)
+	view = styles.StyleInput.Render(view)
 	w, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h,
@@ -103,7 +107,7 @@ func (c Component) Footer(props FooterProps) string {
 		spinnerView = c.spinner.model.View()
 	}
 
-	return chatbuilder.StyleFooter.Render(spinnerView + " " + props.Provider.ID() + " - " + props.ModelID)
+	return styles.StyleFooter.Render(spinnerView + " " + props.Provider.ID() + " - " + props.ModelID)
 }
 
 func (c *Component) handleSpinnerTick(msg spinner.TickMsg) tea.Cmd {
