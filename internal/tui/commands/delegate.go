@@ -53,7 +53,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 
 	if index == m.Index() {
 		style = d.styles.selectedItem
-		prefix = "➤ "
+		prefix = "> "
 	}
 
 	if _, err := fmt.Fprint(w, style.Render(prefix+str)); err != nil {
