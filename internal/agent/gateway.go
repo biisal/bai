@@ -98,7 +98,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 	}
 
 	for {
-		g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted})
+		g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted, IsComplete: true})
 		result, err := g.activeProvider.StreamChat(ctx, g.activeModel, messages)
 		if err != nil {
 			slog.Error("failed to stream chat", "error", err)

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -20,7 +19,7 @@ func executeBash(ctx context.Context, command string, timeoutSecs *int) (content
 	}
 
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	setProcessGroup(cmd)
 
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
@@ -52,22 +51,6 @@ func executeBash(ctx context.Context, command string, timeoutSecs *int) (content
 		return "(no output)", false
 	}
 	return output, false
-}
-
-func runCommand(ctx context.Context, cmd *exec.Cmd) error {
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
-
-	select {
-	case err := <-done:
-		return err
-	case <-ctx.Done():
-		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		return <-done
-	}
 }
 
 func truncateOutput(out string) string {

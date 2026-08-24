@@ -13,11 +13,11 @@ import (
 
 func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	return func() tea.Msg {
-		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventUserMessage, Text: text})
+		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventUserMessage, Text: text, IsComplete: true})
 		if _, err := m.gateway.StreamChat(ctx, text); err != nil {
-			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error()})
+			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error(), IsComplete: true})
 		}
-		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventStreamDone})
+		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventStreamDone, IsComplete: true})
 		return nil
 	}
 }
@@ -36,6 +36,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 				m.broker.Publish(m.ctx, broker.Message{
 					Type: broker.EventSystemNoticeError,
 					Text: fmt.Sprintf("Failed to get messages: %v\n", err),
+					IsComplete: true,
 				})
 				return nil
 			}
@@ -45,6 +46,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 			m.broker.Publish(m.ctx, broker.Message{
 				Type: broker.EventSystemNoticeError,
 				Text: fmt.Sprintf("Failed to set active conversation: %v\n", err),
+				IsComplete: true,
 			})
 			return nil
 		}
@@ -78,6 +80,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 			m.broker.Publish(m.ctx, broker.Message{
 				Type: broker.EventSystemNotice,
 				Text: fmt.Sprintf("Model changed to: %s/%s\n", item.ProviderName, item.ModelID),
+				IsComplete: true,
 			})
 			return nil
 		}
@@ -105,7 +108,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.componets.handleSpinnerTick(msg)
 
 	case broker.Message:
-		m.content.AddSegment(msg.Type, msg.Text)
+		m.content.AddSegment(msg.Type, msg.Text, msg.IsComplete)
 		m.componets.SetChatContent(m.content.Render())
 		m.componets.ScrollChatToBottom()
 

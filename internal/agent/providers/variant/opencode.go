@@ -11,9 +11,6 @@ import (
 	"github.com/biisal/bai/internal/config"
 )
 
-// OpenCode layers opencode-specific quirks on top of any provider
-// format: branded headers, per-request IDs, a TTL-rotating session
-// header, and a "Bearer public" auth fallback when no API key is set.
 const OpenCode = "opencode"
 
 func init() {
@@ -31,7 +28,7 @@ func opencodeFactory(cfg config.ProviderConfig) (*Spec, error) {
 			},
 			{
 				Key:   "x-opencode-request",
-				Value: func() string { return ocID("msg") }, // fresh per request
+				Value: func() string { return ocID("msg") },
 			},
 			{Key: "x-opencode-client", Value: func() string { return "cli" }},
 			{Key: "x-opencode-project", Value: func() string { return "global" }},
@@ -45,8 +42,6 @@ func opencodeFactory(cfg config.ProviderConfig) (*Spec, error) {
 	}, nil
 }
 
-// ocID generates an opencode-style ID: hex millisecond timestamp + 16
-// chars of random base64url.
 func ocID(prefix string) string {
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 16)
 	rnd := make([]byte, 12)

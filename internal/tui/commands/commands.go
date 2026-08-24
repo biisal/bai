@@ -106,6 +106,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 				c.Broker.Publish(ctx, broker.Message{
 					Type: broker.EventSystemNotice,
 					Text: "Bye.. See you soon!\n",
+					IsComplete: true,
 				})
 				return func() tea.Msg {
 					return tea.Quit()
@@ -121,6 +122,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 				c.Broker.Publish(ctx, broker.Message{
 					Type: broker.EventSystemNotice,
 					Text: "New conversation started.",
+					IsComplete: true,
 				})
 				*c.ShowList = false
 				return nil
