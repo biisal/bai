@@ -42,11 +42,11 @@ func NewContent() *Content {
 	}
 }
 
-func (c *Content) AddSegment(kind broker.EventType, text string) {
+func (c *Content) AddSegment(kind broker.EventType, text string, isComplete bool) {
 	if text == "" {
 		return
 	}
-	if c.active == nil || c.active.Kind != kind {
+	if c.active == nil || c.active.Kind != kind || isComplete {
 		c.flushActive()
 		c.active = &Segment{Kind: kind, buf: strings.Builder{}}
 	}

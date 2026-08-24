@@ -118,7 +118,7 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 		if args.Limit != nil {
 			limit = *args.Limit
 		}
-		b.Publish(ctx, broker.Message{Type: broker.EventToolFileReading, Text: fmt.Sprintf("read:%s:%d:%d", args.Path, offset, limit)})
+		b.Publish(ctx, broker.Message{Type: broker.EventToolFileReading, Text: fmt.Sprintf("read:%s:%d:%d", args.Path, offset, limit), IsComplete: true})
 		content, err := ReadFile(args.Path, offset, limit)
 		if err != nil {
 			return fmt.Sprintf("error reading file: %v", err), true
@@ -135,7 +135,7 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 		if args.Path == "" {
 			return fmt.Sprintf("error: missing required argument \"path\" for %s", call.Name), true
 		}
-		b.Publish(ctx, broker.Message{Type: broker.EventToolFileWriting, Text: fmt.Sprintf("write:%s", args.Path)})
+		b.Publish(ctx, broker.Message{Type: broker.EventToolFileWriting, Text: fmt.Sprintf("write:%s", args.Path), IsComplete: true})
 		if err := WriteFile(ctx, args.Path, args.Content); err != nil {
 			return fmt.Sprintf("error writing file: %v", err), true
 		}
@@ -161,7 +161,7 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 		for i, e := range args.Edits {
 			edits[i] = Edit{OldText: e.OldText, NewText: e.NewText}
 		}
-		b.Publish(ctx, broker.Message{Type: broker.EventToolFileWriting, Text: fmt.Sprintf("edit:%s", args.Path)})
+		b.Publish(ctx, broker.Message{Type: broker.EventToolFileWriting, Text: fmt.Sprintf("edit:%s", args.Path), IsComplete: true})
 		if err := EditFile(ctx, args.Path, edits); err != nil {
 			return fmt.Sprintf("error editing file: %v", err), true
 		}
@@ -177,7 +177,7 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 		if args.Command == "" {
 			return fmt.Sprintf("error: missing required argument \"command\" for %s", call.Name), true
 		}
-		b.Publish(ctx, broker.Message{Type: broker.EventToolBash, Text: args.Command})
+		b.Publish(ctx, broker.Message{Type: broker.EventToolBash, Text: args.Command, IsComplete: true})
 		return executeBash(ctx, args.Command, args.Timeout)
 	default:
 		return fmt.Sprintf("unknown tool: %s", call.Name), true

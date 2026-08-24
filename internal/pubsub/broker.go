@@ -6,8 +6,9 @@ import (
 )
 
 type Message struct {
-	Type EventType
-	Text string
+	Type       EventType
+	Text       string
+	IsComplete bool
 }
 
 type Broker struct {

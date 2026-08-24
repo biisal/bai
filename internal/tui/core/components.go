@@ -59,7 +59,7 @@ func NewComponent() *Component {
 
 	sp := spinner.New()
 	sp.Spinner = spinner.MiniDot
-	sp.Spinner.FPS = time.Second / 4
+	sp.Spinner.FPS = time.Second / 5
 
 	return &Component{
 		textArea:     ta,
