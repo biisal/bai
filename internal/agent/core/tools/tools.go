@@ -97,7 +97,7 @@ var Definitions = []Definition{
 	},
 }
 
-func Execute(ctx context.Context, call Call, b broker.Service) (content string, isError bool) {
+func Execute(ctx context.Context, call Call, b broker.Service) (string, error) {
 	switch call.Name {
 	case ReadFileTool:
 		var args struct {
@@ -106,10 +106,10 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 			Limit  *int64 `json:"limit"`
 		}
 		if err := json.Unmarshal(call.Args, &args); err != nil {
-			return fmt.Sprintf("error parsing arguments for %s: %v", call.Name, err), true
+			return "", fmt.Errorf("error parsing arguments for %s: %v", call.Name, err)
 		}
 		if args.Path == "" {
-			return fmt.Sprintf("error: missing required argument \"path\" for %s", call.Name), true
+			return "", fmt.Errorf("missing required argument \"path\" for %s", call.Name)
 		}
 		var offset, limit int64
 		if args.Offset != nil {
@@ -121,25 +121,25 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 		b.Publish(ctx, broker.Message{Type: broker.EventToolFileReading, Text: fmt.Sprintf("read:%s:%d:%d", args.Path, offset, limit), IsComplete: true})
 		content, err := ReadFile(args.Path, offset, limit)
 		if err != nil {
-			return fmt.Sprintf("error reading file: %v", err), true
+			return "", fmt.Errorf("error reading file: %v", err)
 		}
-		return content, false
+		return content, nil
 	case WriteFileTool:
 		var args struct {
 			Path    string `json:"path"`
 			Content string `json:"content"`
 		}
 		if err := json.Unmarshal(call.Args, &args); err != nil {
-			return fmt.Sprintf("error parsing arguments for %s: %v", call.Name, err), true
+			return "", fmt.Errorf("error parsing arguments for %s: %v", call.Name, err)
 		}
 		if args.Path == "" {
-			return fmt.Sprintf("error: missing required argument \"path\" for %s", call.Name), true
+			return "", fmt.Errorf("missing required argument \"path\" for %s", call.Name)
 		}
 		b.Publish(ctx, broker.Message{Type: broker.EventToolFileWriting, Text: fmt.Sprintf("write:%s", args.Path), IsComplete: true})
 		if err := WriteFile(ctx, args.Path, args.Content); err != nil {
-			return fmt.Sprintf("error writing file: %v", err), true
+			return "", fmt.Errorf("error writing file: %v", err)
 		}
-		return fmt.Sprintf("Successfully wrote %d bytes to %s", len(args.Content), args.Path), false
+		return fmt.Sprintf("Successfully wrote %d bytes to %s", len(args.Content), args.Path), nil
 	case EditFileTool:
 		var args struct {
 			Path  string `json:"path"`
@@ -149,13 +149,13 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 			} `json:"edits"`
 		}
 		if err := json.Unmarshal(call.Args, &args); err != nil {
-			return fmt.Sprintf("error parsing arguments for %s: %v", call.Name, err), true
+			return "", fmt.Errorf("error parsing arguments for %s: %v", call.Name, err)
 		}
 		if args.Path == "" {
-			return fmt.Sprintf("error: missing required argument \"path\" for %s", call.Name), true
+			return "", fmt.Errorf("missing required argument \"path\" for %s", call.Name)
 		}
 		if len(args.Edits) == 0 {
-			return fmt.Sprintf("error: missing required argument \"edits\" for %s", call.Name), true
+			return "", fmt.Errorf("missing required argument \"edits\" for %s", call.Name)
 		}
 		edits := make([]Edit, len(args.Edits))
 		for i, e := range args.Edits {
@@ -163,23 +163,23 @@ func Execute(ctx context.Context, call Call, b broker.Service) (content string, 
 		}
 		b.Publish(ctx, broker.Message{Type: broker.EventToolFileWriting, Text: fmt.Sprintf("edit:%s", args.Path), IsComplete: true})
 		if err := EditFile(ctx, args.Path, edits); err != nil {
-			return fmt.Sprintf("error editing file: %v", err), true
+			return "", fmt.Errorf("error editing file: %v", err)
 		}
-		return fmt.Sprintf("Successfully replaced %d block(s) in %s", len(edits), args.Path), false
+		return fmt.Sprintf("Successfully replaced %d block(s) in %s", len(edits), args.Path), nil
 	case BashTool:
 		var args struct {
 			Command string `json:"command"`
 			Timeout *int   `json:"timeout"`
 		}
+		b.Publish(ctx, broker.Message{Type: broker.EventToolBash, Text: args.Command, IsComplete: true})
 		if err := json.Unmarshal(call.Args, &args); err != nil {
-			return fmt.Sprintf("error parsing arguments for %s: %v", call.Name, err), true
+			return "", fmt.Errorf("error parsing arguments for %s: %v", call.Name, err)
 		}
 		if args.Command == "" {
-			return fmt.Sprintf("error: missing required argument \"command\" for %s", call.Name), true
+			return "", fmt.Errorf("missing required argument \"command\" for %s", call.Name)
 		}
-		b.Publish(ctx, broker.Message{Type: broker.EventToolBash, Text: args.Command, IsComplete: true})
 		return executeBash(ctx, args.Command, args.Timeout)
 	default:
-		return fmt.Sprintf("unknown tool: %s", call.Name), true
+		return "", fmt.Errorf("unknown tool: %s", call.Name)
 	}
 }

@@ -9,9 +9,9 @@ import (
 )
 
 func TestExecuteBash_BasicOutput(t *testing.T) {
-	content, isErr := executeBash(context.Background(), "echo hello", nil)
-	if isErr {
-		t.Fatalf("unexpected error: %s", content)
+	content, err := executeBash(context.Background(), "echo hello", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if strings.TrimSpace(content) != "hello" {
 		t.Fatalf("got %q, want %q", content, "hello")
@@ -19,9 +19,9 @@ func TestExecuteBash_BasicOutput(t *testing.T) {
 }
 
 func TestExecuteBash_NoOutput(t *testing.T) {
-	content, isErr := executeBash(context.Background(), "true", nil)
-	if isErr {
-		t.Fatalf("unexpected error: %s", content)
+	content, err := executeBash(context.Background(), "true", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if content != "(no output)" {
 		t.Fatalf("got %q, want %q", content, "(no output)")
@@ -29,30 +29,30 @@ func TestExecuteBash_NoOutput(t *testing.T) {
 }
 
 func TestExecuteBash_ExitCode(t *testing.T) {
-	content, isErr := executeBash(context.Background(), "exit 42", nil)
-	if !isErr {
+	_, err := executeBash(context.Background(), "exit 42", nil)
+	if err == nil {
 		t.Fatal("expected error for non-zero exit")
 	}
-	if !strings.Contains(content, "Command exited with code 42") {
-		t.Fatalf("got %q, expected exit code 42 message", content)
+	if !strings.Contains(err.Error(), "Command exited with code 42") {
+		t.Fatalf("got %q, expected exit code 42 message", err.Error())
 	}
 }
 
 func TestExecuteBash_Timeout(t *testing.T) {
 	timeout := 1
-	content, isErr := executeBash(context.Background(), "sleep 10", &timeout)
-	if !isErr {
+	_, err := executeBash(context.Background(), "sleep 10", &timeout)
+	if err == nil {
 		t.Fatal("expected error for timeout")
 	}
-	if !strings.Contains(content, "Command timed out after 1 seconds") {
-		t.Fatalf("got %q, expected timeout message", content)
+	if !strings.Contains(err.Error(), "Command timed out after 1 seconds") {
+		t.Fatalf("got %q, expected timeout message", err.Error())
 	}
 }
 
 func TestExecuteBash_StderrAndStdout(t *testing.T) {
-	content, isErr := executeBash(context.Background(), "echo out; echo err >&2", nil)
-	if isErr {
-		t.Fatalf("unexpected error: %s", content)
+	content, err := executeBash(context.Background(), "echo out; echo err >&2", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(content, "out") || !strings.Contains(content, "err") {
 		t.Fatalf("expected both stdout and stderr, got %q", content)
@@ -60,9 +60,9 @@ func TestExecuteBash_StderrAndStdout(t *testing.T) {
 }
 
 func TestExecuteBash_TruncationSavesFullOutput(t *testing.T) {
-	content, isErr := executeBash(context.Background(), "seq 1 2500", nil)
-	if isErr {
-		t.Fatalf("unexpected error: %s", content)
+	content, err := executeBash(context.Background(), "seq 1 2500", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(content, "Output truncated") {
 		t.Fatalf("expected truncation notice, got first 200 bytes: %.200s", content)
@@ -86,9 +86,9 @@ func TestExecuteBash_TruncationSavesFullOutput(t *testing.T) {
 func TestExecuteBash_BytesTruncation(t *testing.T) {
 	// Use dd to generate ~300KB of output without a huge command string
 	cmd := "dd if=/dev/zero bs=1024 count=300 2>/dev/null | tr '\\0' 'a'"
-	content, isErr := executeBash(context.Background(), cmd, nil)
-	if isErr {
-		t.Fatalf("unexpected error: %s", content)
+	content, err := executeBash(context.Background(), cmd, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(content, "Output truncated") {
 		t.Fatalf("expected truncation notice, got first 100 bytes: %.100s", content)
@@ -101,11 +101,11 @@ func TestExecuteBash_BytesTruncation(t *testing.T) {
 func TestExecuteBash_ContextCancel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	content, isErr := executeBash(ctx, "sleep 10", nil)
-	if !isErr {
+	_, err := executeBash(ctx, "sleep 10", nil)
+	if err == nil {
 		t.Fatal("expected error for context cancel")
 	}
-	if !strings.Contains(content, "aborted") && !strings.Contains(content, "timed out") {
-		t.Fatalf("got %q, expected abort or timeout message", content)
+	if !strings.Contains(err.Error(), "aborted") && !strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("got %q, expected abort or timeout message", err.Error())
 	}
 }

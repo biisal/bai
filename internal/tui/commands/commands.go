@@ -104,8 +104,8 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 			fn: func(c CommandContext) tea.Cmd {
 				*c.ShowList = false
 				c.Broker.Publish(ctx, broker.Message{
-					Type: broker.EventSystemNotice,
-					Text: "Bye.. See you soon!\n",
+					Type:       broker.EventSystemNotice,
+					Text:       "Bye.. See you soon!\n",
 					IsComplete: true,
 				})
 				return func() tea.Msg {
@@ -120,8 +120,8 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 				c.Components.SetValue("")
 				c.Content.ReRenderFromDbConversation(nil)
 				c.Broker.Publish(ctx, broker.Message{
-					Type: broker.EventSystemNotice,
-					Text: "New conversation started.",
+					Type:       broker.EventSystemNotice,
+					Text:       "New conversation started.",
 					IsComplete: true,
 				})
 				*c.ShowList = false
@@ -257,10 +257,16 @@ func (c *Commands) Sync(text string) {
 }
 
 func (c *Commands) IsCommand(text string) bool {
+	text = strings.TrimSpace(text)
+	if text == "/" {
+		return true
+	}
 	if !strings.HasPrefix(text, "/") {
 		return false
 	}
-	text = strings.TrimSpace(text[1:])
+
+	text = strings.Fields(text[1:])[0]
+
 	for cmd := range c.commands {
 		if strings.HasPrefix(cmd, text) {
 			return true

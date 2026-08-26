@@ -113,6 +113,12 @@ func (p *ProviderOpenAI) StreamChat(ctx context.Context, modelId string, history
 			StreamOptions: openai.ChatCompletionStreamOptionsParam{},
 		},
 	)
+
+	defer func() {
+		if err := stream.Close(); err != nil {
+			slog.Error("openai stream.Close()", "error", err)
+		}
+	}()
 	var acc openai.ChatCompletionAccumulator
 
 	var (
