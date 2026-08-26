@@ -4,17 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 
 	tea "charm.land/bubbletea/v2"
 	fantasy "charm.land/fantasy"
-	"charm.land/fantasy/providers/openaicompat"
-	"github.com/openai/openai-go/v3/option"
 
 	"github.com/biisal/bai/internal/agent"
-	"github.com/biisal/bai/internal/agent/providers/variant"
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
@@ -48,7 +44,6 @@ func start(configPath string, dev bool) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	// Build one fantasy.Provider per config entry.
 	providers := make(map[string]fantasy.Provider)
 	for _, cfg := range config.Providers {
 		p, err := buildProvider(cfg)
@@ -80,47 +75,4 @@ func start(configPath string, dev bool) error {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}
 	return nil
-}
-
-// buildProvider creates a fantasy.Provider from the config, optionally
-// applying a variant middleware for custom headers (e.g. opencode).
-func buildProvider(cfg config.ProviderConfig) (fantasy.Provider, error) {
-	if cfg.Format != config.FormatOpenAI {
-		return nil, fmt.Errorf("unknown provider format: %s, hint use one of: %v", cfg.Format, []string{config.FormatOpenAI})
-	}
-
-	opts := []openaicompat.Option{
-		openaicompat.WithAPIKey(cfg.APIKey),
-		openaicompat.WithBaseURL(cfg.BaseURL),
-		openaicompat.WithName(cfg.Name),
-	}
-
-	if cfg.Variant != "" {
-		factory, ok := variant.Get(cfg.Variant)
-		if !ok {
-			return nil, fmt.Errorf("unknown variant %q, available: %v", cfg.Variant, variant.Names())
-		}
-		spec, err := factory(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("variant %q: %w", cfg.Variant, err)
-		}
-		opts = append(opts, openaicompat.WithSDKOptions(
-			option.WithMiddleware(variantMiddleware(spec, cfg.APIKey)),
-		))
-	}
-
-	return openaicompat.New(opts...)
-}
-
-// variantMiddleware injects the per-request headers defined by a variant spec.
-func variantMiddleware(spec *variant.Spec, apiKey string) option.Middleware {
-	return func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
-		for _, h := range spec.Headers {
-			req.Header.Set(h.Key, h.Value())
-		}
-		if apiKey == "" && spec.AuthFallback != "" {
-			req.Header.Set("Authorization", spec.AuthScheme+" "+spec.AuthFallback)
-		}
-		return next(req)
-	}
 }

@@ -13,19 +13,20 @@ import (
 
 var ErrNoProviders = errors.New("invalid config file: no providers found")
 
+type ProviderFormat string
+
 const (
-	FormatOpenAI = "openai-compatible"
+	FormatOpenAI    ProviderFormat = "openai-compatible"
+	FormatAnthropic ProviderFormat = "anthropic"
 )
 
 type ProviderConfig struct {
-	Name    string `json:"name"`
-	APIKey  string `json:"api_key"`
-	Format  string `json:"format"`
-	BaseURL string `json:"base_url"`
-	// Variant layers provider-specific quirks (custom headers, auth
-	// fallbacks, session tracking) on top of a format. Optional.
-	Variant string        `json:"variant"`
-	Models  []ModelConfig `json:"models"`
+	Name    string         `json:"name"`
+	APIKey  string         `json:"api_key"`
+	Format  ProviderFormat `json:"format"`
+	BaseURL string         `json:"base_url"`
+	Variant string         `json:"variant"`
+	Models  []ModelConfig  `json:"models"`
 }
 
 type ModelConfig struct {

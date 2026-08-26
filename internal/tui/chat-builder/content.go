@@ -113,13 +113,14 @@ func (c *Content) ReRender() {
 func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {
 	var segments []*Segment
 	for _, msg := range messages {
+		if msg.Role == fantasy.MessageRoleTool {
+			continue
+		}
 		for _, part := range msg.Content {
 			var kind broker.EventType
 			switch msg.Role {
 			case fantasy.MessageRoleUser:
 				kind = broker.EventUserMessage
-			case fantasy.MessageRoleTool:
-				kind = broker.EventToolBash
 			case fantasy.MessageRoleAssistant:
 				switch p := part.(type) {
 				case fantasy.ReasoningPart:
@@ -143,24 +144,16 @@ func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {
 			case fantasy.ToolResultPart:
 				continue
 			case fantasy.ToolCallPart:
-				switch p.ToolName {
-				case tools.BashName:
-					var args struct {
-						Command string `json:"command"`
-					}
-					if err := json.Unmarshal([]byte(p.Input), &args); err == nil && args.Command != "" {
-						seg.buf.WriteString(args.Command)
+				var args map[string]any
+				if err := json.Unmarshal([]byte(p.Input), &args); err == nil {
+					if cmd, ok := args["command"].(string); ok && cmd != "" {
+						seg.buf.WriteString(cmd)
+					} else if path, ok := args["path"].(string); ok && path != "" {
+						seg.buf.WriteString(path)
 					} else {
 						seg.buf.WriteString(p.Input)
 					}
-				case tools.EditFileName:
-					var args struct {
-						Path string `json:"path"`
-					}
-					if err := json.Unmarshal([]byte(p.Input), &args); err == nil && args.Path != "" {
-						seg.buf.WriteString(args.Path)
-					}
-				default:
+				} else {
 					seg.buf.WriteString(p.Input)
 				}
 			case fantasy.TextPart:
