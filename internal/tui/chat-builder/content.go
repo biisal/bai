@@ -42,11 +42,11 @@ func NewContent() *Content {
 	}
 }
 
-func (c *Content) AddSegment(kind broker.EventType, text string) {
+func (c *Content) AddSegment(kind broker.EventType, text string, isComplete bool) {
 	if text == "" {
 		return
 	}
-	if c.active == nil || c.active.Kind != kind {
+	if c.active == nil || c.active.Kind != kind || isComplete {
 		c.flushActive()
 		c.active = &Segment{Kind: kind, buf: strings.Builder{}}
 	}
@@ -87,7 +87,7 @@ func renderSegment(seg *Segment) string {
 		style = styles.StyleToolBash
 		content = bashWithDollarPrefix(content)
 	}
-	return style.Render(content)
+	return style.MarginBottom(1).Render(content)
 }
 
 func (c *Content) flushActive() {
@@ -104,7 +104,7 @@ func (c *Content) ReRender() {
 	out := strings.Builder{}
 	for _, block := range c.blocks {
 		out.WriteString(renderSegment(block))
-		out.WriteString("\n\n")
+		out.WriteString("\n")
 	}
 	c.rendered.Reset()
 	c.rendered.WriteString(out.String())

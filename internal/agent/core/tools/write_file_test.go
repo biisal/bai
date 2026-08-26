@@ -83,9 +83,9 @@ func TestExecuteWriteFile(t *testing.T) {
 	path := filepath.Join(dir, "out.txt")
 	argsJSON := `{"path":` + `"` + path + `"` + `,"content":"test data"}`
 	call := Call{ID: "1", Name: WriteFileTool, Args: []byte(argsJSON)}
-	content, isError := Execute(t.Context(), call, broker.New())
-	if isError {
-		t.Fatalf("Execute() unexpected error: %s", content)
+	content, err := Execute(t.Context(), call, broker.New())
+	if err != nil {
+		t.Fatalf("Execute() unexpected error: %v", err)
 	}
 	want := "Successfully wrote 9 bytes to " + path
 	if content != want {
@@ -95,8 +95,8 @@ func TestExecuteWriteFile(t *testing.T) {
 
 func TestExecuteWriteFile_MissingPath(t *testing.T) {
 	call := Call{ID: "1", Name: WriteFileTool, Args: []byte(`{"content":"hi"}`)}
-	_, isError := Execute(t.Context(), call, broker.New())
-	if !isError {
+	_, err := Execute(t.Context(), call, broker.New())
+	if err == nil {
 		t.Fatal("expected error for missing path")
 	}
 }
