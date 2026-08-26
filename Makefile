@@ -3,7 +3,7 @@ SHELL := /bin/bash
 BINARY_PATH := ./bin/bai
 INSTALL_PATH := ~/.local/bin
 
-.PHONY: default build run dev watch test release lint lint-fix clean install format format-check db-generate
+.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate
 .ONESHELL:
 
 default:
@@ -12,6 +12,11 @@ default:
 build:
 	go build -o ${BINARY_PATH} ./cmd/bai/...
 	echo "build was successful"
+
+build-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+		go build -o ${BINARY_PATH}-linux-amd64 ./cmd/bai/...
+	echo "linux build was successful"
 
 install: build
 	@mv ${BINARY_PATH} ${INSTALL_PATH} 

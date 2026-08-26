@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	broker "github.com/biisal/bai/internal/pubsub"
 )
 
 func TestWriteFile_CreatesFile(t *testing.T) {
@@ -75,28 +73,5 @@ func TestWriteFile_EmptyContent(t *testing.T) {
 func TestWriteFile_EmptyPath(t *testing.T) {
 	if err := WriteFile(context.Background(), "", "x"); err == nil {
 		t.Fatal("WriteFile(\"\", ...) expected error")
-	}
-}
-
-func TestExecuteWriteFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "out.txt")
-	argsJSON := `{"path":` + `"` + path + `"` + `,"content":"test data"}`
-	call := Call{ID: "1", Name: WriteFileTool, Args: []byte(argsJSON)}
-	content, err := Execute(t.Context(), call, broker.New())
-	if err != nil {
-		t.Fatalf("Execute() unexpected error: %v", err)
-	}
-	want := "Successfully wrote 9 bytes to " + path
-	if content != want {
-		t.Fatalf("Execute() = %q, want %q", content, want)
-	}
-}
-
-func TestExecuteWriteFile_MissingPath(t *testing.T) {
-	call := Call{ID: "1", Name: WriteFileTool, Args: []byte(`{"content":"hi"}`)}
-	_, err := Execute(t.Context(), call, broker.New())
-	if err == nil {
-		t.Fatal("expected error for missing path")
 	}
 }

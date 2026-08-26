@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/biisal/bai/internal/domain"
+	"charm.land/fantasy"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/styles"
 	test_utils "github.com/biisal/bai/utils/tests"
@@ -378,38 +378,34 @@ func assertBlocks(t *testing.T, expected []*Segment, actual []*Segment) {
 func TestContent_RerenderFromDbConversation(t *testing.T) {
 	tests := []struct {
 		name  string
-		setup func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string)
+		setup func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string)
 	}{
 		{
 			name: "should render empty when no messages",
-			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
-				messages = []domain.Message{}
+			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
+				messages = []fantasy.Message{}
 				want = ""
 				return
 			},
 		},
 		{
 			name: "active should be nil after rerender",
-			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
+			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
 				return
 			},
 		},
 
 		{
 			name: "should render sorted segments from db conversation",
-			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
-				messages = []domain.Message{
+			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
+				messages = []fantasy.Message{
 					{
-						Role: domain.RoleUser,
-						Parts: []domain.Part{
-							{Type: domain.PartTextType, Data: domain.TextPartData{Text: "test content 2"}},
-						},
+						Role:    fantasy.MessageRoleUser,
+						Content: []fantasy.MessagePart{fantasy.TextPart{Text: "test content 2"}},
 					},
 					{
-						Role: domain.RoleUser,
-						Parts: []domain.Part{
-							{Type: domain.PartTextType, Data: domain.TextPartData{Text: "test content"}},
-						},
+						Role:    fantasy.MessageRoleUser,
+						Content: []fantasy.MessagePart{fantasy.TextPart{Text: "test content"}},
 					},
 				}
 
@@ -430,13 +426,13 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 		},
 		{
 			name: "should render thinking parts as separate thinking segments",
-			setup: func(t *testing.T) (messages []domain.Message, expectedSegments []*Segment, want string) {
-				messages = []domain.Message{
+			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
+				messages = []fantasy.Message{
 					{
-						Role: domain.RoleAssistant,
-						Parts: []domain.Part{
-							{Type: domain.PartReasoningType, Data: domain.ReasoningPartData{Thinking: "let me think"}},
-							{Type: domain.PartTextType, Data: domain.TextPartData{Text: "the answer"}},
+						Role: fantasy.MessageRoleAssistant,
+						Content: []fantasy.MessagePart{
+							fantasy.ReasoningPart{Text: "let me think"},
+							fantasy.TextPart{Text: "the answer"},
 						},
 					},
 				}

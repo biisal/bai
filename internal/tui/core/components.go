@@ -10,7 +10,6 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/biisal/bai/internal/agent/providers"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
@@ -101,7 +100,7 @@ func (c *Component) Input() (string, CompSize) {
 }
 
 type FooterProps struct {
-	Provider providers.Provider
+	Provider string
 	ModelID  string
 }
 
@@ -110,7 +109,7 @@ func (c Component) Footer(props FooterProps) string {
 	if c.spinner.showSpinner {
 		parts = append(parts, c.spinner.model.View(), "ESC to interrupt")
 	}
-	parts = append(parts, props.Provider.ID()+" - "+props.ModelID)
+	parts = append(parts, props.Provider+" - "+props.ModelID)
 
 	return styles.StyleFooter.Render(strings.Join(parts, " | "))
 }
