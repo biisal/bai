@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func executeBash(ctx context.Context, command string, timeoutSecs *int) (content string, isError bool) {
+func executeBash(ctx context.Context, command string, timeoutSecs *int) (string, error) {
 	if timeoutSecs != nil && *timeoutSecs > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(*timeoutSecs)*time.Second)
@@ -34,23 +34,23 @@ func executeBash(ctx context.Context, command string, timeoutSecs *int) (content
 		if timeoutSecs != nil {
 			secs = *timeoutSecs
 		}
-		return appendStatus(output, fmt.Sprintf("Command timed out after %d seconds", secs)), true
+		return "", fmt.Errorf("%s", appendStatus(output, fmt.Sprintf("Command timed out after %d seconds", secs)))
 	case errors.Is(ctx.Err(), context.Canceled):
-		return appendStatus(output, "Command aborted"), true
+		return "", fmt.Errorf("%s", appendStatus(output, "Command aborted"))
 	}
 
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return appendStatus(output, fmt.Sprintf("Command exited with code %d", exitErr.ExitCode())), true
+			return "", fmt.Errorf("%s", appendStatus(output, fmt.Sprintf("Command exited with code %d", exitErr.ExitCode())))
 		}
-		return fmt.Sprintf("error executing command: %v", err), true
+		return "", fmt.Errorf("error executing command: %v", err)
 	}
 
 	if strings.TrimSpace(output) == "" {
-		return "(no output)", false
+		return "(no output)", nil
 	}
-	return output, false
+	return output, nil
 }
 
 func truncateOutput(out string) string {

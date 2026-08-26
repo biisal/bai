@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 )
 
@@ -102,6 +103,8 @@ func UnmarshalParts(data []byte) ([]Part, error) {
 }
 
 func MarshalParts(parts []Part) ([]byte, error) {
+	slog.Debug("MarshalParts() = ", "parts", fmt.Sprintf("%q", parts))
+
 	type envelope struct {
 		Type PartType `json:"type"`
 		Data any      `json:"data,omitempty"`

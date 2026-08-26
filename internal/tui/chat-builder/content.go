@@ -87,7 +87,7 @@ func renderSegment(seg *Segment) string {
 		style = styles.StyleToolBash
 		content = bashWithDollarPrefix(content)
 	}
-	return style.Render(content)
+	return style.MarginBottom(1).Render(content)
 }
 
 func (c *Content) flushActive() {
@@ -104,7 +104,7 @@ func (c *Content) ReRender() {
 	out := strings.Builder{}
 	for _, block := range c.blocks {
 		out.WriteString(renderSegment(block))
-		out.WriteString("\n\n")
+		out.WriteString("\n")
 	}
 	c.rendered.Reset()
 	c.rendered.WriteString(out.String())
