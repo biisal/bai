@@ -10,7 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
-	"github.com/biisal/bai/internal/domain"
+	"charm.land/fantasy"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -48,9 +48,9 @@ type Commands struct {
 	Width    int
 	commands map[string]*commandEntry
 	gateway  *agent.Gateway
+	ctx      context.Context
 
 	models    []list.Item
-	sessions  []list.Item
 	rootItems []list.Item
 
 	lastSynced string
@@ -65,7 +65,7 @@ type CommandContext struct {
 }
 
 type Content interface {
-	ReRenderFromDbConversation(messages []domain.Message)
+	ReRenderFromDbConversation(messages []fantasy.Message)
 	Render() string
 }
 
@@ -157,8 +157,8 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		Current:   rootCommand,
 		commands:  commands,
 		gateway:   gateway,
+		ctx:       ctx,
 		models:    models,
-		sessions:  toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir)),
 		rootItems: rootItems,
 	}
 }
@@ -201,7 +201,7 @@ func (c *Commands) getItems(command string) []list.Item {
 	case "models":
 		return c.models
 	case "sessions":
-		return c.sessions
+		return toListItems(parseConversations(c.ctx, c.gateway.GetConversationsByCurrentDir))
 	default:
 		return c.rootItems
 	}
