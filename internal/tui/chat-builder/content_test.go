@@ -21,7 +21,7 @@ func TestContent_AddSegment(t *testing.T) {
 			testFn: func(t *testing.T, c *Content) {
 				t.Helper()
 
-				c.AddSegment(broker.EventUserMessage, "hello")
+				c.AddSegment(broker.EventUserMessage, "hello", false)
 
 				if c.active == nil {
 					t.Fatal("expected an active segment")
@@ -42,9 +42,9 @@ func TestContent_AddSegment(t *testing.T) {
 			testFn: func(t *testing.T, c *Content) {
 				t.Helper()
 
-				c.AddSegment(broker.EventUserMessage, "hello")
-				c.AddSegment(broker.EventUserMessage, " ")
-				c.AddSegment(broker.EventUserMessage, "world")
+				c.AddSegment(broker.EventUserMessage, "hello", false)
+				c.AddSegment(broker.EventUserMessage, " ", false)
+				c.AddSegment(broker.EventUserMessage, "world", false)
 
 				if got := c.active.buf.String(); got != "hello world" {
 					t.Errorf("expected %q, got %q", "hello world", got)
@@ -59,10 +59,10 @@ func TestContent_AddSegment(t *testing.T) {
 			testFn: func(t *testing.T, c *Content) {
 				t.Helper()
 
-				c.AddSegment(broker.EventUserMessage, "hello")
-				c.AddSegment(broker.EventUserMessage, " world")
+				c.AddSegment(broker.EventUserMessage, "hello", false)
+				c.AddSegment(broker.EventUserMessage, " world", false)
 
-				c.AddSegment(broker.EventAgentThinking, "thinking")
+				c.AddSegment(broker.EventAgentThinking, "thinking", false)
 
 				if len(c.blocks) != 1 {
 					t.Fatalf("expected 1 block, got %d", len(c.blocks))
@@ -85,9 +85,9 @@ func TestContent_AddSegment(t *testing.T) {
 			testFn: func(t *testing.T, c *Content) {
 				t.Helper()
 
-				c.AddSegment(broker.EventUserMessage, "user")
-				c.AddSegment(broker.EventAgentThinking, "thinking")
-				c.AddSegment(broker.EventUserMessage, "user again")
+				c.AddSegment(broker.EventUserMessage, "user", false)
+				c.AddSegment(broker.EventAgentThinking, "thinking", false)
+				c.AddSegment(broker.EventUserMessage, "user again", false)
 
 				if len(c.blocks) != 2 {
 					t.Fatalf("expected 2 blocks, got %d", len(c.blocks))
@@ -160,31 +160,31 @@ func Test_renderSegment(t *testing.T) {
 			name:  "apply user input style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventUserMessage},
 			width: 0,
-			want:  styles.StyleUserInput.Render("test_text"),
+			want:  styles.StyleUserInput.MarginBottom(1).Render("test_text"),
 		},
 		{
 			name:  "apply agent response style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventAgentResponse},
 			width: 0,
-			want:  styles.StyleAgentResponse.Render("test_text"),
+			want:  styles.StyleAgentResponse.MarginBottom(1).Render("test_text"),
 		},
 		{
 			name:  "apply error style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventAgentError},
 			width: 0,
-			want:  styles.StyleError.Render("test_text"),
+			want:  styles.StyleError.MarginBottom(1).Render("test_text"),
 		},
 		{
 			name:  "apply agent thinking style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventAgentThinking},
 			width: 0,
-			want:  styles.StyleAgentThinking.Render("test_text"),
+			want:  styles.StyleAgentThinking.MarginBottom(1).Render("test_text"),
 		},
 		{
 			name:  "apply system notice style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventSystemNotice},
 			width: 0,
-			want:  styles.StyleSystemNotice.Render("test_text"),
+			want:  styles.StyleSystemNotice.MarginBottom(1).Render("test_text"),
 		},
 	}
 	for _, tt := range tests {
@@ -230,7 +230,7 @@ func TestContent_flushActive(t *testing.T) {
 				}
 				c.flushActive()
 
-				styled := styles.StyleUserInput.Render(text) + "\n"
+				styled := styles.StyleUserInput.MarginBottom(1).Render(text) + "\n"
 
 				if c.rendered.String() != styled {
 					t.Errorf("flushActive() = %s, want %s", c.rendered.String(), styled)
@@ -335,7 +335,7 @@ func TestContent_ReRender(t *testing.T) {
 
 		for _, block := range c.blocks {
 			renderdSegString.WriteString(renderSegment(block))
-			renderdSegString.WriteString("\n\n")
+			renderdSegString.WriteString("\n")
 		}
 
 		if c.rendered.String() != renderdSegString.String() {
@@ -423,7 +423,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 						buf:  getSb("test content"),
 					},
 				}
-				want = renderSegment(expectedSegments[0]) + "\n\n" + renderSegment(expectedSegments[1]) + "\n\n"
+				want = renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
 
 				return
 			},
@@ -445,7 +445,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 					{Kind: broker.EventAgentThinking, buf: getSb("let me think")},
 					{Kind: broker.EventAgentResponse, buf: getSb("the answer")},
 				}
-				want = renderSegment(expectedSegments[0]) + "\n\n" + renderSegment(expectedSegments[1]) + "\n\n"
+				want = renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
 
 				return
 			},

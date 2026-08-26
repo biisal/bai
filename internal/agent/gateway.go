@@ -98,7 +98,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 	}
 
 	for {
-		g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted})
+		g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted, IsComplete: true})
 		result, err := g.activeProvider.StreamChat(ctx, g.activeModel, messages)
 		if err != nil {
 			slog.Error("failed to stream chat", "error", err)
@@ -107,7 +107,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 
 		assistantMsg := assistantMessageFromResult(result)
 		if err := g.AddMessageToDB(ctx, assistantMsg); err != nil {
-			slog.Error("failed to add assistant message to db", "error", err)
+			slog.Error("failed to add assistant message to db", "error", err, "assistantMsg", assistantMsg)
 			return nil, err
 		}
 		messages = append(messages, assistantMsg)
@@ -118,15 +118,17 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 
 		toolMsg := domain.Message{Role: domain.RoleTool}
 		for _, tc := range result.ToolCalls {
-
-			out, isErr := tools.Execute(ctx, tc, g.broker)
+			out, err := tools.Execute(ctx, tc, g.broker)
+			if err != nil {
+				out = err.Error()
+			}
 			toolMsg.Parts = append(toolMsg.Parts, domain.Part{
 				Type: domain.PartToolResultType,
-				Data: domain.ToolResultPartData{ToolCallID: tc.ID, Name: string(tc.Name), Content: out, IsError: isErr},
+				Data: domain.ToolResultPartData{ToolCallID: tc.ID, Name: string(tc.Name), Content: out, IsError: err != nil},
 			})
 		}
 		if err := g.AddMessageToDB(ctx, toolMsg); err != nil {
-			slog.Error("failed to add tool result message to db", "error", err)
+			slog.Error("failed to add tool result message to db", "error", err, "toolMsg", toolMsg)
 			return nil, err
 		}
 		messages = append(messages, toolMsg)
