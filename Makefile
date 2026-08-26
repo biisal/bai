@@ -13,11 +13,6 @@ build:
 	go build -o ${BINARY_PATH} ./cmd/bai/...
 	echo "build was successful"
 
-build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-		go build -o ${BINARY_PATH}-linux-amd64 ./cmd/bai/...
-	echo "linux build was successful"
-
 install: build
 	@mv ${BINARY_PATH} ${INSTALL_PATH} 
 	echo "installed to ${INSTALL_PATH}"

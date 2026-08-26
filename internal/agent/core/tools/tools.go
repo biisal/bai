@@ -8,15 +8,12 @@ import (
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
-// Tool name constants – referenced by instruction and chat-builder packages.
 const (
 	ReadFileName  = "read_file"
 	WriteFileName = "write_file"
 	EditFileName  = "edit_file"
 	BashName      = "bash"
 )
-
-// input types – fantasy generates JSON schemas from these automatically.
 
 type readFileInput struct {
 	Path   string `json:"path"`
@@ -44,7 +41,6 @@ type bashInput struct {
 	Timeout *int   `json:"timeout,omitempty"`
 }
 
-// toolSet holds the broker so tool methods can publish events without closures.
 type toolSet struct {
 	broker broker.Service
 }
@@ -89,7 +85,7 @@ func (t *toolSet) editFile(ctx context.Context, input editFileInput, _ fantasy.T
 	})
 	edits := make([]Edit, len(input.Edits))
 	for i, e := range input.Edits {
-		edits[i] = Edit{OldText: e.OldText, NewText: e.NewText}
+		edits[i] = Edit(e)
 	}
 	if err := EditFile(ctx, input.Path, edits); err != nil {
 		return fantasy.NewTextErrorResponse(err.Error()), nil
@@ -110,7 +106,6 @@ func (t *toolSet) bash(ctx context.Context, input bashInput, _ fantasy.ToolCall)
 	return fantasy.NewTextResponse(out), nil
 }
 
-// NewTools returns all agent tools wired up with broker publishing.
 func NewTools(b broker.Service) []fantasy.AgentTool {
 	ts := &toolSet{broker: b}
 	return []fantasy.AgentTool{
