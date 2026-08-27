@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -82,7 +81,7 @@ type ProviderResponse struct {
 	Content string
 }
 
-func (g *Gateway) handleContextCanceled(partialReasoning, partialText *strings.Builder) {
+func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builder) {
 	var parts []fantasy.MessagePart
 	if partialReasoning.Len() > 0 {
 		parts = append(parts, fantasy.ReasoningPart{Text: partialReasoning.String()})
@@ -177,9 +176,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 		},
 	})
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			g.handleContextCanceled(&partialReasoning, &partialText)
-		}
+		g.trySavingMsgToDB(&partialReasoning, &partialText)
 		return nil, err
 	}
 
