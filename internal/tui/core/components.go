@@ -15,7 +15,6 @@ import (
 
 type CompSize struct {
 	Height int
-	Width  int
 }
 
 type Spinner struct {
@@ -92,10 +91,9 @@ func (c *Component) Input() (string, CompSize) {
 	view := c.textArea.View()
 
 	view = styles.StyleInput.Render(view)
-	w, h := lipgloss.Size(view)
+	_, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h,
-		Width:  w,
 	}
 }
 
