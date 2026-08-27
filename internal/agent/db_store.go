@@ -3,21 +3,20 @@ package agent
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"log/slog"
 
+	"charm.land/fantasy"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/domain"
 	"github.com/biisal/bai/internal/files"
 )
 
-func (g *Gateway) AddMessageToDB(ctx context.Context, msg domain.Message) error {
+func (g *Gateway) AddMessageToDB(ctx context.Context, msg fantasy.Message) error {
 	if g.conversation == nil {
 		title := "Untitled Conversation"
-		for _, part := range msg.Parts {
-			if part.Type != domain.PartTextType {
-				continue
-			}
-			if text, ok := part.Data.(domain.TextPartData); ok && text.Text != "" {
+		for _, part := range msg.Content {
+			if text, ok := part.(fantasy.TextPart); ok && text.Text != "" {
 				title = text.Text
 				break
 			}
@@ -30,14 +29,14 @@ func (g *Gateway) AddMessageToDB(ctx context.Context, msg domain.Message) error 
 		g.conversation = &conversation
 		g.mu.RUnlock()
 	}
-	parts, err := domain.MarshalParts(msg.Parts)
+	partsBytes, err := json.Marshal(msg.Content)
 	if err != nil {
 		return err
 	}
 	_, err = g.db.CreateMessage(ctx, repo.CreateMessageParams{
 		ConversationID: g.conversation.ID,
-		Role:           msg.Role,
-		Parts:          string(parts),
+		Role:           domain.Role(msg.Role),
+		Parts:          string(partsBytes),
 	})
 	return err
 }
@@ -84,30 +83,38 @@ func (g *Gateway) GetProvider(ctx context.Context) (repo.Provider, error) {
 	return g.db.GetProvider(ctx)
 }
 
-func (G *Gateway) GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]domain.Message, error) {
+func (G *Gateway) GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]fantasy.Message, error) {
 	messages, err := G.db.GetMessagesByConversation(ctx, conversationID)
 	if err != nil {
 		return nil, err
 	}
-	domainMessages := make([]domain.Message, 0, len(messages))
+	fantasyMessages := make([]fantasy.Message, 0, len(messages))
 	for _, m := range messages {
-		domainMessages = append(domainMessages, toDomainMessage(m))
+		fantasyMessages = append(fantasyMessages, toFantasyMessage(m))
 	}
-	return domainMessages, nil
+	return fantasyMessages, nil
 }
 
-func toDomainMessage(m repo.Message) domain.Message {
-	parts, err := domain.UnmarshalParts([]byte(m.Parts))
-	if err != nil {
-		parts = []domain.Part{
-			{
-				Type: domain.PartTextType,
-				Data: domain.TextPartData{Text: m.Parts},
-			},
+func toFantasyMessage(m repo.Message) fantasy.Message {
+	var rawParts []json.RawMessage
+	var content []fantasy.MessagePart
+
+	err := json.Unmarshal([]byte(m.Parts), &rawParts)
+	if err == nil {
+		for _, raw := range rawParts {
+			part, err := fantasy.UnmarshalMessagePart(raw)
+			if err == nil {
+				content = append(content, part)
+			}
+		}
+	} else {
+		// Fallback for older messages
+		content = []fantasy.MessagePart{
+			fantasy.TextPart{Text: m.Parts},
 		}
 	}
-	return domain.Message{
-		Role:  m.Role,
-		Parts: parts,
+	return fantasy.Message{
+		Role:    fantasy.MessageRole(m.Role),
+		Content: content,
 	}
 }

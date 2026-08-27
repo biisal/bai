@@ -40,8 +40,7 @@ func executeBash(ctx context.Context, command string, timeoutSecs *int) (string,
 	}
 
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			return "", fmt.Errorf("%s", appendStatus(output, fmt.Sprintf("Command exited with code %d", exitErr.ExitCode())))
 		}
 		return "", fmt.Errorf("error executing command: %v", err)

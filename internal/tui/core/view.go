@@ -10,10 +10,10 @@ import (
 )
 
 func (m Model) View() tea.View {
-	inputView, intputSize := m.componets.Input()
+	inputView, inputSize := m.components.Input()
 
 	provider, modelID := m.gateway.Active()
-	footer := m.componets.Footer(FooterProps{
+	footer := m.components.Footer(FooterProps{
 		Provider: provider,
 		ModelID:  modelID,
 	})
@@ -27,7 +27,7 @@ func (m Model) View() tea.View {
 
 	dirInfo := styles.StyleFooter.Render(files.CurrentDirWithGitCache)
 	rows := []string{dirInfo, "", inputView}
-	totalHeight := intputSize.Height + footerHeight
+	totalHeight := inputSize.Height + footerHeight
 	if commandsView != "" {
 		rows = append(rows, commandsView)
 		totalHeight += lipgloss.Height(commandsView)
@@ -40,7 +40,7 @@ func (m Model) View() tea.View {
 	dirHeight := lipgloss.Height(dirInfo)
 	viewPortHeight -= dirHeight
 
-	chatView := m.componets.ChatViewPort(viewPortHeight)
+	chatView := m.components.ChatViewPort(viewPortHeight)
 
 	rows[1] = chatView
 

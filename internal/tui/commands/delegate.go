@@ -16,17 +16,15 @@ type styles struct {
 	selectedItem lipgloss.Style
 	pagination   lipgloss.Style
 	help         lipgloss.Style
-	quitText     lipgloss.Style
 }
 
-func newStyles(darkBG bool, width int) styles {
+func newStyles(width int) styles {
 	var s styles
 	s.title = lipgloss.NewStyle().MarginLeft(2)
 	s.item = lipgloss.NewStyle().PaddingLeft(4).Width(width).Inline(true)
 	s.selectedItem = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Width(width).Inline(true)
-	s.pagination = list.DefaultStyles(darkBG).PaginationStyle.PaddingLeft(4)
-	s.help = list.DefaultStyles(darkBG).HelpStyle.PaddingLeft(4).PaddingBottom(1)
-	s.quitText = lipgloss.NewStyle().Margin(1, 0, 2, 4)
+	s.pagination = list.DefaultStyles(true).PaginationStyle.PaddingLeft(4)
+	s.help = list.DefaultStyles(true).HelpStyle.PaddingLeft(4).PaddingBottom(1)
 	return s
 }
 

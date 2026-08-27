@@ -3,7 +3,7 @@ SHELL := /bin/bash
 BINARY_PATH := ./bin/bai
 INSTALL_PATH := ~/.local/bin
 
-.PHONY: default build run dev watch test release lint lint-fix clean install format format-check db-generate
+.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate
 .ONESHELL:
 
 default:

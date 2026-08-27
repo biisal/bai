@@ -13,19 +13,20 @@ import (
 
 var ErrNoProviders = errors.New("invalid config file: no providers found")
 
+type ProviderFormat string
+
 const (
-	FormatOpenAI = "openai-compatible"
+	FormatOpenAI    ProviderFormat = "openai-compatible"
+	FormatAnthropic ProviderFormat = "anthropic"
 )
 
 type ProviderConfig struct {
-	Name    string `json:"name"`
-	APIKey  string `json:"api_key"`
-	Format  string `json:"format"`
-	BaseURL string `json:"base_url"`
-	// Variant layers provider-specific quirks (custom headers, auth
-	// fallbacks, session tracking) on top of a format. Optional.
-	Variant string        `json:"variant"`
-	Models  []ModelConfig `json:"models"`
+	Name    string         `json:"name"`
+	APIKey  string         `json:"api_key"`
+	Format  ProviderFormat `json:"format"`
+	BaseURL string         `json:"base_url"`
+	Variant string         `json:"variant"`
+	Models  []ModelConfig  `json:"models"`
 }
 
 type ModelConfig struct {
@@ -121,7 +122,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	var errors []string
-	metProvides := make(map[string]bool)
+	metProviders := make(map[string]bool)
 	for _, provider := range config.Providers {
 		if provider.BaseURL == "" {
 			errors = append(errors, fmt.Sprintf("base_url can't be empty for provider: %s", provider.Name))
@@ -130,10 +131,10 @@ func Load(path string) (*Config, error) {
 			errors = append(errors, fmt.Sprintf("format can't be empty for provider: %s", provider.Name))
 		}
 
-		if _, ok := metProvides[provider.Name]; ok {
+		if _, ok := metProviders[provider.Name]; ok {
 			errors = append(errors, fmt.Sprintf("provider id must be unique for provider: %s", provider.Name))
 		}
-		metProvides[provider.Name] = true
+		metProviders[provider.Name] = true
 	}
 
 	if len(errors) > 0 {

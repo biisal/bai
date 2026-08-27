@@ -7,7 +7,6 @@ package repo
 
 import (
 	"context"
-	"time"
 )
 
 const createConversation = `-- name: CreateConversation :one
@@ -32,15 +31,6 @@ func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversation
 	return i, err
 }
 
-const deleteConversation = `-- name: DeleteConversation :exec
-DELETE FROM conversations WHERE id = ?1
-`
-
-func (q *Queries) DeleteConversation(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteConversation, id)
-	return err
-}
-
 const getConversation = `-- name: GetConversation :one
 SELECT id, title, directory, created_at, updated_at FROM conversations WHERE id = ?1
 `
@@ -56,17 +46,6 @@ func (q *Queries) GetConversation(ctx context.Context, id int64) (Conversation, 
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const getConversationMessageCount = `-- name: GetConversationMessageCount :one
-SELECT COUNT(*) FROM messages WHERE conversation_id = ?1
-`
-
-func (q *Queries) GetConversationMessageCount(ctx context.Context, conversationID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getConversationMessageCount, conversationID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
 }
 
 const getConversationsByDirectory = `-- name: GetConversationsByDirectory :many
@@ -100,57 +79,4 @@ func (q *Queries) GetConversationsByDirectory(ctx context.Context, directory str
 		return nil, err
 	}
 	return items, nil
-}
-
-const listConversations = `-- name: ListConversations :many
-SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC
-`
-
-type ListConversationsRow struct {
-	ID        int64
-	Title     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-func (q *Queries) ListConversations(ctx context.Context) ([]ListConversationsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listConversations)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListConversationsRow
-	for rows.Next() {
-		var i ListConversationsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Title,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const updateConversation = `-- name: UpdateConversation :exec
-UPDATE conversations SET title = ?1, updated_at = datetime('now') WHERE id = ?2
-`
-
-type UpdateConversationParams struct {
-	Title string
-	ID    int64
-}
-
-func (q *Queries) UpdateConversation(ctx context.Context, arg UpdateConversationParams) error {
-	_, err := q.db.ExecContext(ctx, updateConversation, arg.Title, arg.ID)
-	return err
 }

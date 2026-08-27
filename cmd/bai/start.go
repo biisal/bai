@@ -8,8 +8,9 @@ import (
 	"os/signal"
 
 	tea "charm.land/bubbletea/v2"
+	fantasy "charm.land/fantasy"
+
 	"github.com/biisal/bai/internal/agent"
-	"github.com/biisal/bai/internal/agent/providers"
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
@@ -23,6 +24,7 @@ func start(configPath string, dev bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
+
 	logLevel := slog.LevelInfo
 	if dev {
 		slog.Info("Starting in dev mode")
@@ -33,25 +35,22 @@ func start(configPath string, dev bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to set up logger: %w", err)
 	}
-
 	defer func() {
 		if err := file.Close(); err != nil {
 			slog.Error(err.Error())
-			return
 		}
 	}()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	providersMap := make(map[string]providers.Provider)
-	b := broker.New()
-	for _, providerConfig := range config.Providers {
-		provider, err := providers.NewFromConfig(providerConfig, b)
+	providers := make(map[string]fantasy.Provider)
+	for _, cfg := range config.Providers {
+		p, err := buildProvider(cfg)
 		if err != nil {
 			return fmt.Errorf("failed to create provider: %w", err)
 		}
-		providersMap[providerConfig.Name] = provider
+		providers[cfg.Name] = p
 	}
 
 	conn, err := db.Connect(config.DatabasePath)
@@ -68,7 +67,9 @@ func start(configPath string, dev bool) error {
 		return fmt.Errorf("failed to resolve provider: %w", err)
 	}
 
-	gateway := agent.NewGateway(dbService, b, providersMap, activeProvider, activeModel)
+	b := broker.New()
+	gateway := agent.NewGateway(dbService, b, providers, activeProvider, activeModel)
+
 	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, config.Providers))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
+	"charm.land/fantasy"
 	"charm.land/lipgloss/v2"
 	"github.com/biisal/bai/internal/agent/core/tools"
-	"github.com/biisal/bai/internal/domain"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/styles"
 )
@@ -110,56 +110,56 @@ func (c *Content) ReRender() {
 	c.rendered.WriteString(out.String())
 }
 
-func (c *Content) ReRenderFromDbConversation(messages []domain.Message) {
+func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {
 	var segments []*Segment
 	for _, msg := range messages {
-		for _, part := range msg.Parts {
+		if msg.Role == fantasy.MessageRoleTool {
+			continue
+		}
+		for _, part := range msg.Content {
 			var kind broker.EventType
 			switch msg.Role {
-			case domain.RoleUser:
+			case fantasy.MessageRoleUser:
 				kind = broker.EventUserMessage
-			case domain.RoleTool:
-				kind = broker.EventToolBash
-			case domain.RoleAssistant:
-				switch part.Type {
-				case domain.PartReasoningType:
+			case fantasy.MessageRoleAssistant:
+				switch p := part.(type) {
+				case fantasy.ReasoningPart:
 					kind = broker.EventAgentThinking
-				case domain.PartToolCallType:
-					kind = broker.EventToolBash // TODO: update this to proper tool
+				case fantasy.ToolCallPart:
+					switch p.ToolName {
+					case tools.BashName:
+						kind = broker.EventToolBash
+					case tools.EditFileName, tools.WriteFileName:
+						kind = broker.EventToolFileWriting
+					default:
+						kind = broker.EventToolFileReading
+					}
 				default:
 					kind = broker.EventAgentResponse
 				}
 			}
 
 			seg := &Segment{Kind: kind, buf: strings.Builder{}}
-			switch part.Type {
-			case domain.PartToolResultType:
+			switch p := part.(type) {
+			case fantasy.ToolResultPart:
 				continue
-			case domain.PartToolCallType:
-				if tc, ok := part.Data.(domain.ToolCallPartData); ok {
-					switch tc.Name {
-					case string(tools.BashTool): // TODO: orgasnize this
-						var args struct {
-							Command string `json:"command"`
-						}
-						if err := json.Unmarshal(tc.Input, &args); err == nil && args.Command != "" {
-							seg.buf.WriteString(args.Command)
-						} else {
-							seg.buf.WriteString(string(tc.Input))
-						}
-					case string(tools.EditFileTool):
-						var args struct {
-							Path string `json:"path"`
-						}
-						if err := json.Unmarshal(tc.Input, &args); err == nil && args.Path != "" {
-							seg.buf.WriteString(args.Path)
-						}
+			case fantasy.ToolCallPart:
+				var args map[string]any
+				if err := json.Unmarshal([]byte(p.Input), &args); err == nil {
+					if cmd, ok := args["command"].(string); ok && cmd != "" {
+						seg.buf.WriteString(cmd)
+					} else if path, ok := args["path"].(string); ok && path != "" {
+						seg.buf.WriteString(path)
+					} else {
+						seg.buf.WriteString(p.Input)
 					}
+				} else {
+					seg.buf.WriteString(p.Input)
 				}
-			case domain.PartTextType:
-				seg.buf.WriteString(part.Data.(domain.TextPartData).Text)
-			case domain.PartReasoningType:
-				seg.buf.WriteString(part.Data.(domain.ReasoningPartData).Thinking)
+			case fantasy.TextPart:
+				seg.buf.WriteString(p.Text)
+			case fantasy.ReasoningPart:
+				seg.buf.WriteString(p.Text)
 			}
 			segments = append(segments, seg)
 		}

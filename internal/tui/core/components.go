@@ -10,13 +10,11 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/biisal/bai/internal/agent/providers"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
 type CompSize struct {
 	Height int
-	Width  int
 }
 
 type Spinner struct {
@@ -93,15 +91,14 @@ func (c *Component) Input() (string, CompSize) {
 	view := c.textArea.View()
 
 	view = styles.StyleInput.Render(view)
-	w, h := lipgloss.Size(view)
+	_, h := lipgloss.Size(view)
 	return view, CompSize{
 		Height: h,
-		Width:  w,
 	}
 }
 
 type FooterProps struct {
-	Provider providers.Provider
+	Provider string
 	ModelID  string
 }
 
@@ -110,7 +107,7 @@ func (c Component) Footer(props FooterProps) string {
 	if c.spinner.showSpinner {
 		parts = append(parts, c.spinner.model.View(), "ESC to interrupt")
 	}
-	parts = append(parts, props.Provider.ID()+" - "+props.ModelID)
+	parts = append(parts, props.Provider+" - "+props.ModelID)
 
 	return styles.StyleFooter.Render(strings.Join(parts, " | "))
 }
