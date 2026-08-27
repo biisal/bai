@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
+	"time"
 
 	fantasy "charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent/core/instruction"
@@ -19,7 +21,7 @@ type Gateway struct {
 	providers      map[string]fantasy.Provider
 	db             repo.Querier
 	conversation   *repo.Conversation
-	activeProvider string
+	activeProvider fantasy.Provider
 	activeModel    string
 }
 
@@ -44,15 +46,16 @@ func (g *Gateway) SetActive(providerID, modelID string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	if _, ok := g.providers[providerID]; !ok {
+	provider, ok := g.providers[providerID]
+	if !ok {
 		return fmt.Errorf("unknown provider: %s", providerID)
 	}
-	g.activeProvider = providerID
+	g.activeProvider = provider
 	g.activeModel = modelID
 	return nil
 }
 
-func (g *Gateway) Active() (providerID, modelID string) {
+func (g *Gateway) Active() (fantasy.Provider, string) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	return g.activeProvider, g.activeModel
@@ -78,6 +81,29 @@ type ProviderResponse struct {
 	Content string
 }
 
+func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builder) {
+	var parts []fantasy.MessagePart
+	if partialReasoning.Len() > 0 {
+		parts = append(parts, fantasy.ReasoningPart{Text: partialReasoning.String()})
+	}
+	if partialText.Len() > 0 {
+		parts = append(parts, fantasy.TextPart{Text: partialText.String()})
+	}
+
+	if len(parts) == 0 {
+		return
+	}
+
+	saveCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if saveErr := g.AddMessageToDB(saveCtx, fantasy.Message{
+		Role:    fantasy.MessageRoleAssistant,
+		Content: parts,
+	}); saveErr != nil {
+		slog.Error("failed to save interrupted message", "error", saveErr)
+	}
+}
+
 func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResponse, error) {
 	// 1. Save user message.
 	if err := g.AddMessageToDB(ctx, fantasy.Message{
@@ -95,59 +121,62 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 		return nil, err
 	}
 
-	// 3. Resolve the active language model.
-	g.mu.RLock()
-	provider := g.providers[g.activeProvider]
-	modelID := g.activeModel
-	g.mu.RUnlock()
-
+	provider, modelID := g.Active()
 	model, err := provider.LanguageModel(ctx, modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get language model: %w", err)
 	}
 
-	// 4. Build the agent with tools and system prompt.
 	agentTools := tools.NewTools(g.broker)
 	ag := fantasy.NewAgent(
 		model,
 		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt()),
 		fantasy.WithTools(agentTools...),
+		fantasy.WithMaxRetries(3),
 	)
 
-	// 5. Stream the response, publishing to the broker and saving to DB.
-	g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted, IsComplete: true})
-
-	savedLen := len(history) // skip re-saving history messages
+	var partialReasoning strings.Builder
+	var partialText strings.Builder
 
 	result, err := ag.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 
+		OnRetry: fantasy.DefaultRetryOptions().OnRetry,
+
+		OnToolCall: func(toolCall fantasy.ToolCallContent) error {
+			slog.Debug("tool call", "input", toolCall.Input, "name", toolCall.ToolName)
+			return nil
+		},
+
+		OnAgentStart: func() {
+			g.broker.Publish(ctx, broker.Message{Type: broker.EventStreamStarted, IsComplete: true})
+		},
+
 		OnTextDelta: func(_ string, text string) error {
+			partialText.WriteString(text)
 			g.broker.Publish(ctx, broker.Message{Type: broker.EventAgentResponse, Text: text})
 			return nil
 		},
 
 		OnReasoningDelta: func(_ string, text string) error {
+			partialReasoning.WriteString(text)
 			g.broker.Publish(ctx, broker.Message{Type: broker.EventAgentThinking, Text: text})
 			return nil
 		},
 
 		OnStepFinish: func(step fantasy.StepResult) error {
-			// Save only the messages generated in this step.
-			newMsgs := step.Messages
-			if len(newMsgs) > savedLen {
-				newMsgs = newMsgs[savedLen:]
-			}
-			for _, fm := range newMsgs {
+			partialReasoning.Reset()
+			partialText.Reset()
+			for _, fm := range step.Messages {
 				if saveErr := g.AddMessageToDB(ctx, fm); saveErr != nil {
 					slog.Error("failed to save step message", "error", saveErr)
 				}
 			}
-			savedLen = len(step.Messages)
 			return nil
 		},
 	})
 	if err != nil {
+		g.trySavingMsgToDB(&partialReasoning, &partialText)
 		return nil, err
 	}
 
