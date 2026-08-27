@@ -14,7 +14,7 @@ func (m Model) View() tea.View {
 
 	provider, modelID := m.gateway.Active()
 	footer := m.components.Footer(FooterProps{
-		Provider: provider,
+		Provider: provider.Name(),
 		ModelID:  modelID,
 	})
 
