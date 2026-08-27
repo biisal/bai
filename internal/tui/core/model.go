@@ -21,7 +21,7 @@ type Model struct {
 	gateway         *agent.Gateway
 	broker          broker.Service
 	messages        <-chan broker.Message
-	componets       *Component
+	components       *Component
 	Width           int
 	Height          int
 	ChatContent     *strings.Builder
@@ -41,7 +41,7 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 	return &Model{
 		gateway:   gateway,
 		messages:  broker.Subscribe(),
-		componets: comp, ctx: ctx,
+		components: comp, ctx: ctx,
 		ChatContent:     &strings.Builder{},
 		ThinkingContent: &strings.Builder{},
 		broker:          broker,

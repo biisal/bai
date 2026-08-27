@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -10,7 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
-	"github.com/biisal/bai/internal/domain"
+	"charm.land/fantasy"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -48,9 +47,9 @@ type Commands struct {
 	Width    int
 	commands map[string]*commandEntry
 	gateway  *agent.Gateway
+	ctx      context.Context
 
 	models    []list.Item
-	sessions  []list.Item
 	rootItems []list.Item
 
 	lastSynced string
@@ -65,7 +64,7 @@ type CommandContext struct {
 }
 
 type Content interface {
-	ReRenderFromDbConversation(messages []domain.Message)
+	ReRenderFromDbConversation(messages []fantasy.Message)
 	Render() string
 }
 
@@ -130,7 +129,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		},
 	}
 
-	listStyles := newStyles(true, 0)
+	listStyles := newStyles(0)
 
 	rootItems := make([]list.Item, 0)
 	for name, entry := range commands {
@@ -157,31 +156,10 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		Current:   rootCommand,
 		commands:  commands,
 		gateway:   gateway,
+		ctx:       ctx,
 		models:    models,
-		sessions:  toListItems(parseConversations(ctx, gateway.GetConversationsByCurrentDir)),
 		rootItems: rootItems,
 	}
-}
-
-func (c *Commands) Update(command string, cmdCtx CommandContext) tea.Cmd {
-	if c.Current == command {
-		return nil
-	}
-
-	entry, ok := c.commands[command]
-	if !ok {
-		slog.Warn("update_commands", "command", command)
-		c.ShowList = false
-		return nil
-	}
-
-	c.Current = command
-	c.List.SetItems(c.getItems(command))
-
-	if entry.fn != nil {
-		return entry.fn(cmdCtx)
-	}
-	return nil
 }
 
 func (c *Commands) ExecuteCommand(command string, cmdCtx CommandContext) tea.Cmd {
@@ -201,7 +179,7 @@ func (c *Commands) getItems(command string) []list.Item {
 	case "models":
 		return c.models
 	case "sessions":
-		return c.sessions
+		return toListItems(parseConversations(c.ctx, c.gateway.GetConversationsByCurrentDir))
 	default:
 		return c.rootItems
 	}
@@ -209,7 +187,7 @@ func (c *Commands) getItems(command string) []list.Item {
 
 func (c *Commands) SetSize(width int) {
 	c.Width = width
-	listStyles := newStyles(true, width)
+	listStyles := newStyles(width)
 	d := itemDelegate{styles: &listStyles}
 	c.List.SetDelegate(d)
 }

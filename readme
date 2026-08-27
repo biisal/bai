@@ -3,22 +3,18 @@ bAI
 
 A terminal-based AI coding agent. Single binary, TUI interface.
 
-Status: early development. The core chat loop works; the
-coding-agent features below are planned, not shipped yet.
+Status: early development. Core chat loop + coding agent tools work.
 
-Current
--------
+Features
+--------
 - TUI with provider and model selection
 - Streaming chat against OpenAI, Anthropic, or Groq (any
   OpenAI-compatible endpoint via config)
-- SQLite-backed sessions
-
-Planned
--------
-- Diff view of file changes, with accept/reject per change
-- Read files and write files (including partial writes)
-- Run bash commands
-- File state snapshotted before changes, so you can revert
+- SQLite-backed sessions (conversations)
+- File read/write/edit tools
+- Bash command execution
+- Diff view of file changes
+- OpenCode variant support
 
 Requirements
 ------------
@@ -52,5 +48,5 @@ Project layout
     cmd/bai/         entry point and start command
     internal/agent/  provider gateway and message handling
     internal/tui/    bubble tea model, view, update
-    internal/db/     sqlite connection and service
+    internal/db/     sqlite connection and queries
     internal/config/ config loading and defaults

@@ -22,6 +22,6 @@ func TestStart(t *testing.T) {
 				]
 			}`)
 			err := start(path, false)
-			test_utils.AssertError(t, err, fmt.Errorf("failed to create provider: unknown provider format: unknown-format, hint use one of: [openai-compatible]"))
+			test_utils.AssertError(t, err, fmt.Errorf("failed to create provider: unknown provider format: unknown-format, hint use one of: [openai-compatible anthropic]"))
 		})
 }

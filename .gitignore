@@ -2,5 +2,4 @@
 .env
 *.db
 bin
-tmp
-bin
+dist

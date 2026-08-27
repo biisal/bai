@@ -13,7 +13,7 @@ func BuildSystemPrompt() string {
 	addGuidelines := func(g string) {
 		guidelines += fmt.Sprintf("%s\n", g)
 	}
-	tools := []string{string(tools.ReadFileTool), string(tools.WriteFileTool), string(tools.BashTool), string(tools.EditFileTool)}
+	tools := []string{tools.ReadFileName, tools.WriteFileName, tools.BashName, tools.EditFileName}
 
 	addGuidelines("Be concise in your responses")
 	addGuidelines("Show file paths clearly when working with files")
