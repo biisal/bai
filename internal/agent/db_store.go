@@ -25,9 +25,9 @@ func (g *Gateway) AddMessageToDB(ctx context.Context, msg fantasy.Message) error
 		if err != nil {
 			return err
 		}
-		g.mu.RLock()
+		g.mu.Lock()
 		g.conversation = &conversation
-		g.mu.RUnlock()
+		g.mu.Unlock()
 	}
 	partsBytes, err := json.Marshal(msg.Content)
 	if err != nil {
