@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -130,7 +129,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		},
 	}
 
-	listStyles := newStyles(true, 0)
+	listStyles := newStyles(0)
 
 	rootItems := make([]list.Item, 0)
 	for name, entry := range commands {
@@ -163,27 +162,6 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 	}
 }
 
-func (c *Commands) Update(command string, cmdCtx CommandContext) tea.Cmd {
-	if c.Current == command {
-		return nil
-	}
-
-	entry, ok := c.commands[command]
-	if !ok {
-		slog.Warn("update_commands", "command", command)
-		c.ShowList = false
-		return nil
-	}
-
-	c.Current = command
-	c.List.SetItems(c.getItems(command))
-
-	if entry.fn != nil {
-		return entry.fn(cmdCtx)
-	}
-	return nil
-}
-
 func (c *Commands) ExecuteCommand(command string, cmdCtx CommandContext) tea.Cmd {
 	entry, ok := c.commands[command]
 	if !ok {
@@ -209,7 +187,7 @@ func (c *Commands) getItems(command string) []list.Item {
 
 func (c *Commands) SetSize(width int) {
 	c.Width = width
-	listStyles := newStyles(true, width)
+	listStyles := newStyles(width)
 	d := itemDelegate{styles: &listStyles}
 	c.List.SetDelegate(d)
 }

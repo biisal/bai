@@ -52,13 +52,13 @@ func (m *Model) MatchCommand() tea.Cmd {
 		}
 		m.commands.ShowList = false
 		m.content.ReRenderFromDbConversation(messages)
-		m.componets.SetChatContent(m.content.Render())
-		m.componets.ScrollChatToBottom()
+		m.components.SetChatContent(m.content.Render())
+		m.components.ScrollChatToBottom()
 		return nil
 	case commands.CommandItem:
 		if item.Name == "models" || item.Name == "sessions" {
 			newInput := fmt.Sprintf("/%s ", item.Name)
-			m.componets.textArea.SetValue(newInput)
+			m.components.textArea.SetValue(newInput)
 			m.commands.Sync(newInput)
 			return nil
 		}
@@ -67,7 +67,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 			Gateway:    m.gateway,
 			Broker:     m.broker,
 			Content:    m.content,
-			Components: m.componets,
+			Components: m.components,
 			ShowList:   &m.commands.ShowList,
 		})
 
@@ -92,34 +92,34 @@ func (m *Model) SetSize(w, h int) {
 	m.Width = w
 	m.Height = h
 
-	m.componets.textArea.SetWidth(w)
+	m.components.textArea.SetWidth(w)
 
 	// using viewport
 	m.content.SetSize(w-1, h)
 	m.commands.SetSize(w)
 
-	m.componets.chatViewPort.SetWidth(w)
+	m.components.chatViewPort.SetWidth(w)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case spinner.TickMsg:
-		return m, m.componets.handleSpinnerTick(msg)
+		return m, m.components.handleSpinnerTick(msg)
 
 	case broker.Message:
 		m.content.AddSegment(msg.Type, msg.Text, msg.IsComplete)
-		m.componets.SetChatContent(m.content.Render())
-		m.componets.ScrollChatToBottom()
+		m.components.SetChatContent(m.content.Render())
+		m.components.ScrollChatToBottom()
 
 		if msg.Type == broker.EventStreamDone || msg.Type == broker.EventAgentError {
-			m.componets.spinner.showSpinner = false
+			m.components.spinner.showSpinner = false
 		}
 		return m, waitForMsg(m.messages)
 	case tea.WindowSizeMsg:
 		m.SetSize(msg.Width, msg.Height)
 		m.content.ReRender()
-		m.componets.SetChatContent(m.content.Render())
+		m.components.SetChatContent(m.content.Render())
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -132,17 +132,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			text := m.componets.textArea.Value()
+			text := m.components.textArea.Value()
 			if text == "" {
 				return m, nil
 			}
-			m.componets.textArea.SetValue("")
+			m.components.textArea.SetValue("")
 			if !m.commands.IsCommand(text) {
 				ctx, cancel := context.WithCancel(m.ctx)
 				m.chatCtx = &chatContext{ctx: ctx, cancel: cancel}
-				m.componets.spinner.showSpinner = true
+				m.components.spinner.showSpinner = true
 				return m, tea.Batch(
-					func() tea.Msg { return m.componets.spinner.model.Tick() },
+					func() tea.Msg { return m.components.spinner.model.Tick() },
 					m.streamChat(ctx, text),
 				)
 			}
@@ -151,11 +151,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	var textCmd, listCmd, vpCmd tea.Cmd
 
-	m.componets.textArea, textCmd = m.componets.textArea.Update(msg)
+	m.components.textArea, textCmd = m.components.textArea.Update(msg)
 	m.commands.List, listCmd = m.commands.List.Update(msg)
-	m.componets.chatViewPort, vpCmd = m.componets.chatViewPort.Update(msg)
+	m.components.chatViewPort, vpCmd = m.components.chatViewPort.Update(msg)
 
-	m.commands.Sync(m.componets.textArea.Value())
+	m.commands.Sync(m.components.textArea.Value())
 
 	cmds = append(cmds, textCmd, listCmd, vpCmd)
 	return m, tea.Batch(cmds...)

@@ -98,7 +98,7 @@ func (G *Gateway) GetMessagesByConversationID(ctx context.Context, conversationI
 func toFantasyMessage(m repo.Message) fantasy.Message {
 	var rawParts []json.RawMessage
 	var content []fantasy.MessagePart
-	
+
 	err := json.Unmarshal([]byte(m.Parts), &rawParts)
 	if err == nil {
 		for _, raw := range rawParts {
