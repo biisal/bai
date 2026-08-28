@@ -42,6 +42,13 @@ func NewGateway(
 	return g
 }
 
+func (g *Gateway) ActiveConversationTitle() string {
+	if g.conversation == nil {
+		return "bai | Start a new conversation"
+	}
+	return fmt.Sprintf("bai | %s", g.conversation.Title)
+}
+
 func (g *Gateway) SetActive(providerID, modelID string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
