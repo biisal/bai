@@ -34,8 +34,8 @@ func (m *Model) MatchCommand() tea.Cmd {
 			slog.Error("match_conversation_get_messages", "err", err)
 			return func() tea.Msg {
 				m.broker.Publish(m.ctx, broker.Message{
-					Type: broker.EventSystemNoticeError,
-					Text: fmt.Sprintf("Failed to get messages: %v\n", err),
+					Type:       broker.EventSystemNoticeError,
+					Text:       fmt.Sprintf("Failed to get messages: %v\n", err),
 					IsComplete: true,
 				})
 				return nil
@@ -44,8 +44,8 @@ func (m *Model) MatchCommand() tea.Cmd {
 		if err := m.gateway.SetActiveConversation(m.ctx, item.Conversation.ID, nil); err != nil {
 			slog.Error("match_conversation_set_active", "err", err)
 			m.broker.Publish(m.ctx, broker.Message{
-				Type: broker.EventSystemNoticeError,
-				Text: fmt.Sprintf("Failed to set active conversation: %v\n", err),
+				Type:       broker.EventSystemNoticeError,
+				Text:       fmt.Sprintf("Failed to set active conversation: %v\n", err),
 				IsComplete: true,
 			})
 			return nil
@@ -55,6 +55,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 		m.components.SetChatContent(m.content.Render())
 		m.components.ScrollChatToBottom()
 		return nil
+
 	case commands.CommandItem:
 		if item.Name == "models" || item.Name == "sessions" {
 			newInput := fmt.Sprintf("/%s ", item.Name)
@@ -78,8 +79,8 @@ func (m *Model) MatchCommand() tea.Cmd {
 		m.commands.ShowList = false
 		return func() tea.Msg {
 			m.broker.Publish(m.ctx, broker.Message{
-				Type: broker.EventSystemNotice,
-				Text: fmt.Sprintf("Model changed to: %s/%s\n", item.ProviderName, item.ModelID),
+				Type:       broker.EventSystemNotice,
+				Text:       fmt.Sprintf("Model changed to: %s/%s\n", item.ProviderName, item.ModelID),
 				IsComplete: true,
 			})
 			return nil
