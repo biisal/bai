@@ -107,10 +107,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.FocusMsg:
-		cmds = append(cmds, m.components.textArea.Focus())
-		return m, tea.Batch(cmds...)
+		m.components.SetCursorActive()
+		return m, nil
 	case tea.BlurMsg:
-		m.components.textArea.Blur()
+		m.components.SetCursorInactive()
 		return m, nil
 	case spinner.TickMsg:
 		return m, m.components.handleSpinnerTick(msg)
