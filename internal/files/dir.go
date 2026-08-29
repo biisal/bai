@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -53,6 +54,10 @@ func CurrentDirWithGit() string {
 
 	CurrentDirWithGitCache = dir + " (" + branch + ")"
 	return CurrentDirWithGitCache
+}
+
+func GetBaseDir() string {
+	return filepath.Base(CurrentDir())
 }
 
 func init() {

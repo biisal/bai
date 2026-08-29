@@ -2,11 +2,13 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/files"
 	broker "github.com/biisal/bai/internal/pubsub"
 	chatbuilder "github.com/biisal/bai/internal/tui/chat-builder"
 	"github.com/biisal/bai/internal/tui/commands"
@@ -21,13 +23,15 @@ type Model struct {
 	gateway         *agent.Gateway
 	broker          broker.Service
 	messages        <-chan broker.Message
-	components       *Component
+	components      *Component
 	Width           int
 	Height          int
 	ChatContent     *strings.Builder
 	ThinkingContent *strings.Builder
 	ctx             context.Context
 	content         *chatbuilder.Content
+
+	windowTitle string
 
 	chatCtx *chatContext
 
@@ -39,14 +43,15 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 	commands := commands.NewCommands(ctx, providers, gateway)
 
 	return &Model{
-		gateway:   gateway,
-		messages:  broker.Subscribe(),
+		gateway:    gateway,
+		messages:   broker.Subscribe(),
 		components: comp, ctx: ctx,
 		ChatContent:     &strings.Builder{},
 		ThinkingContent: &strings.Builder{},
 		broker:          broker,
 		content:         chatbuilder.NewContent(),
 		commands:        commands,
+		windowTitle:     fmt.Sprintf("bai - %s", files.GetBaseDir()),
 	}
 }
 
