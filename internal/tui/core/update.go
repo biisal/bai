@@ -105,6 +105,13 @@ func (m *Model) SetSize(w, h int) {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
+
+	case tea.FocusMsg:
+		cmds = append(cmds, m.components.textArea.Focus())
+		return m, tea.Batch(cmds...)
+	case tea.BlurMsg:
+		m.components.textArea.Blur()
+		return m, nil
 	case spinner.TickMsg:
 		return m, m.components.handleSpinnerTick(msg)
 
