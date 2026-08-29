@@ -19,7 +19,10 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X "main.version={{.Version}}"
+      - -s -w
+        -X "main.version={{.Version}}"
+        -X "main.commit={{.Commit}}"
+        -X "main.date={{.Date}}"
 
 archives:
   - formats: [tar.gz]
@@ -27,15 +30,48 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+    files:
+      - readme
+      - LICENSE
+      - config.example.json
 
 checksum:
   name_template: "checksums.txt"
 
+snapshot:
+  name_template: "{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}"
+
 changelog:
   sort: asc
+  use: github
   filters:
     exclude:
       - "^docs:"
       - "^test:"
       - "^ci:"
       - "^chore:"
+  groups:
+    - title: "Features"
+      regexp: "^feat:"
+      order: 0
+    - title: "Fixes"
+      regexp: "^fix:"
+      order: 1
+    - title: "Refactors"
+      regexp: "^refactor:"
+      order: 2
+    - title: "Others"
+      order: 999
+
+release:
+  github:
+    owner: biisal
+    name: bai
+  prerelease: auto
+  header: |
+    # bAI {{ .Tag }}
+
+    ## Changelog
+  footer: |
+    ---
+    _Released with [GoReleaser](https://goreleaser.com)_
