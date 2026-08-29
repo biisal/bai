@@ -43,8 +43,8 @@ func NewComponent() *Component {
 
 	s := ta.Styles()
 	s.Cursor.Blink = false
-	s.Focused.CursorLine = styles.StyleCursorFocused
-	s.Blurred.CursorLine = styles.StyleCursorBlurred
+	s.Focused.CursorLine = lipgloss.NewStyle()
+	s.Cursor.Color = nil
 	ta.SetStyles(s)
 
 	ta.ShowLineNumbers = false
@@ -68,18 +68,17 @@ func NewComponent() *Component {
 	}
 }
 
-// func (c *Component) SetCursorFocused() {
-// 	s := c.textArea.Styles()
-// 	s.Focused.CursorLine = styles.StyleCursorFocused
-// 	c.textArea.SetStyles(s)
-// }
+func (c *Component) SetCursorActive() {
+	s := c.textArea.Styles()
+	s.Cursor.Color = nil
+	c.textArea.SetStyles(s)
+}
 
-// func (c *Component) SetCursorBlurred() {
-// 	// s := c.textArea.Styles()
-// 	c.textArea.Blur()
-// 	// s.Focused.CursorLine = styles.StyleCursorBlurred
-// 	// c.textArea.SetStyles(s)
-// }
+func (c *Component) SetCursorInactive() {
+	s := c.textArea.Styles()
+	s.Cursor.Color = styles.StyleCursorBlurredColor
+	c.textArea.SetStyles(s)
+}
 
 func (c *Component) SetValue(value string) {
 	c.textArea.SetValue(value)

@@ -18,8 +18,8 @@ var (
 	StyleViewportSelectedHighlight = lipgloss.NewStyle().Background(lipgloss.Color("236"))
 	StyleInput                     = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false).BorderTopForeground(lipgloss.Color("6"))
 
-	StyleCursorFocused = lipgloss.NewStyle()
-	StyleCursorBlurred = lipgloss.NewStyle().Background(lipgloss.NoColor{})
+	StyleCursorFocusedColor = lipgloss.Color("7")
+	StyleCursorBlurredColor = lipgloss.Color("240")
 )
 
 func UpdateChatStyleWidth(w int) {
