@@ -46,6 +46,8 @@ func (m Model) View() tea.View {
 
 	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, rows...))
 	v.AltScreen = true
+	v.ReportFocus = true
 	v.MouseMode = tea.MouseModeCellMotion
+	v.WindowTitle = m.gateway.ActiveConversationTitle()
 	return v
 }

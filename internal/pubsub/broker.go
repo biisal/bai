@@ -33,8 +33,6 @@ func (b *Broker) Subscribe() <-chan Message {
 func (b *Broker) Publish(ctx context.Context, msg Message) {
 	select {
 	case b.msgChan <- msg:
-		// Delivered. If this fires often, the TUI consumer is slower
-		// than the producer — a hidden backpressure loop.
 		if len(b.msgChan) > 0 {
 			slog.Debug("broker: queued", "queued", len(b.msgChan), "type", msg.Type)
 		}
