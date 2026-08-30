@@ -10,7 +10,7 @@ import (
 func TestStart(t *testing.T) {
 	t.Run("Should throw error when invalid config path provided",
 		func(t *testing.T) {
-			err := start("invalid path", "invalid theme config path", false)
+			err := start("invalid path", false)
 			test_utils.AssertError(t, err, fmt.Errorf("failed to load config: config file does not exists: invalid path"))
 		})
 
@@ -21,7 +21,7 @@ func TestStart(t *testing.T) {
 					{"id": "openai", "name": "OpenAI", "format": "unknown-format", "base_url": "https://api.openai.com/v1"}
 				]
 			}`)
-			err := start(path, "invalid theme config path", false)
+			err := start(path, false)
 			test_utils.AssertError(t, err, fmt.Errorf("failed to create provider: unknown provider format: unknown-format, hint use one of: [openai-compatible anthropic]"))
 		})
 }

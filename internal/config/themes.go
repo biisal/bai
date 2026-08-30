@@ -84,54 +84,53 @@ func checkIfConfigFile(entry os.DirEntry) bool {
 	return true
 }
 
-// type ThemeFileName string
-// type ThemeFileDirectory string
+type ThemeFile struct {
+	Name     string
+	FilePath string
+}
 
-func GetAllThemes() (names map[string]string, err error) {
+func GetAllThemes() ([]ThemeFile, error) {
 	entries, err := os.ReadDir(ThemeConfigDir())
 	if err != nil {
 		return nil, err
 	}
-	themes := make(map[string]string)
+
 	dirName := ThemeConfigDir()
+	var themes []ThemeFile
 	for _, entry := range entries {
 		if !checkIfConfigFile(entry) {
 			continue
 		}
-		themes[entry.Name()] = filepath.Join(dirName, entry.Name())
+		themes = append(themes, ThemeFile{
+			Name:     entry.Name(),
+			FilePath: filepath.Join(dirName, entry.Name()),
+		})
 	}
 	return themes, nil
 }
 
 func NewTheme(path string) (*Theme, error) {
-	finalPath := ThemeConfigPath()
-	if path != "" {
-		finalPath = path
-	}
-
-	if _, err := os.Stat(finalPath); os.IsNotExist(err) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return DefaultTheme(), nil
 	}
 
 	var theme Theme
 
-	file, err := os.Open(finalPath)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
 			slog.Error(err.Error())
-			return
 		}
 	}()
 	if err := json.NewDecoder(file).Decode(&theme); err != nil {
-		prefix := "invalid config file"
 		if errors.Is(err, io.EOF) {
 			slog.Warn("found empty config file, using default theme")
 			return DefaultTheme(), nil
 		}
-		return nil, fmt.Errorf("%s: %w", prefix, err)
+		return nil, fmt.Errorf("invalid config file: %w", err)
 	}
 	return &theme, nil
 }

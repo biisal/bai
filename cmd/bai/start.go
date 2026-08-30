@@ -20,7 +20,7 @@ import (
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
-func start(configPath string, themeConfigPath string, dev bool) error {
+func start(configPath string, dev bool) error {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
