@@ -43,3 +43,8 @@ type Provider struct {
 	ModelID      sql.NullString
 	CreatedAt    time.Time
 }
+
+type UserSetting struct {
+	ID    any
+	Theme sql.NullString
+}

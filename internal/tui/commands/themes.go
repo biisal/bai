@@ -1,9 +1,6 @@
 package commands
 
 import (
-	"os"
-	"path/filepath"
-
 	"charm.land/bubbles/v2/list"
 	"github.com/biisal/bai/internal/config"
 )
@@ -23,29 +20,14 @@ func (t ThemeItem) Description() string {
 
 func (t ThemeItem) FilterValue() string { return t.Name }
 
-func checkIfConfigFile(entry os.DirEntry) bool {
-	if entry.IsDir() {
-		return false
-	}
-
-	if filepath.Ext(entry.Name()) != ".json" {
-		return false
-	}
-
-	return true
-}
-
 func ThemeFiles() []list.Item {
-	entries, err := os.ReadDir(config.ThemeConfigDir())
+	names, err := config.GetAllThemes()
 	if err != nil {
 		return nil
 	}
 	var items []list.Item
-	for _, entry := range entries {
-		if !checkIfConfigFile(entry) {
-			continue
-		}
-		items = append(items, ThemeItem{Name: entry.Name(), FilePath: filepath.Join(config.ThemeConfigDir(), entry.Name())})
+	for name, path := range names {
+		items = append(items, ThemeItem{Name: name, FilePath: path})
 	}
 	return items
 }

@@ -38,7 +38,7 @@ type Theme struct {
 
 func DefaultTheme() *Theme {
 	return &Theme{
-		Background: "#ffffff",
+		Background: "",
 		Foreground: "7",
 
 		Muted:           "236",
@@ -70,6 +70,37 @@ func ThemeConfigDir() string {
 
 func ThemeConfigPath() string {
 	return filepath.Join(ThemeConfigDir(), "default.json")
+}
+
+func checkIfConfigFile(entry os.DirEntry) bool {
+	if entry.IsDir() {
+		return false
+	}
+
+	if filepath.Ext(entry.Name()) != ".json" {
+		return false
+	}
+
+	return true
+}
+
+// type ThemeFileName string
+// type ThemeFileDirectory string
+
+func GetAllThemes() (names map[string]string, err error) {
+	entries, err := os.ReadDir(ThemeConfigDir())
+	if err != nil {
+		return nil, err
+	}
+	themes := make(map[string]string)
+	dirName := ThemeConfigDir()
+	for _, entry := range entries {
+		if !checkIfConfigFile(entry) {
+			continue
+		}
+		themes[entry.Name()] = filepath.Join(dirName, entry.Name())
+	}
+	return themes, nil
 }
 
 func NewTheme(path string) (*Theme, error) {

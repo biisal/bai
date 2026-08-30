@@ -51,7 +51,6 @@ type Commands struct {
 
 	models    []list.Item
 	rootItems []list.Item
-	themes    []list.Item
 
 	lastSynced string
 }
@@ -127,7 +126,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 				return nil
 			},
 			items: func(c *Commands) []list.Item {
-				return c.themes
+				return ThemeFiles()
 			},
 		},
 		"exit": {
@@ -176,7 +175,6 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 		ctx:       ctx,
 		models:    models,
 		rootItems: rootItems,
-		themes:    ThemeFiles(),
 	}
 }
 
@@ -233,10 +231,6 @@ func (c *Commands) Sync(text string) {
 
 	text = text[1:]
 	if cmd, filter, found := strings.Cut(text, " "); found {
-		if _, ok := c.commands[cmd]; !ok {
-			c.ShowList = false
-			return
-		}
 		c.ShowList = true
 		c.Current = cmd
 		c.List.SetItems(c.getItems(cmd))
@@ -255,19 +249,5 @@ func (c *Commands) Sync(text string) {
 
 func (c *Commands) IsCommand(text string) bool {
 	text = strings.TrimSpace(text)
-	if text == "/" {
-		return true
-	}
-	if !strings.HasPrefix(text, "/") {
-		return false
-	}
-
-	text = strings.Fields(text[1:])[0]
-
-	for cmd := range c.commands {
-		if strings.HasPrefix(cmd, text) {
-			return true
-		}
-	}
-	return false
+	return strings.HasPrefix(text, "/")
 }

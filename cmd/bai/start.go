@@ -26,12 +26,10 @@ func start(configPath string, themeConfigPath string, dev bool) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	themeConfig, err := config.NewTheme(themeConfigPath)
+	themes, err := config.GetAllThemes()
 	if err != nil {
-		return fmt.Errorf("failed to load theme config: %w", err)
+		return fmt.Errorf("failed to get themes: %w", err)
 	}
-
-	styles.UpdateStylesUsingConfigTheme(themeConfig)
 
 	logLevel := slog.LevelInfo
 	if dev {
@@ -74,6 +72,14 @@ func start(configPath string, themeConfigPath string, dev bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve provider: %w", err)
 	}
+
+	_, themeDir := resolveTheme(ctx, dbService, themes)
+	theme, err := config.NewTheme(themeDir)
+	if err != nil {
+		return fmt.Errorf("failed to load theme: %w", err)
+	}
+
+	styles.UpdateStylesUsingConfigTheme(theme)
 
 	b := broker.New()
 	gateway := agent.NewGateway(dbService, b, providers, activeProvider, activeModel)
