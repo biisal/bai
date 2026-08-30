@@ -21,13 +21,13 @@ func (t ThemeItem) Description() string {
 func (t ThemeItem) FilterValue() string { return t.Name }
 
 func ThemeFiles() []list.Item {
-	names, err := config.GetAllThemes()
+	themes, err := config.GetAllThemes()
 	if err != nil {
 		return nil
 	}
-	var items []list.Item
-	for name, path := range names {
-		items = append(items, ThemeItem{Name: name, FilePath: path})
+	items := make([]list.Item, 0, len(themes))
+	for _, tf := range themes {
+		items = append(items, ThemeItem{Name: tf.Name, FilePath: tf.FilePath})
 	}
 	return items
 }

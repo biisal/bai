@@ -119,15 +119,6 @@ func toFantasyMessage(m repo.Message) fantasy.Message {
 	}
 }
 
-func (g *Gateway) GetTheme(ctx context.Context) (string, error) {
-	theme, err := g.db.GetSettings(ctx)
-	if err != nil {
-		return "", err
-	}
-	return theme.Theme.String, nil
-}
-
 func (g *Gateway) SetThemeToDB(ctx context.Context, theme string) error {
-	err := g.db.AddOrUpdateSettings(ctx, sql.NullString{Valid: true, String: theme})
-	return err
+	return g.db.AddOrUpdateSettings(ctx, sql.NullString{Valid: true, String: theme})
 }
