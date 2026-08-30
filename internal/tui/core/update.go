@@ -98,6 +98,12 @@ func (m *Model) MatchCommand() tea.Cmd {
 		}
 		styles.UpdateStylesUsingConfigTheme(theme)
 		m.commands.ShowList = false
+		if err := m.gateway.SetThemeToDB(m.ctx, item.Name); err != nil {
+			m.broker.Publish(m.ctx, broker.Message{
+				Type: broker.EventSystemNoticeError,
+				Text: fmt.Sprintf("failed to set theme to db: %s", err.Error()),
+			})
+		}
 		m.broker.Publish(m.ctx, broker.Message{
 			Type:       broker.EventSystemNotice,
 			Text:       fmt.Sprintf("Theme changed to: %s", item.Name),

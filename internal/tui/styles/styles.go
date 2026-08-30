@@ -31,7 +31,7 @@ var (
 	StyleCursorFocusedColor = lipgloss.Color("7")
 	StyleCursorBlurredColor = lipgloss.Color("240")
 
-	StyleColorBackground color.Color = lipgloss.NoColor{}
+	StyleColorBackground color.Color = nil
 )
 
 func UpdateChatStyleWidth(w int) {
