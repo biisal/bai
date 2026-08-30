@@ -17,13 +17,21 @@ import (
 	"github.com/biisal/bai/internal/logger"
 	broker "github.com/biisal/bai/internal/pubsub"
 	tui "github.com/biisal/bai/internal/tui/core"
+	"github.com/biisal/bai/internal/tui/styles"
 )
 
-func start(configPath string, dev bool) error {
-	config, err := config.Load(configPath)
+func start(configPath string, themeConfigPath string, dev bool) error {
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
+
+	themeConfig, err := config.NewTheme(themeConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to load theme config: %w", err)
+	}
+
+	styles.UpdateStylesUsingConfigTheme(themeConfig)
 
 	logLevel := slog.LevelInfo
 	if dev {
@@ -31,7 +39,7 @@ func start(configPath string, dev bool) error {
 		logLevel = slog.LevelDebug
 	}
 
-	file, err := logger.SetUpLogger(config.LogFilePath, logLevel)
+	file, err := logger.SetUpLogger(cfg.LogFilePath, logLevel)
 	if err != nil {
 		return fmt.Errorf("failed to set up logger: %w", err)
 	}
@@ -45,7 +53,7 @@ func start(configPath string, dev bool) error {
 	defer cancel()
 
 	providers := make(map[string]fantasy.Provider)
-	for _, cfg := range config.Providers {
+	for _, cfg := range cfg.Providers {
 		p, err := buildProvider(cfg)
 		if err != nil {
 			return fmt.Errorf("failed to create provider: %w", err)
@@ -53,7 +61,7 @@ func start(configPath string, dev bool) error {
 		providers[cfg.Name] = p
 	}
 
-	conn, err := db.Connect(config.DatabasePath)
+	conn, err := db.Connect(cfg.DatabasePath)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
@@ -62,7 +70,7 @@ func start(configPath string, dev bool) error {
 	}
 	dbService := repo.New(conn)
 
-	activeProvider, activeModel, err := resolveProvider(ctx, dbService, config.Providers)
+	activeProvider, activeModel, err := resolveProvider(ctx, dbService, cfg.Providers)
 	if err != nil {
 		return fmt.Errorf("failed to resolve provider: %w", err)
 	}
@@ -70,7 +78,7 @@ func start(configPath string, dev bool) error {
 	b := broker.New()
 	gateway := agent.NewGateway(dbService, b, providers, activeProvider, activeModel)
 
-	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, config.Providers))
+	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, cfg.Providers))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}

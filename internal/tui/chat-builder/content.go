@@ -101,13 +101,12 @@ func (c *Content) flushActive() {
 }
 
 func (c *Content) ReRender() {
-	out := strings.Builder{}
-	for _, block := range c.blocks {
-		out.WriteString(renderSegment(block))
-		out.WriteString("\n")
-	}
 	c.rendered.Reset()
-	c.rendered.WriteString(out.String())
+	c.rendered.WriteString(Intro())
+	for _, block := range c.blocks {
+		c.rendered.WriteString(renderSegment(block))
+		c.rendered.WriteString("\n")
+	}
 }
 
 func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {
