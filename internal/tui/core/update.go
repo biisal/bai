@@ -7,8 +7,10 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"github.com/biisal/bai/internal/config"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/commands"
+	"github.com/biisal/bai/internal/tui/styles"
 )
 
 func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
@@ -57,9 +59,9 @@ func (m *Model) MatchCommand() tea.Cmd {
 		return nil
 
 	case commands.CommandItem:
-		if item.Name == "models" || item.Name == "sessions" {
+		if m.commands.HasSubItems(item.Name) {
 			newInput := fmt.Sprintf("/%s ", item.Name)
-			m.components.textArea.SetValue(newInput)
+			m.components.SetValue(newInput)
 			m.commands.Sync(newInput)
 			return nil
 		}
@@ -85,7 +87,25 @@ func (m *Model) MatchCommand() tea.Cmd {
 			})
 			return nil
 		}
+	case commands.ThemeItem:
+		theme, err := config.NewTheme(item.FilePath)
+		if err != nil {
+			m.broker.Publish(m.ctx, broker.Message{
+				Type: broker.EventSystemNoticeError,
+				Text: fmt.Sprintf("failed to get theme from file %s\nError: %s", item.Name, err.Error()),
+			})
+			return nil
+		}
+		styles.UpdateStylesUsingConfigTheme(theme)
+		m.commands.ShowList = false
+		m.broker.Publish(m.ctx, broker.Message{
+			Type:       broker.EventSystemNotice,
+			Text:       fmt.Sprintf("Theme changed to: %s", item.Name),
+			IsComplete: true,
+		})
+
 	}
+
 	return nil
 }
 
@@ -96,7 +116,7 @@ func (m *Model) SetSize(w, h int) {
 	m.components.textArea.SetWidth(w)
 
 	// using viewport
-	m.content.SetSize(w-1, h)
+	m.content.SetSize(w, h)
 	m.commands.SetSize(w)
 
 	m.components.chatViewPort.SetWidth(w)
