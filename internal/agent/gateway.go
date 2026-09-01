@@ -184,6 +184,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 	})
 	if err != nil {
 		g.trySavingMsgToDB(&partialReasoning, &partialText)
+		slog.Error("failed to stream chat", "error", err)
 		return nil, err
 	}
 
