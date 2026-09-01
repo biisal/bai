@@ -11,42 +11,40 @@ import (
 
 func (m Model) View() tea.View {
 	inputView, inputSize := m.components.Input()
-
 	provider, modelID := m.gateway.Active()
-	footer := m.components.Footer(FooterProps{
+	footer, footerHeight := m.components.Footer(FooterProps{
 		Provider: provider.Name(),
 		ModelID:  modelID,
 	})
 
-	commandsView := m.commands.View()
+	commandsView := strings.TrimRight(m.commands.View(), "\n")
+	dirInfo := styles.StyleFooter.Render(files.CurrentDirWithGitCache)
+	spinner := m.components.SpinnerStatus()
+
+	usedHeight := inputSize.Height + footerHeight + lipgloss.Height(dirInfo)
 	if commandsView != "" {
-		commandsView = strings.TrimRight(commandsView, "\n")
+		usedHeight += lipgloss.Height(commandsView)
+	}
+	if spinner != "" {
+		usedHeight += lipgloss.Height(spinner)
 	}
 
-	footerHeight := lipgloss.Height(footer)
+	chatView := m.components.ChatViewPort(m.Height - usedHeight)
 
-	dirInfo := styles.StyleFooter.Render(files.CurrentDirWithGitCache)
-	rows := []string{dirInfo, "", inputView}
-	totalHeight := inputSize.Height + footerHeight
+	rows := []string{dirInfo, chatView}
+	if spinner != "" {
+		rows = append(rows, spinner)
+	}
+	rows = append(rows, inputView)
 	if commandsView != "" {
 		rows = append(rows, commandsView)
-		totalHeight += lipgloss.Height(commandsView)
 	}
-
 	rows = append(rows, footer)
-
-	viewPortHeight := m.Height - totalHeight
-
-	dirHeight := lipgloss.Height(dirInfo)
-	viewPortHeight -= dirHeight
-
-	chatView := m.components.ChatViewPort(viewPortHeight)
-
-	rows[1] = chatView
 
 	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, rows...))
 	v.AltScreen = true
 	v.ReportFocus = true
+	v.BackgroundColor = styles.StyleColorBackground
 	v.MouseMode = tea.MouseModeCellMotion
 	v.WindowTitle = m.gateway.ActiveConversationTitle()
 	return v
