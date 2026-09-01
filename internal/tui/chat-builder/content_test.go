@@ -333,6 +333,8 @@ func TestContent_ReRender(t *testing.T) {
 
 		renderdSegString := strings.Builder{}
 
+		renderdSegString.WriteString(Intro())
+
 		for _, block := range c.blocks {
 			renderdSegString.WriteString(renderSegment(block))
 			renderdSegString.WriteString("\n")
@@ -342,7 +344,7 @@ func TestContent_ReRender(t *testing.T) {
 			t.Errorf("expected %q but got %q", renderdSegString.String(), c.rendered.String())
 		}
 	})
-	t.Run("should return empty when no blocks", func(t *testing.T) {
+	t.Run("should return only intro when no blocks", func(t *testing.T) {
 		c := NewContent()
 		c.SetSize(80, 24)
 		c.blocks = []*Segment{}
@@ -353,7 +355,7 @@ func TestContent_ReRender(t *testing.T) {
 
 		c.ReRender()
 
-		renderdSegString := ""
+		renderdSegString := Intro()
 
 		if c.rendered.String() != renderdSegString {
 			t.Errorf("expected %q but got %q", renderdSegString, c.rendered.String())
@@ -381,16 +383,17 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 		setup func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string)
 	}{
 		{
-			name: "should render empty when no messages",
+			name: "should render only intro when no messages",
 			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
 				messages = []fantasy.Message{}
-				want = ""
+				want = Intro()
 				return
 			},
 		},
 		{
 			name: "active should be nil after rerender",
 			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
+				want = Intro()
 				return
 			},
 		},
@@ -419,7 +422,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 						buf:  getSb("test content"),
 					},
 				}
-				want = renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
+				want = Intro() + renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
 
 				return
 			},
@@ -441,7 +444,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 					{Kind: broker.EventAgentThinking, buf: getSb("let me think")},
 					{Kind: broker.EventAgentResponse, buf: getSb("the answer")},
 				}
-				want = renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
+				want = Intro() + renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
 
 				return
 			},
