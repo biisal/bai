@@ -143,12 +143,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.components.handleSpinnerTick(msg)
 
 	case broker.Message:
-		wasBottom := m.components.chatViewPort.AtBottom()
 		m.content.AddSegment(msg.Type, msg.Text, msg.IsComplete)
 		m.components.SetChatContent(m.content.Render())
-		if wasBottom {
-			m.components.ScrollChatToBottom()
-		}
+
+		m.components.ScrollChatToBottom(msg)
 
 		if msg.Type == broker.EventStreamDone || msg.Type == broker.EventAgentError {
 			m.components.spinner.showSpinner = false
@@ -179,7 +177,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ctx, cancel := context.WithCancel(m.ctx)
 				m.chatCtx = &chatContext{ctx: ctx, cancel: cancel}
 				m.components.spinner.showSpinner = true
-				m.components.chatViewPort.GotoBottom()
 				return m, tea.Batch(
 					func() tea.Msg { return m.components.spinner.model.Tick() },
 					m.streamChat(ctx, text),
