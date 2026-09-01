@@ -10,6 +10,20 @@ import (
 	repo "github.com/biisal/bai/internal/db/sqlc"
 )
 
+func getTx(t *testing.T, conn *sql.DB) repo.Querier {
+	t.Helper()
+	tx, err := conn.Begin()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Cleanup(func() {
+		if err := tx.Rollback(); err != nil {
+			t.Fatal(err.Error())
+		}
+	})
+	return repo.New(tx)
+}
+
 func assertThemeResult(t *testing.T, gotName, gotDir, wantName, wantDir string) {
 	t.Helper()
 	if wantName != gotName {

@@ -1,6 +1,9 @@
-package main
+package agent
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,7 +14,67 @@ import (
 
 	"github.com/biisal/bai/internal/agent/providers/variant"
 	"github.com/biisal/bai/internal/config"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 )
+
+var (
+	ErrProviderNotFound = errors.New("provider not found in config")
+	ErrModelNotFound    = errors.New("model not found in config")
+)
+
+func getOrSetProvider(ctx context.Context, svc repo.Querier, providers []config.ProviderConfig) (providerID, modelID string, err error) {
+	if len(providers) == 0 {
+		return "", "", ErrProviderNotFound
+	}
+	if len(providers[0].Models) == 0 {
+		return "", "", ErrModelNotFound
+	}
+	name := providers[0].Name
+	modelId := providers[0].Models[0].ID
+	if err := svc.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
+		ProviderName: sql.NullString{String: name, Valid: true},
+		ModelID:      sql.NullString{String: modelId, Valid: true},
+	}); err != nil {
+		return "", "", err
+	}
+	return name, modelId, nil
+}
+
+func resolveProvider(ctx context.Context, svc repo.Querier, providers []config.ProviderConfig) (providerID, modelID string, err error) {
+	provider, err := svc.GetProvider(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return getOrSetProvider(ctx, svc, providers)
+		}
+		return "", "", err
+	}
+	for _, p := range providers {
+		if p.Name == provider.ProviderName.String {
+			for _, model := range p.Models {
+				if model.ID == provider.ModelID.String {
+					return p.Name, model.ID, nil
+				}
+			}
+			if len(p.Models) == 0 {
+				return getOrSetProvider(ctx, svc, providers)
+			}
+			return p.Name, p.Models[0].ID, nil
+		}
+	}
+	return getOrSetProvider(ctx, svc, providers)
+}
+
+func buildProviders(providerConfigs []config.ProviderConfig) (map[string]fantasy.Provider, error) {
+	providers := make(map[string]fantasy.Provider, len(providerConfigs))
+	for _, cfg := range providerConfigs {
+		p, err := buildProvider(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create provider %q: %w", cfg.Name, err)
+		}
+		providers[cfg.Name] = p
+	}
+	return providers, nil
+}
 
 func buildProvider(cfg config.ProviderConfig) (fantasy.Provider, error) {
 	switch cfg.Format {

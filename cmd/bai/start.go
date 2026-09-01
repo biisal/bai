@@ -8,7 +8,6 @@ import (
 	"os/signal"
 
 	tea "charm.land/bubbletea/v2"
-	fantasy "charm.land/fantasy"
 
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
@@ -20,15 +19,44 @@ import (
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
+func startDB(ctx context.Context, path string) (*repo.Queries, error) {
+	conn, err := db.Connect(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	if err := db.Migrate(ctx, conn); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	}
+	dbService := repo.New(conn)
+	return dbService, nil
+}
+
+func SetTheme(ctx context.Context, dbService *repo.Queries, b broker.Service) {
+	themes, err := config.GetAllThemes()
+	if err != nil {
+		// TODO: init model will call content.Rerender which will erase this messages
+		b.Publish(ctx, broker.Message{
+			Type: broker.EventSystemNoticeError,
+			Text: fmt.Sprintf("faild to load themes, continueing with default theme! Error : %s", err),
+		})
+	}
+
+	_, themeDir := resolveTheme(ctx, dbService, themes)
+	theme, err := config.NewTheme(themeDir)
+	if err != nil {
+		b.Publish(ctx, broker.Message{
+			Type: broker.EventSystemNoticeError,
+			Text: fmt.Sprintf("faild to load themes, continueing with default theme! Error : %s", err),
+		})
+		theme = config.DefaultTheme()
+	}
+	styles.UpdateStylesUsingConfigTheme(theme)
+}
+
 func start(configPath string, dev bool) error {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	themes, err := config.GetAllThemes()
-	if err != nil {
-		return fmt.Errorf("failed to get themes: %w", err)
 	}
 
 	logLevel := slog.LevelInfo
@@ -50,39 +78,18 @@ func start(configPath string, dev bool) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	providers := make(map[string]fantasy.Provider)
-	for _, cfg := range cfg.Providers {
-		p, err := buildProvider(cfg)
-		if err != nil {
-			return fmt.Errorf("failed to create provider: %w", err)
-		}
-		providers[cfg.Name] = p
-	}
-
-	conn, err := db.Connect(cfg.DatabasePath)
+	dbService, err := startDB(ctx, cfg.DatabasePath)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return err
 	}
-	if err := db.Migrate(ctx, conn); err != nil {
-		return fmt.Errorf("failed to migrate database: %w", err)
-	}
-	dbService := repo.New(conn)
-
-	activeProvider, activeModel, err := resolveProvider(ctx, dbService, cfg.Providers)
-	if err != nil {
-		return fmt.Errorf("failed to resolve provider: %w", err)
-	}
-
-	_, themeDir := resolveTheme(ctx, dbService, themes)
-	theme, err := config.NewTheme(themeDir)
-	if err != nil {
-		return fmt.Errorf("failed to load theme: %w", err)
-	}
-
-	styles.UpdateStylesUsingConfigTheme(theme)
 
 	b := broker.New()
-	gateway := agent.NewGateway(dbService, b, providers, activeProvider, activeModel)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers)
+	if err != nil {
+		return err
+	}
+
+	SetTheme(ctx, dbService, b)
 
 	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, cfg.Providers))
 	if _, err := p.Run(); err != nil {
