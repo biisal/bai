@@ -92,6 +92,9 @@ type ThemeFile struct {
 func GetAllThemes() ([]ThemeFile, error) {
 	entries, err := os.ReadDir(ThemeConfigDir())
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

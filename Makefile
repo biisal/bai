@@ -28,7 +28,7 @@ watch:
 	watchexec -r -e go -- 'go run ./cmd/bai/... --dev'
 
 test:
-	go test ./... -failfast
+	go test -race -failfast ./...
 
 release:
 	goreleaser release --clean --snapshot
