@@ -118,3 +118,7 @@ func toFantasyMessage(m repo.Message) fantasy.Message {
 		Content: content,
 	}
 }
+
+func (g *Gateway) SetThemeToDB(ctx context.Context, theme string) error {
+	return g.db.AddOrUpdateSettings(ctx, sql.NullString{Valid: true, String: theme})
+}

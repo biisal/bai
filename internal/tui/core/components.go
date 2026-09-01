@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -115,14 +114,17 @@ type FooterProps struct {
 	ModelID  string
 }
 
-func (c Component) Footer(props FooterProps) string {
-	parts := []string{}
-	if c.spinner.showSpinner {
-		parts = append(parts, c.spinner.model.View(), "ESC to interrupt")
-	}
-	parts = append(parts, props.Provider+" - "+props.ModelID)
+func (c Component) Footer(props FooterProps) (footer string, height int) {
+	footer = styles.StyleFooter.Render(props.Provider + " - " + props.ModelID)
+	_, height = lipgloss.Size(footer)
+	return
+}
 
-	return styles.StyleFooter.Render(strings.Join(parts, " | "))
+func (c Component) SpinnerStatus() string {
+	if !c.spinner.showSpinner {
+		return ""
+	}
+	return styles.StyleFooter.Padding(1, 0).Render(c.spinner.model.View() + " working...")
 }
 
 func (c *Component) handleSpinnerTick(msg spinner.TickMsg) tea.Cmd {

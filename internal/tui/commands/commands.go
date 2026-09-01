@@ -7,9 +7,9 @@ import (
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
-	"charm.land/fantasy"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -75,8 +75,9 @@ type Components interface {
 }
 
 type commandEntry struct {
-	desc string
-	fn   func(ctx CommandContext) tea.Cmd
+	desc  string
+	fn    func(ctx CommandContext) tea.Cmd
+	items func(c *Commands) []list.Item
 }
 
 func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway *agent.Gateway) *Commands {
@@ -91,25 +92,17 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 			fn: func(c CommandContext) tea.Cmd {
 				return nil
 			},
+			items: func(c *Commands) []list.Item {
+				return c.models
+			},
 		},
 		"sessions": {
 			desc: "show list of conversations",
 			fn: func(c CommandContext) tea.Cmd {
 				return nil
 			},
-		},
-		"exit": {
-			desc: "exit the application",
-			fn: func(c CommandContext) tea.Cmd {
-				*c.ShowList = false
-				c.Broker.Publish(ctx, broker.Message{
-					Type:       broker.EventSystemNotice,
-					Text:       "Bye.. See you soon!\n",
-					IsComplete: true,
-				})
-				return func() tea.Msg {
-					return tea.Quit()
-				}
+			items: func(c *Commands) []list.Item {
+				return toListItems(parseConversations(c.ctx, c.gateway.GetConversationsByCurrentDir))
 			},
 		},
 		"new": {
@@ -125,6 +118,29 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 				})
 				*c.ShowList = false
 				return nil
+			},
+		},
+		"themes": {
+			desc: "list available themes",
+			fn: func(c CommandContext) tea.Cmd {
+				return nil
+			},
+			items: func(c *Commands) []list.Item {
+				return ThemeFiles()
+			},
+		},
+		"exit": {
+			desc: "exit the application",
+			fn: func(c CommandContext) tea.Cmd {
+				*c.ShowList = false
+				c.Broker.Publish(ctx, broker.Message{
+					Type:       broker.EventSystemNotice,
+					Text:       "Bye.. See you soon!\n",
+					IsComplete: true,
+				})
+				return func() tea.Msg {
+					return tea.Quit()
+				}
 			},
 		},
 	}
@@ -175,14 +191,15 @@ func (c *Commands) ExecuteCommand(command string, cmdCtx CommandContext) tea.Cmd
 }
 
 func (c *Commands) getItems(command string) []list.Item {
-	switch command {
-	case "models":
-		return c.models
-	case "sessions":
-		return toListItems(parseConversations(c.ctx, c.gateway.GetConversationsByCurrentDir))
-	default:
-		return c.rootItems
+	if entry, ok := c.commands[command]; ok && entry.items != nil {
+		return entry.items(c)
 	}
+	return c.rootItems
+}
+
+func (c *Commands) HasSubItems(command string) bool {
+	entry, ok := c.commands[command]
+	return ok && entry.items != nil
 }
 
 func (c *Commands) SetSize(width int) {
@@ -214,10 +231,6 @@ func (c *Commands) Sync(text string) {
 
 	text = text[1:]
 	if cmd, filter, found := strings.Cut(text, " "); found {
-		if _, ok := c.commands[cmd]; !ok {
-			c.ShowList = false
-			return
-		}
 		c.ShowList = true
 		c.Current = cmd
 		c.List.SetItems(c.getItems(cmd))
@@ -236,19 +249,5 @@ func (c *Commands) Sync(text string) {
 
 func (c *Commands) IsCommand(text string) bool {
 	text = strings.TrimSpace(text)
-	if text == "/" {
-		return true
-	}
-	if !strings.HasPrefix(text, "/") {
-		return false
-	}
-
-	text = strings.Fields(text[1:])[0]
-
-	for cmd := range c.commands {
-		if strings.HasPrefix(cmd, text) {
-			return true
-		}
-	}
-	return false
+	return strings.HasPrefix(text, "/")
 }

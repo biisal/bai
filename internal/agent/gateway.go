@@ -11,6 +11,7 @@ import (
 	fantasy "charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent/core/instruction"
 	"github.com/biisal/bai/internal/agent/core/tools"
+	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -26,20 +27,28 @@ type Gateway struct {
 }
 
 func NewGateway(
+	ctx context.Context,
 	db repo.Querier,
 	b broker.Service,
-	providers map[string]fantasy.Provider,
-	providerID, modelID string,
-) *Gateway {
+	providerConfigs []config.ProviderConfig,
+) (*Gateway, error) {
+	providers, err := buildProviders(providerConfigs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build providers: %w", err)
+	}
+	activeProvider, activeModel, err := resolveProvider(ctx, db, providerConfigs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve provider: %w", err)
+	}
 	g := &Gateway{
 		db:        db,
 		broker:    b,
 		providers: providers,
 	}
-	if err := g.SetActive(providerID, modelID); err != nil {
-		return nil
+	if err := g.SetActive(activeProvider, activeModel); err != nil {
+		return nil, err
 	}
-	return g
+	return g, nil
 }
 
 func (g *Gateway) ActiveConversationTitle() string {
@@ -184,6 +193,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 	})
 	if err != nil {
 		g.trySavingMsgToDB(&partialReasoning, &partialText)
+		slog.Error("failed to stream chat", "error", err)
 		return nil, err
 	}
 
