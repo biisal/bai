@@ -70,7 +70,7 @@ type Content interface {
 
 type Components interface {
 	SetChatContent(content string)
-	ScrollChatToBottom()
+	ScrollChatToBottom(msg ...broker.Message)
 	SetValue(value string)
 }
 

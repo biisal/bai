@@ -9,6 +9,7 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
@@ -87,7 +88,20 @@ func (c *Component) SetChatContent(content string) {
 	c.chatViewPort.SetContent(content)
 }
 
-func (c *Component) ScrollChatToBottom() {
+func (c *Component) ScrollChatToBottom(msg ...broker.Message) {
+	if len(msg) == 0 {
+		c.chatViewPort.GotoBottom()
+		return
+	}
+
+	m := msg[len(msg)-1]
+
+	if m.Type != broker.EventUserMessage {
+		if !c.chatViewPort.AtBottom() {
+			return
+		}
+	}
+
 	c.chatViewPort.GotoBottom()
 }
 
