@@ -25,6 +25,7 @@ type Spinner struct {
 type Component struct {
 	textArea     textarea.Model
 	chatViewPort viewport.Model
+	wasAtBottom  bool
 
 	spinner Spinner
 }
@@ -85,6 +86,7 @@ func (c *Component) SetValue(value string) {
 }
 
 func (c *Component) SetChatContent(content string) {
+	c.wasAtBottom = c.chatViewPort.AtBottom()
 	c.chatViewPort.SetContent(content)
 }
 
@@ -97,7 +99,7 @@ func (c *Component) ScrollChatToBottom(msg ...broker.Message) {
 	m := msg[len(msg)-1]
 
 	if m.Type != broker.EventUserMessage {
-		if !c.chatViewPort.AtBottom() {
+		if !c.wasAtBottom {
 			return
 		}
 	}
