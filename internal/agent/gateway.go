@@ -121,6 +121,8 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResponse, error) {
+	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
+
 	// 1. Save user message.
 	if err := g.AddMessageToDB(ctx, fantasy.Message{
 		Role:    fantasy.MessageRoleUser,
@@ -129,6 +131,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 		slog.Error("failed to add user message to db", "error", err)
 		return nil, err
 	}
+	g.broker.Publish(ctx, broker.Message{Type: broker.EventUserMessage, Text: message, IsComplete: true})
 
 	// 2. Load conversation history.
 	history, err := g.GetMessagesByConversationID(ctx, g.conversation.ID)
@@ -156,8 +159,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 
 	result, err := ag.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
-
-		OnRetry: fantasy.DefaultRetryOptions().OnRetry,
+		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
 
 		OnToolCall: func(toolCall fantasy.ToolCallContent) error {
 			slog.Debug("tool call", "input", toolCall.Input, "name", toolCall.ToolName)

@@ -33,7 +33,8 @@ type Model struct {
 
 	windowTitle string
 
-	chatCtx *chatContext
+	chatCtx      *chatContext
+	messageQueue messageQueue
 
 	commands *commands.Commands
 }
