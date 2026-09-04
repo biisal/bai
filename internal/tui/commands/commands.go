@@ -80,7 +80,9 @@ type commandEntry struct {
 	items func(c *Commands) []list.Item
 }
 
-func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway *agent.Gateway) *Commands {
+func NewCommands(ctx context.Context, providers []config.ProviderConfig,
+	gateway *agent.Gateway,
+) *Commands {
 	models := parseModels(providers)
 	commands := map[string]*commandEntry{
 		"": {
@@ -102,7 +104,8 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 				return nil
 			},
 			items: func(c *Commands) []list.Item {
-				return toListItems(parseConversations(c.ctx, c.gateway.GetConversationsByCurrentDir))
+				return toListItems(parseConversations(c.ctx,
+					c.gateway.GetConversationsByCurrentDir))
 			},
 		},
 		"new": {
@@ -178,7 +181,9 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig, gateway
 	}
 }
 
-func (c *Commands) ExecuteCommand(command string, cmdCtx CommandContext) tea.Cmd {
+func (c *Commands) ExecuteCommand(command string,
+	cmdCtx CommandContext,
+) tea.Cmd {
 	entry, ok := c.commands[command]
 	if !ok {
 		return nil
