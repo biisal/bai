@@ -15,11 +15,9 @@ import (
 
 func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	return func() tea.Msg {
-		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventUserMessage, Text: text, IsComplete: true})
 		if _, err := m.gateway.StreamChat(ctx, text); err != nil {
 			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error(), IsComplete: true})
 		}
-		m.broker.Publish(m.ctx, broker.Message{Type: broker.EventStreamDone, IsComplete: true})
 		return nil
 	}
 }
@@ -148,8 +146,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.components.ScrollChatToBottom(msg)
 
-		if msg.Type == broker.EventStreamDone || msg.Type == broker.EventAgentError {
-			m.components.spinner.showSpinner = false
+		if msg.Type == broker.EventStreamDone {
+			return m, tea.Batch(waitForMsg(m.messages),
+				m.releaseNextQueuedMessage())
 		}
 		return m, waitForMsg(m.messages)
 	case tea.WindowSizeMsg:
@@ -162,7 +161,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.chatCtx != nil {
 				m.chatCtx.cancel()
-				m.chatCtx = nil
 				return m, nil
 			}
 		case "ctrl+c":
@@ -174,13 +172,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.components.textArea.SetValue("")
 			if !m.commands.IsCommand(text) {
-				ctx, cancel := context.WithCancel(m.ctx)
-				m.chatCtx = &chatContext{ctx: ctx, cancel: cancel}
-				m.components.spinner.showSpinner = true
-				return m, tea.Batch(
-					func() tea.Msg { return m.components.spinner.model.Tick() },
-					m.streamChat(ctx, text),
-				)
+				return m, m.submitMessage(text)
 			}
 			return m, m.MatchCommand()
 		}
