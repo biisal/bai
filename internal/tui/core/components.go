@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -18,8 +19,9 @@ type CompSize struct {
 }
 
 type Spinner struct {
-	model       spinner.Model
-	showSpinner bool
+	model          spinner.Model
+	showSpinner    bool
+	queuedMessages int
 }
 
 type Component struct {
@@ -140,7 +142,11 @@ func (c Component) SpinnerStatus() string {
 	if !c.spinner.showSpinner {
 		return ""
 	}
-	return styles.StyleFooter.Padding(1, 0).Render(c.spinner.model.View() + " working...")
+	status := fmt.Sprintf("%s working...", c.spinner.model.View())
+	if c.spinner.queuedMessages > 0 {
+		status = fmt.Sprintf("%s queued: %d", status, c.spinner.queuedMessages)
+	}
+	return styles.StyleFooter.Padding(1, 0).Render(status)
 }
 
 func (c *Component) handleSpinnerTick(msg spinner.TickMsg) tea.Cmd {
