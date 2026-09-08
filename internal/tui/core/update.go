@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/files"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/commands"
 	"github.com/biisal/bai/internal/tui/styles"
@@ -58,7 +59,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 
 	case commands.CommandItem:
 		if m.commands.HasSubItems(item.Name) {
-			newInput := fmt.Sprintf("/%s ", item.Name)
+			newInput := fmt.Sprintf("%s ", item.Name)
 			m.components.SetValue(newInput)
 			m.commands.Sync(newInput)
 			return nil
@@ -109,8 +110,12 @@ func (m *Model) MatchCommand() tea.Cmd {
 			IsComplete: true,
 		})
 
+	case commands.FileItem:
+		m.commands.ShowList = false
+		current := m.components.textArea.Value()
+		text := files.ReplaceFileQuery(current, item.FilePath)
+		m.components.textArea.SetValue(text)
 	}
-
 	return nil
 }
 
@@ -170,8 +175,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if text == "" {
 				return m, nil
 			}
-			m.components.textArea.SetValue("")
 			if !m.commands.IsCommand(text) {
+				m.components.textArea.SetValue("")
 				return m, m.submitMessage(text)
 			}
 			return m, m.MatchCommand()
@@ -180,10 +185,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var textCmd, listCmd, vpCmd tea.Cmd
 
 	m.components.textArea, textCmd = m.components.textArea.Update(msg)
-	m.commands.List, listCmd = m.commands.List.Update(msg)
 	m.components.chatViewPort, vpCmd = m.components.chatViewPort.Update(msg)
 
 	m.commands.Sync(m.components.textArea.Value())
+	m.commands.List, listCmd = m.commands.List.Update(msg)
 
 	cmds = append(cmds, textCmd, listCmd, vpCmd)
 	return m, tea.Batch(cmds...)
