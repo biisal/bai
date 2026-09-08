@@ -56,16 +56,16 @@ func TestReplaceFileQuery(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "replaces file query at end",
+			name:     "replaces file query with absolute quoted path",
 			fullText: "find @myfile.txt",
 			path:     "/path/to/file.txt",
-			want:     "find /path/to/file.txt",
+			want:     `find "/path/to/file.txt"`,
 		},
 		{
-			name:     "replaces multiple @ symbols",
+			name:     "replaces file query with relative quoted path",
 			fullText: "find @src/index.ts",
 			path:     "./index.ts",
-			want:     "find ./index.ts",
+			want:     `find "./index.ts"`,
 		},
 		{
 			name:     "no file query to replace",
@@ -74,10 +74,10 @@ func TestReplaceFileQuery(t *testing.T) {
 			want:     "find something",
 		},
 		{
-			name:     "file query with no spaces",
+			name:     "quotes selected file path with spaces",
 			fullText: "@file.go",
-			path:     "new_file.go",
-			want:     "new_file.go",
+			path:     "path/to/my file.go",
+			want:     `"path/to/my file.go"`,
 		},
 	}
 

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -174,7 +173,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 
 	rootItems := make([]list.Item, 0)
 	for name, entry := range commands {
-		if name == rootCommand {
+		if name == rootCommand || name == fileCommand {
 			continue
 		}
 		rootItems = append(rootItems, CommandItem{Name: name, Desc: entry.desc})
@@ -243,57 +242,44 @@ func (c *Commands) View() string {
 }
 
 func (c *Commands) Sync(text string) {
-	if matched, query := files.IfFileFinding(text); matched {
-		c.ShowList = true
-		if c.Current != fileCommand {
-			c.Current = fileCommand
-		}
-
-		slog.Debug("query for sync", "query", query)
-
-		if query != "" {
-			c.List.SetFilterText(query)
-			return
-		}
-		items := c.getItems("@")
-		c.List.SetItems(items)
-		c.List.ResetFilter()
-		return
-	}
-	found := false
-	for cmd := range c.commands {
-		if strings.HasPrefix(text, cmd) {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		c.ShowList = false
-		c.lastSynced = ""
-		return
-	}
-
-	if c.lastSynced == text && c.ShowList {
+	if text == c.lastSynced {
 		return
 	}
 	c.lastSynced = text
 
-	if cmd, filter, found := strings.Cut(text, " "); found {
-		c.ShowList = true
-		c.Current = cmd
-		c.List.SetItems(c.getItems(cmd))
-		if filter == "" {
-			c.List.ResetFilter()
-		} else {
-			c.List.SetFilterText(filter)
-		}
+	command, filter, ok := c.match(text)
+	if !ok {
+		c.ShowList = false
 		return
 	}
+
 	c.ShowList = true
-	c.Current = rootCommand
-	c.List.SetItems(c.rootItems)
-	c.List.SetFilterText(text)
+	c.Current = command
+	c.List.SetItems(c.getItems(command))
+
+	if filter == "" {
+		c.List.ResetFilter()
+	} else {
+		c.List.SetFilterText(filter)
+	}
+}
+
+func (c *Commands) match(text string) (command, filter string, ok bool) {
+	if matched, query := files.IfFileFinding(text); matched {
+		return fileCommand, query, true
+	}
+
+	if !strings.HasPrefix(text, rootCommand) {
+		return "", "", false
+	}
+
+	if command, filter, found := strings.Cut(text, " "); found {
+		if _, exists := c.commands[command]; exists {
+			return command, filter, true
+		}
+	}
+
+	return rootCommand, strings.TrimPrefix(text, rootCommand), true
 }
 
 func (c *Commands) IsCommand(text string) bool {

@@ -10,6 +10,7 @@ var helps = []struct{ key, val string }{
 	{"escape", "interrupt"},
 	{"ctrl+c", "exit"},
 	{"/", "commands"},
+	{"@", "find files"},
 }
 
 func Intro() string {
