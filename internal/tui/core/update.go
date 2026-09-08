@@ -55,6 +55,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 		m.content.ReRenderFromDbConversation(messages)
 		m.components.SetChatContent(m.content.Render())
 		m.components.ScrollChatToBottom()
+		m.components.textArea.SetValue("")
 		return nil
 
 	case commands.CommandItem:
@@ -96,7 +97,6 @@ func (m *Model) MatchCommand() tea.Cmd {
 			return nil
 		}
 		styles.UpdateStylesUsingConfigTheme(theme)
-		m.commands.ShowList = false
 		m.content.ReRender()
 		if err := m.gateway.SetThemeToDB(m.ctx, item.Name); err != nil {
 			m.broker.Publish(m.ctx, broker.Message{
