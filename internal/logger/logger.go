@@ -10,7 +10,7 @@ func SetUpLogger(filePath string, level slog.Level) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	lg := slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{Level: level, AddSource: true}))
+	lg := slog.New(slog.NewJSONHandler(file, &slog.HandlerOptions{Level: level, AddSource: false}))
 	slog.SetDefault(lg)
 	return file, nil
 }
