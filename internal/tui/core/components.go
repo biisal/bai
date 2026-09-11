@@ -22,6 +22,7 @@ type Spinner struct {
 	model          spinner.Model
 	showSpinner    bool
 	queuedMessages int
+	lastQueuedMsg  string
 }
 
 type Component struct {
@@ -138,14 +139,23 @@ func (c Component) Footer(props FooterProps) (footer string, height int) {
 	return
 }
 
+func (c Component) QueueView(w int) string {
+	if c.spinner.queuedMessages == 0 {
+		return ""
+	}
+
+	top := styles.StyleQueueCounter.Render(fmt.Sprintf("%d Queue", c.spinner.queuedMessages))
+	text := fmt.Sprintf("Next -> %s", c.spinner.lastQueuedMsg)
+	text = styles.StyleQueueMessage.Render(text)
+
+	return lipgloss.JoinVertical(lipgloss.Left, top, text)
+}
+
 func (c Component) SpinnerStatus() string {
 	if !c.spinner.showSpinner {
 		return ""
 	}
 	status := fmt.Sprintf("%s working...", c.spinner.model.View())
-	if c.spinner.queuedMessages > 0 {
-		status = fmt.Sprintf("%s queued: %d", status, c.spinner.queuedMessages)
-	}
 	return styles.StyleFooter.Padding(1, 0).Render(status)
 }
 

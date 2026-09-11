@@ -38,6 +38,7 @@ type ModelConfig struct {
 type Config struct {
 	DatabasePath string           `json:"database_path"`
 	LogFilePath  string           `json:"log_file_path"`
+	SoundPath    string           `json:"sound_path"`
 	Providers    []ProviderConfig `json:"providers"`
 }
 

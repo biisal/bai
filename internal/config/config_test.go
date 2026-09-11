@@ -243,6 +243,52 @@ func TestLoad(t *testing.T) {
 				})
 			},
 		},
+		{
+			name:    "set config sound_path if set",
+			path:    "/tmp/tempfile.json",
+			wantErr: nil,
+			checkFN: func(t *testing.T, config *Config) {
+				soundPath := "/tmp/test.wav"
+				if config.SoundPath != soundPath {
+					t.Errorf("config.SoundPath = %v, want %v", config.SoundPath, soundPath)
+				}
+			},
+			setupFN: func(t *testing.T) {
+				path := "/tmp/tempfile.json"
+				createTempFile(t, path, Config{
+					SoundPath: "/tmp/test.wav",
+					Providers: []ProviderConfig{
+						{
+							Name:    "test",
+							BaseURL: "https://api.openai.com/v1",
+							Format:  FormatOpenAI,
+						},
+					},
+				})
+			},
+		},
+		{
+			name:    "sound_path empty when not set in config",
+			path:    "/tmp/tempfile.json",
+			wantErr: nil,
+			checkFN: func(t *testing.T, config *Config) {
+				if config.SoundPath != "" {
+					t.Errorf("config.SoundPath = %v, want empty", config.SoundPath)
+				}
+			},
+			setupFN: func(t *testing.T) {
+				path := "/tmp/tempfile.json"
+				createTempFile(t, path, Config{
+					Providers: []ProviderConfig{
+						{
+							Name:    "test",
+							BaseURL: "https://api.openai.com/v1",
+							Format:  FormatOpenAI,
+						},
+					},
+				})
+			},
+		},
 	}
 
 	for _, tt := range tests {
