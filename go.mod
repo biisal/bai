@@ -7,6 +7,7 @@ require (
 	charm.land/bubbletea/v2 v2.0.8
 	charm.land/fantasy v0.41.3
 	charm.land/lipgloss/v2 v2.0.5
+	github.com/gopxl/beep/v2 v2.1.1
 	github.com/openai/openai-go/v3 v3.50.0
 	github.com/pressly/goose/v3 v3.27.3
 	modernc.org/sqlite v1.57.0
@@ -46,6 +47,8 @@ require (
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/ebitengine/oto/v3 v3.3.2 // indirect
+	github.com/ebitengine/purego v0.10.2 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -56,16 +59,23 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.21 // indirect
 	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
+	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
+	github.com/icza/bitio v1.1.0 // indirect
 	github.com/invopop/jsonschema v0.14.0 // indirect
+	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
+	github.com/jfreymuth/vorbis v1.0.2 // indirect
 	github.com/kaptinlin/jsonpointer v0.4.28 // indirect
 	github.com/kaptinlin/jsonschema v0.9.8 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.27 // indirect
+	github.com/mewkiz/flac v1.0.12 // indirect
+	github.com/mewkiz/pkg v0.0.0-20230226050401-4010bf0fec14 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.3 // indirect

@@ -18,6 +18,12 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	return func() tea.Msg {
 		if _, err := m.gateway.StreamChat(ctx, text); err != nil {
 			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error(), IsComplete: true})
+			return nil
+		}
+		if m.gateway.AudioPlayer != nil {
+			if playErr := m.gateway.AudioPlayer.Play(); playErr != nil {
+				slog.Error("failed to play notification sound", "error", playErr)
+			}
 		}
 		return nil
 	}
@@ -79,6 +85,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 			return nil
 		}
 		m.commands.ShowList = false
+		m.components.textArea.SetValue("")
 		return func() tea.Msg {
 			m.broker.Publish(m.ctx, broker.Message{
 				Type:       broker.EventSystemNotice,
@@ -164,6 +171,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc":
+			if m.commands.ShowList {
+				m.commands.ShowList = false
+				return m, nil
+			}
+
 			if m.chatCtx != nil {
 				m.chatCtx.cancel()
 				return m, nil
