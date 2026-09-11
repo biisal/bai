@@ -13,6 +13,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -24,6 +25,7 @@ type Gateway struct {
 	conversation   *repo.Conversation
 	activeProvider fantasy.Provider
 	activeModel    string
+	AudioPlayer    *audio.AudioPlayer
 }
 
 func NewGateway(
@@ -31,6 +33,7 @@ func NewGateway(
 	db repo.Querier,
 	b broker.Service,
 	providerConfigs []config.ProviderConfig,
+	audioPlayer *audio.AudioPlayer,
 ) (*Gateway, error) {
 	providers, err := buildProviders(providerConfigs)
 	if err != nil {
@@ -41,9 +44,10 @@ func NewGateway(
 		return nil, fmt.Errorf("failed to resolve provider: %w", err)
 	}
 	g := &Gateway{
-		db:        db,
-		broker:    b,
-		providers: providers,
+		db:          db,
+		broker:      b,
+		providers:   providers,
+		AudioPlayer: audioPlayer,
 	}
 	if err := g.SetActive(activeProvider, activeModel); err != nil {
 		return nil, err
@@ -122,7 +126,6 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 
 func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResponse, error) {
 	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
-
 	// 1. Save user message.
 	if err := g.AddMessageToDB(ctx, fantasy.Message{
 		Role:    fantasy.MessageRoleUser,
@@ -198,6 +201,8 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 		slog.Error("failed to stream chat", "error", err)
 		return nil, err
 	}
+
+	// Play notification sound when agent finishes
 
 	return &ProviderResponse{Content: result.Response.Content.Text()}, nil
 }

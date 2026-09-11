@@ -10,6 +10,7 @@ import (
 	"charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/files"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -38,7 +39,10 @@ func toListItems[T list.Item](items []T) []list.Item {
 	return out
 }
 
-var rootCommand = ""
+var (
+	rootCommand = "/"
+	fileCommand = "@"
+)
 
 type Commands struct {
 	List     list.Model
@@ -78,6 +82,8 @@ type commandEntry struct {
 	desc  string
 	fn    func(ctx CommandContext) tea.Cmd
 	items func(c *Commands) []list.Item
+	// matchFn           func(text string) bool
+	showResultOnSpace bool
 }
 
 func NewCommands(ctx context.Context, providers []config.ProviderConfig,
@@ -85,12 +91,13 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 ) *Commands {
 	models := parseModels(providers)
 	commands := map[string]*commandEntry{
-		"": {
+		"/": {
 			desc: "root",
 			fn:   nil,
 		},
-		"models": {
-			desc: "show available models",
+		"/models": {
+			desc:              "show available models",
+			showResultOnSpace: true,
 			fn: func(c CommandContext) tea.Cmd {
 				return nil
 			},
@@ -98,8 +105,9 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 				return c.models
 			},
 		},
-		"sessions": {
-			desc: "show list of conversations",
+		"/sessions": {
+			desc:              "show list of conversations",
+			showResultOnSpace: true,
 			fn: func(c CommandContext) tea.Cmd {
 				return nil
 			},
@@ -108,8 +116,9 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 					c.gateway.GetConversationsByCurrentDir))
 			},
 		},
-		"new": {
-			desc: "create a new conversation",
+		"/new": {
+			desc:              "create a new conversation",
+			showResultOnSpace: true,
 			fn: func(c CommandContext) tea.Cmd {
 				c.Gateway.SetConversation(nil)
 				c.Components.SetValue("")
@@ -123,8 +132,9 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 				return nil
 			},
 		},
-		"themes": {
-			desc: "list available themes",
+		"/themes": {
+			desc:              "list available themes",
+			showResultOnSpace: true,
 			fn: func(c CommandContext) tea.Cmd {
 				return nil
 			},
@@ -132,8 +142,9 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 				return ThemeFiles()
 			},
 		},
-		"exit": {
-			desc: "exit the application",
+		"/exit": {
+			desc:              "exit the application",
+			showResultOnSpace: true,
 			fn: func(c CommandContext) tea.Cmd {
 				*c.ShowList = false
 				c.Broker.Publish(ctx, broker.Message{
@@ -146,19 +157,27 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 				}
 			},
 		},
+		fileCommand: {
+			desc:              "find files",
+			showResultOnSpace: false,
+			items: func(c *Commands) []list.Item {
+				return FileItems()
+			},
+			fn: func(c CommandContext) tea.Cmd {
+				return nil
+			},
+		},
 	}
 
 	listStyles := newStyles(0)
 
 	rootItems := make([]list.Item, 0)
 	for name, entry := range commands {
-		if name == "" {
+		if name == rootCommand || name == fileCommand {
 			continue
 		}
 		rootItems = append(rootItems, CommandItem{Name: name, Desc: entry.desc})
 	}
-
-	commands[""].fn = nil
 
 	l := list.New(rootItems, itemDelegate{styles: &listStyles}, 5, 10)
 	l.SetShowStatusBar(false)
@@ -223,36 +242,54 @@ func (c *Commands) View() string {
 }
 
 func (c *Commands) Sync(text string) {
-	if !strings.HasPrefix(text, "/") {
-		c.ShowList = false
-		c.lastSynced = ""
-		return
-	}
-
-	if c.lastSynced == text && c.ShowList {
+	if text == c.lastSynced {
 		return
 	}
 	c.lastSynced = text
 
-	text = text[1:]
-	if cmd, filter, found := strings.Cut(text, " "); found {
-		c.ShowList = true
-		c.Current = cmd
-		c.List.SetItems(c.getItems(cmd))
-		if filter == "" {
-			c.List.ResetFilter()
-		} else {
-			c.List.SetFilterText(filter)
-		}
+	command, filter, ok := c.match(text)
+	if !ok {
+		c.ShowList = false
 		return
 	}
+
 	c.ShowList = true
-	c.Current = rootCommand
-	c.List.SetItems(c.rootItems)
-	c.List.SetFilterText(text)
+	c.Current = command
+	c.List.SetItems(c.getItems(command))
+
+	if filter == "" {
+		c.List.ResetFilter()
+	} else {
+		c.List.SetFilterText(filter)
+	}
+}
+
+func (c *Commands) match(text string) (command, filter string, ok bool) {
+	if matched, query := files.IfFileFinding(text); matched {
+		return fileCommand, query, true
+	}
+
+	if !strings.HasPrefix(text, rootCommand) {
+		return "", "", false
+	}
+
+	if command, filter, found := strings.Cut(text, " "); found {
+		if _, exists := c.commands[command]; exists {
+			return command, filter, true
+		}
+	}
+
+	return rootCommand, strings.TrimPrefix(text, rootCommand), true
 }
 
 func (c *Commands) IsCommand(text string) bool {
 	text = strings.TrimSpace(text)
-	return strings.HasPrefix(text, "/")
+	for cmd := range c.commands {
+		if strings.HasPrefix(text, cmd) {
+			return true
+		}
+	}
+
+	matched, _ := files.IfFileFinding(text)
+	return matched
 }

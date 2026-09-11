@@ -29,11 +29,20 @@ func (m Model) View() tea.View {
 		usedHeight += lipgloss.Height(spinner)
 	}
 
+	queueView := m.components.QueueView(m.Width)
+	if queueView != "" {
+		usedHeight += lipgloss.Height(queueView)
+	}
+
 	chatView := m.components.ChatViewPort(m.Height - usedHeight)
 
 	rows := []string{dirInfo, chatView}
 	if spinner != "" {
 		rows = append(rows, spinner)
+	}
+
+	if queueView != "" {
+		rows = append(rows, queueView)
 	}
 	rows = append(rows, inputView)
 	if commandsView != "" {

@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/files"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/commands"
 	"github.com/biisal/bai/internal/tui/styles"
@@ -17,6 +18,12 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	return func() tea.Msg {
 		if _, err := m.gateway.StreamChat(ctx, text); err != nil {
 			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error(), IsComplete: true})
+			return nil
+		}
+		if m.gateway.AudioPlayer != nil {
+			if playErr := m.gateway.AudioPlayer.Play(); playErr != nil {
+				slog.Error("failed to play notification sound", "error", playErr)
+			}
 		}
 		return nil
 	}
@@ -54,11 +61,12 @@ func (m *Model) MatchCommand() tea.Cmd {
 		m.content.ReRenderFromDbConversation(messages)
 		m.components.SetChatContent(m.content.Render())
 		m.components.ScrollChatToBottom()
+		m.components.textArea.SetValue("")
 		return nil
 
 	case commands.CommandItem:
 		if m.commands.HasSubItems(item.Name) {
-			newInput := fmt.Sprintf("/%s ", item.Name)
+			newInput := fmt.Sprintf("%s ", item.Name)
 			m.components.SetValue(newInput)
 			m.commands.Sync(newInput)
 			return nil
@@ -77,6 +85,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 			return nil
 		}
 		m.commands.ShowList = false
+		m.components.textArea.SetValue("")
 		return func() tea.Msg {
 			m.broker.Publish(m.ctx, broker.Message{
 				Type:       broker.EventSystemNotice,
@@ -95,7 +104,6 @@ func (m *Model) MatchCommand() tea.Cmd {
 			return nil
 		}
 		styles.UpdateStylesUsingConfigTheme(theme)
-		m.commands.ShowList = false
 		m.content.ReRender()
 		if err := m.gateway.SetThemeToDB(m.ctx, item.Name); err != nil {
 			m.broker.Publish(m.ctx, broker.Message{
@@ -109,8 +117,12 @@ func (m *Model) MatchCommand() tea.Cmd {
 			IsComplete: true,
 		})
 
+	case commands.FileItem:
+		m.commands.ShowList = false
+		current := m.components.textArea.Value()
+		text := files.ReplaceFileQuery(current, item.FilePath)
+		m.components.textArea.SetValue(text)
 	}
-
 	return nil
 }
 
@@ -159,6 +171,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc":
+			if m.commands.ShowList {
+				m.commands.ShowList = false
+				return m, nil
+			}
+
 			if m.chatCtx != nil {
 				m.chatCtx.cancel()
 				return m, nil
@@ -170,8 +187,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if text == "" {
 				return m, nil
 			}
-			m.components.textArea.SetValue("")
 			if !m.commands.IsCommand(text) {
+				m.components.textArea.SetValue("")
 				return m, m.submitMessage(text)
 			}
 			return m, m.MatchCommand()
@@ -180,10 +197,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var textCmd, listCmd, vpCmd tea.Cmd
 
 	m.components.textArea, textCmd = m.components.textArea.Update(msg)
-	m.commands.List, listCmd = m.commands.List.Update(msg)
 	m.components.chatViewPort, vpCmd = m.components.chatViewPort.Update(msg)
 
 	m.commands.Sync(m.components.textArea.Value())
+	m.commands.List, listCmd = m.commands.List.Update(msg)
 
 	cmds = append(cmds, textCmd, listCmd, vpCmd)
 	return m, tea.Batch(cmds...)
