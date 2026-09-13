@@ -32,6 +32,9 @@ var (
 	StyleCursorBlurredColor = lipgloss.Color("240")
 
 	StyleColorBackground color.Color = nil
+
+	StyleQueueMessage = lipgloss.NewStyle().Padding(0, 1).MaxHeight(1).Foreground(lipgloss.Color("90"))
+	StyleQueueCounter = lipgloss.NewStyle().Background(lipgloss.Color("90"))
 )
 
 func UpdateChatStyleWidth(w int) {
@@ -44,6 +47,7 @@ func UpdateChatStyleWidth(w int) {
 	StyleUserInput = StyleUserInput.Width(w)
 	StyleSystemNotice = StyleSystemNotice.Width(w)
 	StyleFooter = StyleFooter.Width(w)
+	StyleQueueMessage = StyleQueueMessage.Width(w)
 }
 
 func UpdateStylesUsingConfigTheme(theme *config.Theme) {
@@ -71,6 +75,9 @@ func UpdateStylesUsingConfigTheme(theme *config.Theme) {
 
 	StyleCursorFocusedColor = lipgloss.Color(theme.Primary)
 	StyleCursorBlurredColor = lipgloss.Color(theme.Muted)
+
+	StyleQueueMessage = StyleQueueMessage.Background(lipgloss.Color(theme.Muted)).Foreground(lipgloss.Color(theme.MutedForeground))
+	// StyleQueueCounter = StyleQueueCounter.Background(lipgloss.Color(theme.Muted)) // TODO: add better styling
 
 	if theme.Background != "" {
 		StyleColorBackground = lipgloss.Color(theme.Background)

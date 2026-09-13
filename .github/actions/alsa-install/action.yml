@@ -1,0 +1,11 @@
+name: ALSA Install
+description: Install ALSA development dependencies
+
+runs:
+  using: composite
+  steps:
+    - name: Install ALSA development dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libasound2-dev

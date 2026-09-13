@@ -13,6 +13,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -24,6 +25,7 @@ type Gateway struct {
 	conversation   *repo.Conversation
 	activeProvider fantasy.Provider
 	activeModel    string
+	AudioPlayer    *audio.AudioPlayer
 }
 
 func NewGateway(
@@ -31,6 +33,7 @@ func NewGateway(
 	db repo.Querier,
 	b broker.Service,
 	providerConfigs []config.ProviderConfig,
+	audioPlayer *audio.AudioPlayer,
 ) (*Gateway, error) {
 	providers, err := buildProviders(providerConfigs)
 	if err != nil {
@@ -41,9 +44,10 @@ func NewGateway(
 		return nil, fmt.Errorf("failed to resolve provider: %w", err)
 	}
 	g := &Gateway{
-		db:        db,
-		broker:    b,
-		providers: providers,
+		db:          db,
+		broker:      b,
+		providers:   providers,
+		AudioPlayer: audioPlayer,
 	}
 	if err := g.SetActive(activeProvider, activeModel); err != nil {
 		return nil, err
@@ -93,10 +97,6 @@ func (g *Gateway) SetConversation(conversation *repo.Conversation) {
 	g.conversation = conversation
 }
 
-type ProviderResponse struct {
-	Content string
-}
-
 func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builder) {
 	var parts []fantasy.MessagePart
 	if partialReasoning.Len() > 0 {
@@ -120,16 +120,15 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 	}
 }
 
-func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResponse, error) {
+func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
-
 	// 1. Save user message.
 	if err := g.AddMessageToDB(ctx, fantasy.Message{
 		Role:    fantasy.MessageRoleUser,
 		Content: []fantasy.MessagePart{fantasy.TextPart{Text: message}},
 	}); err != nil {
 		slog.Error("failed to add user message to db", "error", err)
-		return nil, err
+		return err
 	}
 	g.broker.Publish(ctx, broker.Message{Type: broker.EventUserMessage, Text: message, IsComplete: true})
 
@@ -137,13 +136,13 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 	history, err := g.GetMessagesByConversationID(ctx, g.conversation.ID)
 	if err != nil {
 		slog.Error("failed to get messages", "error", err)
-		return nil, err
+		return err
 	}
 
 	provider, modelID := g.Active()
 	model, err := provider.LanguageModel(ctx, modelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get language model: %w", err)
+		return fmt.Errorf("failed to get language model: %w", err)
 	}
 
 	agentTools := tools.NewTools(g.broker)
@@ -157,7 +156,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 	var partialReasoning strings.Builder
 	var partialText strings.Builder
 
-	result, err := ag.Stream(ctx, fantasy.AgentStreamCall{
+	_, err = ag.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
 
@@ -196,8 +195,8 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) (*ProviderResp
 	if err != nil {
 		g.trySavingMsgToDB(&partialReasoning, &partialText)
 		slog.Error("failed to stream chat", "error", err)
-		return nil, err
+		return err
 	}
 
-	return &ProviderResponse{Content: result.Response.Content.Text()}, nil
+	return nil
 }

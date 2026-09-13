@@ -14,6 +14,7 @@ import (
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/logger"
+	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 	tui "github.com/biisal/bai/internal/tui/core"
 	"github.com/biisal/bai/internal/tui/styles"
@@ -83,8 +84,21 @@ func start(configPath string, dev bool) error {
 		return err
 	}
 
+	// Initialize audio player if sound path is configured
+	var audioPlayer *audio.AudioPlayer
+	if cfg.SoundPath != "" {
+		audioPlayer, err = audio.NewAudioPlayer(cfg.SoundPath)
+		if err != nil {
+			slog.Error("failed to load audio player", "error", err, "path", cfg.SoundPath)
+			// Continue without audio
+			audioPlayer = nil
+		} else {
+			slog.Info("audio player loaded", "path", cfg.SoundPath)
+		}
+	}
+
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer)
 	if err != nil {
 		return err
 	}

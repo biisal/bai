@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/biisal/bai/utils"
 )
 
 func WriteFile(ctx context.Context, path string, content string) error {
-	if path == "" {
-		return fmt.Errorf("path is empty")
-	}
-
-	resolved, err := filepath.Abs(path)
+	resolved, err := utils.ResolvePath(path)
 	if err != nil {
 		return fmt.Errorf("cannot resolve %q: %w", path, err)
 	}

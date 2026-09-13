@@ -38,6 +38,7 @@ type ModelConfig struct {
 type Config struct {
 	DatabasePath string           `json:"database_path"`
 	LogFilePath  string           `json:"log_file_path"`
+	SoundPath    string           `json:"sound_path"`
 	Providers    []ProviderConfig `json:"providers"`
 }
 
@@ -98,9 +99,8 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
-			slog.Error(err.Error())
-			return
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Error("close config file", "error", closeErr)
 		}
 	}()
 	if err := json.NewDecoder(file).Decode(&config); err != nil {
@@ -121,24 +121,24 @@ func Load(path string) (*Config, error) {
 		return nil, ErrNoProviders
 	}
 
-	var errors []string
+	var errs []string
 	metProviders := make(map[string]bool)
 	for _, provider := range config.Providers {
 		if provider.BaseURL == "" {
-			errors = append(errors, fmt.Sprintf("base_url can't be empty for provider: %s", provider.Name))
+			errs = append(errs, fmt.Sprintf("base_url can't be empty for provider: %s", provider.Name))
 		}
 		if provider.Format == "" {
-			errors = append(errors, fmt.Sprintf("format can't be empty for provider: %s", provider.Name))
+			errs = append(errs, fmt.Sprintf("format can't be empty for provider: %s", provider.Name))
 		}
 
 		if _, ok := metProviders[provider.Name]; ok {
-			errors = append(errors, fmt.Sprintf("provider id must be unique for provider: %s", provider.Name))
+			errs = append(errs, fmt.Sprintf("provider id must be unique for provider: %s", provider.Name))
 		}
 		metProviders[provider.Name] = true
 	}
 
-	if len(errors) > 0 {
-		return nil, fmt.Errorf("invalid config:\n%s", strings.Join(errors, "\n"))
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("invalid config:\n%s", strings.Join(errs, "\n"))
 	}
 	if config.DatabasePath == "" {
 		config.DatabasePath = DefaultDatabasePath()

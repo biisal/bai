@@ -5,9 +5,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/biisal/bai/utils"
 )
 
 type Edit struct {
@@ -24,11 +25,7 @@ func EditFile(ctx context.Context, path string, edits []Edit) error {
 	if len(edits) == 0 {
 		return fmt.Errorf("edit tool input is invalid: edits must contain at least one replacement")
 	}
-	if path == "" {
-		return fmt.Errorf("path is empty")
-	}
-
-	resolved, err := filepath.Abs(path)
+	resolved, err := utils.ResolvePath(path)
 	if err != nil {
 		return fmt.Errorf("cannot resolve %q: %w", path, err)
 	}

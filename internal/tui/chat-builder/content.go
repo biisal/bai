@@ -37,8 +37,7 @@ func (c *Content) SetSize(width, height int) {
 
 func NewContent() *Content {
 	return &Content{
-		rendered: strings.Builder{},
-		blocks:   []*Segment{},
+		blocks: []*Segment{},
 	}
 }
 

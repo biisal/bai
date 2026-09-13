@@ -43,6 +43,7 @@ func (m *Model) submitMessage(text string) tea.Cmd {
 	if m.chatCtx != nil {
 		m.messageQueue.Enqueue(text)
 		m.components.spinner.queuedMessages = m.messageQueue.Len()
+		m.components.spinner.lastQueuedMsg = text
 		return nil
 	}
 	return m.startChat(text)
