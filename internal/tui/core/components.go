@@ -93,20 +93,14 @@ func (c *Component) SetChatContent(content string) {
 	c.chatViewPort.SetContent(content)
 }
 
-func (c *Component) ScrollChatToBottom(msg ...broker.Message) {
-	if len(msg) == 0 {
-		c.chatViewPort.GotoBottom()
+func (c *Component) ScrollChatToBottom() {
+	c.chatViewPort.GotoBottom()
+}
+
+func (c *Component) ScrollChatToBottomFor(msg broker.Message) {
+	if msg.Type != broker.EventUserMessage && !c.wasAtBottom {
 		return
 	}
-
-	m := msg[len(msg)-1]
-
-	if m.Type != broker.EventUserMessage {
-		if !c.wasAtBottom {
-			return
-		}
-	}
-
 	c.chatViewPort.GotoBottom()
 }
 

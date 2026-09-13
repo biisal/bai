@@ -83,8 +83,8 @@ func (g *Gateway) GetProvider(ctx context.Context) (repo.Provider, error) {
 	return g.db.GetProvider(ctx)
 }
 
-func (G *Gateway) GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]fantasy.Message, error) {
-	messages, err := G.db.GetMessagesByConversation(ctx, conversationID)
+func (g *Gateway) GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]fantasy.Message, error) {
+	messages, err := g.db.GetMessagesByConversation(ctx, conversationID)
 	if err != nil {
 		return nil, err
 	}

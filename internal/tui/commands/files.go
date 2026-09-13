@@ -31,7 +31,10 @@ func FileItems() []list.Item {
 	currentDir := files.CurrentDir()
 
 	var items []list.Item
-	if err := filepath.WalkDir(currentDir, func(path string, d fs.DirEntry, err error) error {
+	if err := filepath.WalkDir(currentDir, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
 		if d.IsDir() {
 			if slices.Contains(ignoreFolders, d.Name()) {
 				return fs.SkipDir

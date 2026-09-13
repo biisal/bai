@@ -39,7 +39,7 @@ func toListItems[T list.Item](items []T) []list.Item {
 	return out
 }
 
-var (
+const (
 	rootCommand = "/"
 	fileCommand = "@"
 )
@@ -74,7 +74,8 @@ type Content interface {
 
 type Components interface {
 	SetChatContent(content string)
-	ScrollChatToBottom(msg ...broker.Message)
+	ScrollChatToBottom()
+	ScrollChatToBottomFor(msg broker.Message)
 	SetValue(value string)
 }
 
@@ -82,7 +83,7 @@ type commandEntry struct {
 	desc  string
 	fn    func(ctx CommandContext) tea.Cmd
 	items func(c *Commands) []list.Item
-	// matchFn           func(text string) bool
+
 	showResultOnSpace bool
 }
 
@@ -98,9 +99,6 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 		"/models": {
 			desc:              "show available models",
 			showResultOnSpace: true,
-			fn: func(c CommandContext) tea.Cmd {
-				return nil
-			},
 			items: func(c *Commands) []list.Item {
 				return c.models
 			},
@@ -108,9 +106,6 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 		"/sessions": {
 			desc:              "show list of conversations",
 			showResultOnSpace: true,
-			fn: func(c CommandContext) tea.Cmd {
-				return nil
-			},
 			items: func(c *Commands) []list.Item {
 				return toListItems(parseConversations(c.ctx,
 					c.gateway.GetConversationsByCurrentDir))
@@ -135,9 +130,6 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 		"/themes": {
 			desc:              "list available themes",
 			showResultOnSpace: true,
-			fn: func(c CommandContext) tea.Cmd {
-				return nil
-			},
 			items: func(c *Commands) []list.Item {
 				return ThemeFiles()
 			},
@@ -162,9 +154,6 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 			showResultOnSpace: false,
 			items: func(c *Commands) []list.Item {
 				return FileItems()
-			},
-			fn: func(c CommandContext) tea.Cmd {
-				return nil
 			},
 		},
 	}
