@@ -15,7 +15,6 @@ const outputSampleRate = beep.SampleRate(44100)
 
 type AudioPlayer struct {
 	buffer *beep.Buffer // decoded, resampled audio cached in memory
-	format beep.Format
 
 	speakerOnce sync.Once
 	speakerErr  error
@@ -68,7 +67,6 @@ func (p *AudioPlayer) load(filePath string) error {
 	buf.Append(resampled)
 
 	p.buffer = buf
-	p.format = buf.Format()
 	return nil
 }
 
@@ -118,7 +116,9 @@ func (p *AudioPlayer) Stop() {
 	defer p.mu.Unlock()
 	if p.stream != nil {
 		speaker.Lock()
-		p.stream.Seek(p.stream.Len()) // jump to end -> stops output
+		if err := p.stream.Seek(p.stream.Len()); err != nil { // jump to end -> stops output
+			slog.Error("seek stream", "error", err)
+		}
 		speaker.Unlock()
 		p.stream = nil
 		p.playing = false

@@ -87,6 +87,21 @@ func buildProvider(cfg config.ProviderConfig) (fantasy.Provider, error) {
 	}
 }
 
+func resolveVariant(cfg config.ProviderConfig) (*variant.Spec, error) {
+	if cfg.Variant == "" {
+		return nil, nil
+	}
+	factory, ok := variant.Get(cfg.Variant)
+	if !ok {
+		return nil, fmt.Errorf("unknown variant %q, available: %v", cfg.Variant, variant.Names())
+	}
+	spec, err := factory(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("variant %q: %w", cfg.Variant, err)
+	}
+	return spec, nil
+}
+
 func buildOpenAIProvider(cfg config.ProviderConfig) (fantasy.Provider, error) {
 	opts := []openaicompat.Option{
 		openaicompat.WithAPIKey(cfg.APIKey),
@@ -94,15 +109,11 @@ func buildOpenAIProvider(cfg config.ProviderConfig) (fantasy.Provider, error) {
 		openaicompat.WithName(cfg.Name),
 	}
 
-	if cfg.Variant != "" {
-		factory, ok := variant.Get(cfg.Variant)
-		if !ok {
-			return nil, fmt.Errorf("unknown variant %q, available: %v", cfg.Variant, variant.Names())
-		}
-		spec, err := factory(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("variant %q: %w", cfg.Variant, err)
-		}
+	spec, err := resolveVariant(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if spec != nil {
 		opts = append(opts, openaicompat.WithSDKOptions(
 			option.WithMiddleware(variantMiddleware(spec, cfg.APIKey)),
 		))
@@ -118,16 +129,11 @@ func buildAnthropicProvider(cfg config.ProviderConfig) (fantasy.Provider, error)
 		anthropic.WithName(cfg.Name),
 	}
 
-	if cfg.Variant != "" {
-		factory, ok := variant.Get(cfg.Variant)
-		if !ok {
-			return nil, fmt.Errorf("unknown variant %q, available: %v", cfg.Variant, variant.Names())
-		}
-		spec, err := factory(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("variant %q: %w", cfg.Variant, err)
-		}
-
+	spec, err := resolveVariant(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if spec != nil {
 		headers := make(map[string]string, len(spec.Headers))
 		for _, h := range spec.Headers {
 			headers[h.Key] = h.Value()

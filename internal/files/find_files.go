@@ -19,5 +19,5 @@ func IfFileFinding(text string) (mathched bool, query string) {
 }
 
 func ReplaceFileQuery(fullText, path string) string {
-	return findFileRegex.ReplaceAllString(fullText, fmt.Sprintf("%q ", path))
+	return findFileRegex.ReplaceAllString(fullText, fmt.Sprintf("%q", path))
 }

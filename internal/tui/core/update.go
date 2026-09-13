@@ -16,7 +16,7 @@ import (
 
 func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	return func() tea.Msg {
-		if _, err := m.gateway.StreamChat(ctx, text); err != nil {
+		if err := m.gateway.StreamChat(ctx, text); err != nil {
 			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error(), IsComplete: true})
 			return nil
 		}
@@ -140,7 +140,6 @@ func (m *Model) SetSize(w, h int) {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 
 	case tea.FocusMsg:
@@ -156,7 +155,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.content.AddSegment(msg.Type, msg.Text, msg.IsComplete)
 		m.components.SetChatContent(m.content.Render())
 
-		m.components.ScrollChatToBottom(msg)
+		m.components.ScrollChatToBottomFor(msg)
 
 		if msg.Type == broker.EventStreamDone {
 			return m, tea.Batch(waitForMsg(m.messages),
@@ -202,6 +201,5 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.commands.Sync(m.components.textArea.Value())
 	m.commands.List, listCmd = m.commands.List.Update(msg)
 
-	cmds = append(cmds, textCmd, listCmd, vpCmd)
-	return m, tea.Batch(cmds...)
+	return m, tea.Batch(textCmd, listCmd, vpCmd)
 }
