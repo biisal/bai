@@ -22,6 +22,7 @@ type Spinner struct {
 	model          spinner.Model
 	showSpinner    bool
 	queuedMessages int
+	lastQueuedMsg  string
 }
 
 type Component struct {
@@ -92,20 +93,14 @@ func (c *Component) SetChatContent(content string) {
 	c.chatViewPort.SetContent(content)
 }
 
-func (c *Component) ScrollChatToBottom(msg ...broker.Message) {
-	if len(msg) == 0 {
-		c.chatViewPort.GotoBottom()
+func (c *Component) ScrollChatToBottom() {
+	c.chatViewPort.GotoBottom()
+}
+
+func (c *Component) ScrollChatToBottomFor(msg broker.Message) {
+	if msg.Type != broker.EventUserMessage && !c.wasAtBottom {
 		return
 	}
-
-	m := msg[len(msg)-1]
-
-	if m.Type != broker.EventUserMessage {
-		if !c.wasAtBottom {
-			return
-		}
-	}
-
 	c.chatViewPort.GotoBottom()
 }
 
@@ -138,14 +133,23 @@ func (c Component) Footer(props FooterProps) (footer string, height int) {
 	return
 }
 
+func (c Component) QueueView(w int) string {
+	if c.spinner.queuedMessages == 0 {
+		return ""
+	}
+
+	top := styles.StyleQueueCounter.Render(fmt.Sprintf("%d Queue", c.spinner.queuedMessages))
+	text := fmt.Sprintf("Next -> %s", c.spinner.lastQueuedMsg)
+	text = styles.StyleQueueMessage.Render(text)
+
+	return lipgloss.JoinVertical(lipgloss.Left, top, text)
+}
+
 func (c Component) SpinnerStatus() string {
 	if !c.spinner.showSpinner {
 		return ""
 	}
 	status := fmt.Sprintf("%s working...", c.spinner.model.View())
-	if c.spinner.queuedMessages > 0 {
-		status = fmt.Sprintf("%s queued: %d", status, c.spinner.queuedMessages)
-	}
 	return styles.StyleFooter.Padding(1, 0).Render(status)
 }
 

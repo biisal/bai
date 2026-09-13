@@ -19,6 +19,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Install ALSA development dependencies
+        uses: ./.github/actions/alsa-install
+
       - name: Golangci Lint
         uses: golangci/golangci-lint-action@v9
         with:
@@ -38,6 +41,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Install ALSA development dependencies
+        uses: ./.github/actions/alsa-install
+
       - name: Run Govulncheck
         uses: golang/govulncheck-action@v1
         with:
@@ -54,6 +60,9 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+
+      - name: Install ALSA development dependencies
+        uses: ./.github/actions/alsa-install
 
       - name: Make bai config dir
         run: mkdir -p ~/.config/bai
