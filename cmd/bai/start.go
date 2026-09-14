@@ -97,8 +97,12 @@ func start(configPath string, dev bool) error {
 		}
 	}
 
+	// Collect skill paths: config custom paths + standard default paths.
+	skillPaths := append([]string{}, cfg.SkillsPaths...)
+	skillPaths = append(skillPaths, config.DefaultSkillsPaths()...)
+
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer, skillPaths)
 	if err != nil {
 		return err
 	}
