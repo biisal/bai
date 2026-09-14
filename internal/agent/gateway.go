@@ -18,14 +18,16 @@ import (
 )
 
 type Gateway struct {
-	mu             sync.RWMutex
-	broker         broker.Service
-	providers      map[string]fantasy.Provider
-	db             repo.Querier
-	conversation   *repo.Conversation
-	activeProvider fantasy.Provider
-	activeModel    string
-	AudioPlayer    *audio.AudioPlayer
+	mu               sync.RWMutex
+	broker           broker.Service
+	providers        map[string]fantasy.Provider
+	db               repo.Querier
+	conversation     *repo.Conversation
+	activeProvider   fantasy.Provider
+	activeModel      string
+	AudioPlayer      *audio.AudioPlayer
+	skills           []instruction.Skill
+	userInstructions []string
 }
 
 func NewGateway(
@@ -34,6 +36,7 @@ func NewGateway(
 	b broker.Service,
 	providerConfigs []config.ProviderConfig,
 	audioPlayer *audio.AudioPlayer,
+	skillPaths []string,
 ) (*Gateway, error) {
 	providers, err := buildProviders(providerConfigs)
 	if err != nil {
@@ -43,11 +46,17 @@ func NewGateway(
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve provider: %w", err)
 	}
+
+	skills := instruction.LoadSkills(skillPaths...)
+	userInstructions := instruction.ReadAgentMd()
+
 	g := &Gateway{
-		db:          db,
-		broker:      b,
-		providers:   providers,
-		AudioPlayer: audioPlayer,
+		db:               db,
+		broker:           b,
+		providers:        providers,
+		AudioPlayer:      audioPlayer,
+		skills:           skills,
+		userInstructions: []string{userInstructions},
 	}
 	if err := g.SetActive(activeProvider, activeModel); err != nil {
 		return nil, err
@@ -148,7 +157,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	agentTools := tools.NewTools(g.broker)
 	ag := fantasy.NewAgent(
 		model,
-		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt()),
+		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt(g.userInstructions, g.skills)),
 		fantasy.WithTools(agentTools...),
 		fantasy.WithMaxRetries(3),
 	)
