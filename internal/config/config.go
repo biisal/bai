@@ -39,6 +39,7 @@ type Config struct {
 	DatabasePath string           `json:"database_path"`
 	LogFilePath  string           `json:"log_file_path"`
 	SoundPath    string           `json:"sound_path"`
+	SkillsPaths  []string         `json:"skills_paths"`
 	Providers    []ProviderConfig `json:"providers"`
 }
 
@@ -60,6 +61,31 @@ func DefaultDatabasePath() string {
 
 func DefaultLogFilePath() string {
 	return filepath.Join(AppConfigDir(), "bai.log")
+}
+
+func DefaultSkillsPaths() []string {
+	paths := []string{
+		filepath.Join(AppConfigDir(), "skills"),
+	}
+
+	home, err := os.UserHomeDir()
+	if err == nil && home != "" {
+		paths = append(
+			paths,
+			filepath.Join(home, ".agents", "skills"),
+			filepath.Join(home, ".claude", "skills"),
+		)
+	}
+
+	paths = append(
+		paths,
+		".bai/skills",
+		"./skills",
+		".agents/skills",
+		".claude/skills",
+	)
+
+	return paths
 }
 
 func DefaultConfig() *Config {

@@ -10,6 +10,7 @@ import (
 	"github.com/biisal/bai/internal/files"
 )
 
+// TODO : include git folders
 var ignoreFolders = []string{"node_modules", ".venv", ".git"}
 
 type FileItem struct {

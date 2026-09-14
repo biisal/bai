@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	test_utils "github.com/biisal/bai/utils/tests"
@@ -32,6 +34,68 @@ func createTempFile(t *testing.T, path string, fileContent ...any) {
 func defaultConfigString() string {
 	data, _ := json.MarshalIndent(DefaultConfig(), "", "  ")
 	return string(data)
+}
+
+func TestDefaultSkillsPaths(t *testing.T) {
+	paths := DefaultSkillsPaths()
+
+	if len(paths) == 0 {
+		t.Fatal("DefaultSkillsPaths() returned empty slice")
+	}
+
+	// First path should be bai's own skills dir
+	wantFirst := filepath.Join(AppConfigDir(), "skills")
+	if paths[0] != wantFirst {
+		t.Errorf("paths[0] = %v, want %v", paths[0], wantFirst)
+	}
+
+	// Must include cross-agent and Claude paths
+	foundAgentsGlobal := false
+	foundClaudeGlobal := false
+	foundBaiProject := false
+	foundSimpleSkills := false
+	foundAgentsProject := false
+	foundClaudeProject := false
+
+	for _, p := range paths {
+		if strings.HasSuffix(p, ".agents/skills") && !strings.HasPrefix(p, ".") {
+			foundAgentsGlobal = true
+		}
+		if strings.HasSuffix(p, ".claude/skills") && !strings.HasPrefix(p, ".") {
+			foundClaudeGlobal = true
+		}
+		if p == ".bai/skills" {
+			foundBaiProject = true
+		}
+		if p == "./skills" {
+			foundSimpleSkills = true
+		}
+		if p == ".agents/skills" {
+			foundAgentsProject = true
+		}
+		if p == ".claude/skills" {
+			foundClaudeProject = true
+		}
+	}
+
+	if !foundAgentsGlobal {
+		t.Error("missing ~/.agents/skills global path")
+	}
+	if !foundClaudeGlobal {
+		t.Error("missing ~/.claude/skills global path")
+	}
+	if !foundBaiProject {
+		t.Error("missing .bai/skills project path")
+	}
+	if !foundSimpleSkills {
+		t.Error("missing ./skills project path")
+	}
+	if !foundAgentsProject {
+		t.Error("missing .agents/skills project path")
+	}
+	if !foundClaudeProject {
+		t.Error("missing .claude/skills project path")
+	}
 }
 
 func TestLoad(t *testing.T) {
@@ -279,6 +343,76 @@ func TestLoad(t *testing.T) {
 			setupFN: func(t *testing.T) {
 				path := "/tmp/tempfile.json"
 				createTempFile(t, path, Config{
+					Providers: []ProviderConfig{
+						{
+							Name:    "test",
+							BaseURL: "https://api.openai.com/v1",
+							Format:  FormatOpenAI,
+						},
+					},
+				})
+			},
+		},
+		{
+			name:    "skills_paths empty when not set in config",
+			path:    "/tmp/tempfile.json",
+			wantErr: nil,
+			checkFN: func(t *testing.T, config *Config) {
+				if config.SkillsPaths != nil {
+					t.Errorf("config.SkillsPaths = %v, want nil", config.SkillsPaths)
+				}
+			},
+			setupFN: func(t *testing.T) {
+				path := "/tmp/tempfile.json"
+				createTempFile(t, path, Config{
+					Providers: []ProviderConfig{
+						{
+							Name:    "test",
+							BaseURL: "https://api.openai.com/v1",
+							Format:  FormatOpenAI,
+						},
+					},
+				})
+			},
+		},
+		{
+			name:    "skills_paths loaded from config",
+			path:    "/tmp/tempfile.json",
+			wantErr: nil,
+			checkFN: func(t *testing.T, config *Config) {
+				want := []string{"/custom/skills", "/shared/skills"}
+				test_utils.AssertSliceEqual(t, config.SkillsPaths, want)
+			},
+			setupFN: func(t *testing.T) {
+				path := "/tmp/tempfile.json"
+				createTempFile(t, path, Config{
+					SkillsPaths: []string{"/custom/skills", "/shared/skills"},
+					Providers: []ProviderConfig{
+						{
+							Name:    "test",
+							BaseURL: "https://api.openai.com/v1",
+							Format:  FormatOpenAI,
+						},
+					},
+				})
+			},
+		},
+		{
+			name:    "skills_paths empty array in config",
+			path:    "/tmp/tempfile.json",
+			wantErr: nil,
+			checkFN: func(t *testing.T, config *Config) {
+				if config.SkillsPaths == nil {
+					t.Error("config.SkillsPaths = nil, want empty slice")
+				}
+				if len(config.SkillsPaths) != 0 {
+					t.Errorf("config.SkillsPaths = %v, want empty slice", config.SkillsPaths)
+				}
+			},
+			setupFN: func(t *testing.T) {
+				path := "/tmp/tempfile.json"
+				createTempFile(t, path, Config{
+					SkillsPaths: []string{},
 					Providers: []ProviderConfig{
 						{
 							Name:    "test",
