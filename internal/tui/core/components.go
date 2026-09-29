@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -10,11 +11,13 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/biisal/bai/internal/git"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
 type CompSize struct {
+	Width  int
 	Height int
 }
 
@@ -29,11 +32,13 @@ type Component struct {
 	textArea     textarea.Model
 	chatViewPort viewport.Model
 	wasAtBottom  bool
+	prompt       *Prompt
+	showPrompt   bool
 
 	spinner Spinner
 }
 
-func NewComponent() *Component {
+func NewComponent(gitRepo *git.Git) *Component {
 	ta := textarea.New()
 	ta.Placeholder = "Send a message..."
 	ta.SetVirtualCursor(true)
@@ -67,6 +72,25 @@ func NewComponent() *Component {
 	return &Component{
 		textArea:     ta,
 		chatViewPort: vp,
+		prompt: NewPrompt("Do you want to init git so we can do things",
+			[]PromptOption{
+				{Text: "Yes", Value: "yes", KeyBind: "y", handler: func() tea.Cmd {
+					if err := gitRepo.Init(); err != nil {
+						slog.Error("git init", "error", err)
+					}
+					if err := gitRepo.InsertToGitIgnore(gitRepo.Directory); err != nil {
+						slog.Error("git insert to gitignore", "error", err)
+					}
+					return tea.Cmd(func() tea.Msg {
+						return GitInitMsg{showPrompt: false}
+					})
+				}},
+				{Text: "No", Value: "no", KeyBind: "n", handler: func() tea.Cmd {
+					return tea.Cmd(func() tea.Msg {
+						return GitInitMsg{showPrompt: false}
+					})
+				}},
+			}),
 
 		spinner: Spinner{model: sp},
 	}
