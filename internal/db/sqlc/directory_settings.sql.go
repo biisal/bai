@@ -9,21 +9,6 @@ import (
 	"context"
 )
 
-const createDirectorySettings = `-- name: CreateDirectorySettings :exec
-INSERT INTO directory_settings (directory, auto_git_init)
-VALUES (?1, ?2)
-`
-
-type CreateDirectorySettingsParams struct {
-	Directory   string
-	AutoGitInit bool
-}
-
-func (q *Queries) CreateDirectorySettings(ctx context.Context, arg CreateDirectorySettingsParams) error {
-	_, err := q.db.ExecContext(ctx, createDirectorySettings, arg.Directory, arg.AutoGitInit)
-	return err
-}
-
 const getDirectorySettings = `-- name: GetDirectorySettings :one
 SELECT id, directory, auto_git_init FROM directory_settings
 WHERE directory = ?1
@@ -36,18 +21,18 @@ func (q *Queries) GetDirectorySettings(ctx context.Context, directory string) (D
 	return i, err
 }
 
-const updateDirectorySettings = `-- name: UpdateDirectorySettings :exec
-UPDATE directory_settings
-SET auto_git_init = ?2
-WHERE directory = ?1
+const upsertDirectorySettings = `-- name: UpsertDirectorySettings :exec
+INSERT INTO directory_settings (directory, auto_git_init)
+VALUES (?1, ?2)
+ON CONFLICT(directory) DO UPDATE SET auto_git_init = excluded.auto_git_init
 `
 
-type UpdateDirectorySettingsParams struct {
+type UpsertDirectorySettingsParams struct {
 	Directory   string
 	AutoGitInit bool
 }
 
-func (q *Queries) UpdateDirectorySettings(ctx context.Context, arg UpdateDirectorySettingsParams) error {
-	_, err := q.db.ExecContext(ctx, updateDirectorySettings, arg.Directory, arg.AutoGitInit)
+func (q *Queries) UpsertDirectorySettings(ctx context.Context, arg UpsertDirectorySettingsParams) error {
+	_, err := q.db.ExecContext(ctx, upsertDirectorySettings, arg.Directory, arg.AutoGitInit)
 	return err
 }

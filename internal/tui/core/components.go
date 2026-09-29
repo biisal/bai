@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"log/slog"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -72,27 +71,8 @@ func NewComponent(gitRepo *git.Git) *Component {
 	return &Component{
 		textArea:     ta,
 		chatViewPort: vp,
-		prompt: NewPrompt("Do you want to init git so we can do things",
-			[]PromptOption{
-				{Text: "Yes", Value: "yes", KeyBind: "y", handler: func() tea.Cmd {
-					if err := gitRepo.Init(); err != nil {
-						slog.Error("git init", "error", err)
-					}
-					if err := gitRepo.InsertToGitIgnore(gitRepo.Directory); err != nil {
-						slog.Error("git insert to gitignore", "error", err)
-					}
-					return tea.Cmd(func() tea.Msg {
-						return GitInitMsg{showPrompt: false}
-					})
-				}},
-				{Text: "No", Value: "no", KeyBind: "n", handler: func() tea.Cmd {
-					return tea.Cmd(func() tea.Msg {
-						return GitInitMsg{showPrompt: false}
-					})
-				}},
-			}),
-
-		spinner: Spinner{model: sp},
+		prompt:       newGitPrompt(gitRepo),
+		spinner:      Spinner{model: sp},
 	}
 }
 

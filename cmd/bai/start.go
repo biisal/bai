@@ -111,7 +111,7 @@ func start(configPath string, dev bool) error {
 	SetTheme(ctx, dbService, b)
 
 	gitRepo := git.New(cfg.GitDirName)
-	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, cfg.Providers, gitRepo))
+	p := tea.NewProgram(tui.InitModel(ctx, gateway, dbService, b, cfg.Providers, gitRepo))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}
