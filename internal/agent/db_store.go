@@ -122,3 +122,7 @@ func toFantasyMessage(m repo.Message) fantasy.Message {
 func (g *Gateway) SetThemeToDB(ctx context.Context, theme string) error {
 	return g.db.AddOrUpdateSettings(ctx, sql.NullString{Valid: true, String: theme})
 }
+
+func (g *Gateway) GetDirectorySettings(ctx context.Context, directory string) (repo.DirectorySetting, error) {
+	return g.db.GetDirectorySettings(ctx, directory)
+}
