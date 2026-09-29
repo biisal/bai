@@ -29,6 +29,10 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	}
 }
 
+type GitInitMsg struct {
+	showPrompt bool
+}
+
 func (m *Model) MatchCommand() tea.Cmd {
 	if !m.commands.ShowList {
 		return nil
@@ -167,6 +171,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.content.ReRender()
 		m.components.SetChatContent(m.content.Render())
 
+	case GitInitMsg:
+		m.components.showPrompt = msg.showPrompt
+		return m, nil
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc":
@@ -191,7 +199,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.submitMessage(text)
 			}
 			return m, m.MatchCommand()
+		default:
+			if m.components.showPrompt {
+				return m, m.components.prompt.Update(msg)
+			}
 		}
+
 	}
 	var textCmd, listCmd, vpCmd tea.Cmd
 

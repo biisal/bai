@@ -45,7 +45,7 @@ type Model struct {
 }
 
 func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service, providers []config.ProviderConfig, gitRepo *git.Git) *Model {
-	comp := NewComponent()
+	comp := NewComponent(gitRepo)
 	commands := commands.NewCommands(ctx, providers, gateway)
 
 	return &Model{
@@ -87,17 +87,9 @@ func gitInit(m *Model) tea.Cmd {
 		}
 		settings, err := m.gateway.GetDirectorySettings(m.ctx, files.CurrentDir())
 		if err != nil && errors.Is(err, sql.ErrNoRows) || err == nil && settings.AutoGitInit {
-			// TODO: ask to user
-			if err := m.git.Init(); err != nil {
-				slog.Error("git init", "error", err)
-				return err
+			return GitInitMsg{
+				showPrompt: true,
 			}
-			if err := m.git.InsertToGitIgnore(m.git.Directory); err != nil {
-				slog.Error("git insert to gitignore", "error", err)
-				return err
-			}
-
-			return nil
 		}
 		if !settings.AutoGitInit {
 			return nil
