@@ -13,6 +13,7 @@ import (
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/logger"
 	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
@@ -109,7 +110,8 @@ func start(configPath string, dev bool) error {
 
 	SetTheme(ctx, dbService, b)
 
-	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, cfg.Providers))
+	gitRepo := git.New(cfg.GitDirName)
+	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, cfg.Providers, gitRepo))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}

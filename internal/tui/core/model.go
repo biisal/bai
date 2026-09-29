@@ -2,13 +2,17 @@ package tui
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/files"
+	"github.com/biisal/bai/internal/git"
 	broker "github.com/biisal/bai/internal/pubsub"
 	chatbuilder "github.com/biisal/bai/internal/tui/chat-builder"
 	"github.com/biisal/bai/internal/tui/commands"
@@ -21,6 +25,7 @@ type chatContext struct {
 
 type Model struct {
 	gateway         *agent.Gateway
+	git             *git.Git
 	broker          broker.Service
 	messages        <-chan broker.Message
 	components      *Component
@@ -39,7 +44,7 @@ type Model struct {
 	commands *commands.Commands
 }
 
-func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service, providers []config.ProviderConfig) *Model {
+func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service, providers []config.ProviderConfig, gitRepo *git.Git) *Model {
 	comp := NewComponent()
 	commands := commands.NewCommands(ctx, providers, gateway)
 
@@ -53,6 +58,7 @@ func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Servic
 		content:         chatbuilder.NewContent(),
 		commands:        commands,
 		windowTitle:     fmt.Sprintf("bai - %s", files.GetBaseDir()),
+		git:             gitRepo,
 	}
 }
 
@@ -62,6 +68,44 @@ func waitForMsg(msgChan <-chan broker.Message) tea.Cmd {
 	}
 }
 
+func gitInit(m *Model) tea.Cmd {
+	return func() tea.Msg {
+		slog.Debug("git init started")
+
+		if m.git == nil {
+			slog.Debug("git init", "error", "git repo is nil")
+			return nil
+		}
+
+		initialized, err := m.git.CheckIfGitInitialized()
+		if err != nil {
+			slog.Error("git status check", "error", err)
+			return err
+		}
+		if initialized {
+			return nil
+		}
+		settings, err := m.gateway.GetDirectorySettings(m.ctx, files.CurrentDir())
+		if err != nil && errors.Is(err, sql.ErrNoRows) || err == nil && settings.AutoGitInit {
+			// TODO: ask to user
+			if err := m.git.Init(); err != nil {
+				slog.Error("git init", "error", err)
+				return err
+			}
+			if err := m.git.InsertToGitIgnore(m.git.Directory); err != nil {
+				slog.Error("git insert to gitignore", "error", err)
+				return err
+			}
+
+			return nil
+		}
+		if !settings.AutoGitInit {
+			return nil
+		}
+		return nil
+	}
+}
+
 func (m Model) Init() tea.Cmd {
-	return waitForMsg(m.messages)
+	return tea.Batch(waitForMsg(m.messages), gitInit(&m))
 }

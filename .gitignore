@@ -3,3 +3,4 @@
 *.db
 bin
 dist
+.bai_git
