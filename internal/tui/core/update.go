@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/config"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/files"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/commands"
@@ -31,6 +32,19 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 
 type GitInitMsg struct {
 	showPrompt bool
+	neverAsk   bool
+}
+
+func (m Model) disableAutoGitInit() tea.Cmd {
+	return func() tea.Msg {
+		if err := m.settings.UpsertDirectorySettings(m.ctx, repo.UpsertDirectorySettingsParams{
+			Directory:   files.CurrentDir(),
+			AutoGitInit: false,
+		}); err != nil {
+			slog.Error("disable auto git init", "error", err)
+		}
+		return nil
+	}
 }
 
 func (m *Model) MatchCommand() tea.Cmd {
@@ -135,6 +149,7 @@ func (m *Model) SetSize(w, h int) {
 	m.Height = h
 
 	m.components.textArea.SetWidth(w)
+	m.components.prompt.Width = w
 
 	// using viewport
 	m.content.SetSize(w, h)
@@ -173,6 +188,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case GitInitMsg:
 		m.components.showPrompt = msg.showPrompt
+		if msg.neverAsk {
+			return m, m.disableAutoGitInit()
+		}
 		return m, nil
 
 	case tea.KeyPressMsg:

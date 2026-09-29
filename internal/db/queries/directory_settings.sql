@@ -2,11 +2,7 @@
 SELECT * FROM directory_settings
 WHERE directory = ?1;
 
--- name: UpdateDirectorySettings :exec
-UPDATE directory_settings
-SET auto_git_init = ?2
-WHERE directory = ?1;
-
--- name: CreateDirectorySettings :exec
+-- name: UpsertDirectorySettings :exec
 INSERT INTO directory_settings (directory, auto_git_init)
-VALUES (?1, ?2);
+VALUES (?1, ?2)
+ON CONFLICT(directory) DO UPDATE SET auto_git_init = excluded.auto_git_init;

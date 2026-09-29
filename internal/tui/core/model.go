@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/files"
 	"github.com/biisal/bai/internal/git"
 	broker "github.com/biisal/bai/internal/pubsub"
@@ -23,8 +24,14 @@ type chatContext struct {
 	cancel context.CancelFunc
 }
 
+type directorySettings interface {
+	GetDirectorySettings(ctx context.Context, directory string) (repo.DirectorySetting, error)
+	UpsertDirectorySettings(ctx context.Context, arg repo.UpsertDirectorySettingsParams) error
+}
+
 type Model struct {
 	gateway         *agent.Gateway
+	settings        directorySettings
 	git             *git.Git
 	broker          broker.Service
 	messages        <-chan broker.Message
@@ -44,12 +51,13 @@ type Model struct {
 	commands *commands.Commands
 }
 
-func InitModel(ctx context.Context, gateway *agent.Gateway, broker broker.Service, providers []config.ProviderConfig, gitRepo *git.Git) *Model {
+func InitModel(ctx context.Context, gateway *agent.Gateway, settings directorySettings, broker broker.Service, providers []config.ProviderConfig, gitRepo *git.Git) *Model {
 	comp := NewComponent(gitRepo)
 	commands := commands.NewCommands(ctx, providers, gateway)
 
 	return &Model{
 		gateway:    gateway,
+		settings:   settings,
 		messages:   broker.Subscribe(),
 		components: comp, ctx: ctx,
 		ChatContent:     &strings.Builder{},
@@ -85,14 +93,9 @@ func gitInit(m *Model) tea.Cmd {
 		if initialized {
 			return nil
 		}
-		settings, err := m.gateway.GetDirectorySettings(m.ctx, files.CurrentDir())
-		if err != nil && errors.Is(err, sql.ErrNoRows) || err == nil && settings.AutoGitInit {
-			return GitInitMsg{
-				showPrompt: true,
-			}
-		}
-		if !settings.AutoGitInit {
-			return nil
+		settings, err := m.settings.GetDirectorySettings(m.ctx, files.CurrentDir())
+		if errors.Is(err, sql.ErrNoRows) || err == nil && settings.AutoGitInit {
+			return GitInitMsg{showPrompt: true}
 		}
 		return nil
 	}

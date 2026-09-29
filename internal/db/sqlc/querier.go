@@ -13,7 +13,6 @@ type Querier interface {
 	AddOrUpdateProvider(ctx context.Context, arg AddOrUpdateProviderParams) error
 	AddOrUpdateSettings(ctx context.Context, theme sql.NullString) error
 	CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error)
-	CreateDirectorySettings(ctx context.Context, arg CreateDirectorySettingsParams) error
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (int64, error)
 	GetConversation(ctx context.Context, id int64) (Conversation, error)
 	GetConversationsByDirectory(ctx context.Context, directory string) ([]Conversation, error)
@@ -21,7 +20,7 @@ type Querier interface {
 	GetMessagesByConversation(ctx context.Context, conversationID int64) ([]Message, error)
 	GetProvider(ctx context.Context) (Provider, error)
 	GetSettings(ctx context.Context) (UserSetting, error)
-	UpdateDirectorySettings(ctx context.Context, arg UpdateDirectorySettingsParams) error
+	UpsertDirectorySettings(ctx context.Context, arg UpsertDirectorySettingsParams) error
 }
 
 var _ Querier = (*Queries)(nil)
