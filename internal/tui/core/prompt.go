@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/biisal/bai/internal/git"
+	"github.com/biisal/bai/internal/tui/commands"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
@@ -69,7 +70,7 @@ func (p *Prompt) Update(msg tea.KeyPressMsg) tea.Cmd {
 }
 
 func newGitPrompt(repo *git.Git) *Prompt {
-	dismiss := func() tea.Msg { return GitInitMsg{showPrompt: false} }
+	dismiss := func() tea.Msg { return commands.GitInitMsg{} }
 	return &Prompt{
 		Text: "Initialize a git repository in this directory?",
 		Options: []PromptOption{
@@ -84,7 +85,7 @@ func newGitPrompt(repo *git.Git) *Prompt {
 			}},
 			{Text: "No", KeyBind: "n", Variant: VariantError, handler: func() tea.Cmd { return dismiss }},
 			{Text: "Don't ask again", KeyBind: "d", handler: func() tea.Cmd {
-				return func() tea.Msg { return GitInitMsg{showPrompt: false, neverAsk: true} }
+				return func() tea.Msg { return commands.GitInitMsg{NeverAsk: true} }
 			}},
 		},
 	}

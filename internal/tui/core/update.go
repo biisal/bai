@@ -30,11 +30,6 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 	}
 }
 
-type GitInitMsg struct {
-	showPrompt bool
-	neverAsk   bool
-}
-
 func (m Model) disableAutoGitInit() tea.Cmd {
 	return func() tea.Msg {
 		if err := m.settings.UpsertDirectorySettings(m.ctx, repo.UpsertDirectorySettingsParams{
@@ -186,9 +181,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.content.ReRender()
 		m.components.SetChatContent(m.content.Render())
 
-	case GitInitMsg:
-		m.components.showPrompt = msg.showPrompt
-		if msg.neverAsk {
+	case commands.GitInitMsg:
+		m.components.showPrompt = msg.ShowPrompt
+		if msg.NeverAsk {
 			return m, m.disableAutoGitInit()
 		}
 		return m, nil
