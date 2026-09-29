@@ -44,6 +44,11 @@ const (
 	fileCommand = "@"
 )
 
+type GitInitMsg struct {
+	ShowPrompt bool
+	NeverAsk   bool
+}
+
 type Commands struct {
 	List     list.Model
 	Current  string
@@ -132,6 +137,15 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 			showResultOnSpace: true,
 			items: func(c *Commands) []list.Item {
 				return ThemeFiles()
+			},
+		},
+		"/git_init": {
+			desc:              "initialize a git repository in this directory",
+			showResultOnSpace: true,
+			fn: func(c CommandContext) tea.Cmd {
+				c.Components.SetValue("")
+				*c.ShowList = false
+				return func() tea.Msg { return GitInitMsg{ShowPrompt: true} }
 			},
 		},
 		"/exit": {

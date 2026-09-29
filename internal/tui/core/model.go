@@ -95,7 +95,7 @@ func gitInit(m *Model) tea.Cmd {
 		}
 		settings, err := m.settings.GetDirectorySettings(m.ctx, files.CurrentDir())
 		if errors.Is(err, sql.ErrNoRows) || err == nil && settings.AutoGitInit {
-			return GitInitMsg{showPrompt: true}
+			return commands.GitInitMsg{ShowPrompt: true}
 		}
 		return nil
 	}
