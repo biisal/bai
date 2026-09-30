@@ -13,6 +13,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/git"
 	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -28,6 +29,7 @@ type Gateway struct {
 	AudioPlayer      *audio.AudioPlayer
 	skills           []instruction.Skill
 	userInstructions []string
+	gitRepo          *git.Git
 }
 
 func NewGateway(
@@ -37,6 +39,7 @@ func NewGateway(
 	providerConfigs []config.ProviderConfig,
 	audioPlayer *audio.AudioPlayer,
 	skillPaths []string,
+	gitRepo *git.Git,
 ) (*Gateway, error) {
 	providers, err := buildProviders(providerConfigs)
 	if err != nil {
@@ -57,6 +60,7 @@ func NewGateway(
 		AudioPlayer:      audioPlayer,
 		skills:           skills,
 		userInstructions: []string{userInstructions},
+		gitRepo:          gitRepo,
 	}
 	if err := g.SetActive(activeProvider, activeModel); err != nil {
 		return nil, err
@@ -165,12 +169,31 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	var partialReasoning strings.Builder
 	var partialText strings.Builder
 
+	var purpose strings.Builder
+
 	_, err = ag.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
+		OnFinish: func(result *fantasy.AgentResult) {
+			if g.gitRepo != nil {
+				if err := g.gitRepo.Add("."); err != nil {
+					slog.Error("failed to add files to git", "error", err)
+				}
+				msg := strings.TrimSpace(purpose.String())
+				if err := g.gitRepo.Commit(" " + msg); err != nil {
+					slog.Error("failed to commit files", "error", err)
+				}
+			}
+		},
 
 		OnToolCall: func(toolCall fantasy.ToolCallContent) error {
 			slog.Debug("tool call", "input", toolCall.Input, "name", toolCall.ToolName)
+			if p := tools.PurposeFromToolCall(toolCall.ToolName, toolCall.Input); p != "" {
+				if purpose.Len() > 0 {
+					purpose.WriteString("; ")
+				}
+				purpose.WriteString(p)
+			}
 			return nil
 		},
 

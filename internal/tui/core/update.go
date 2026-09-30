@@ -144,7 +144,7 @@ func (m *Model) SetSize(w, h int) {
 	m.Height = h
 
 	m.components.textArea.SetWidth(w)
-	m.components.prompt.Width = w
+	m.components.prompt.UpdateSize(w)
 
 	// using viewport
 	m.content.SetSize(w, h)

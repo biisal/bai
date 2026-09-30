@@ -139,7 +139,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 				return ThemeFiles()
 			},
 		},
-		"/git_init": {
+		GitInitCommand: {
 			desc:              "initialize a git repository in this directory",
 			showResultOnSpace: true,
 			fn: func(c CommandContext) tea.Cmd {
