@@ -133,6 +133,40 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 	}
 }
 
+// TODO : write test properly
+func (g *Gateway) syncGitRepo(purpose string) {
+	if g.gitRepo == nil {
+		return
+	}
+	isDirty, output, err := g.gitRepo.CheckIfDirty()
+	if err != nil {
+		slog.Error("failed to check if git repo is dirty", "error", err)
+		return
+	}
+	if !isDirty {
+		return
+	}
+	if err := g.gitRepo.Add("."); err != nil {
+		slog.Error("failed to add files to git", "error", err)
+	}
+	msg := strings.TrimSpace(purpose)
+	if msg == "" {
+		maxLines := 10
+		lines := strings.Split(output, "\n")
+		linesLen := len(lines)
+		if linesLen > maxLines {
+			lines = append(lines[:maxLines], fmt.Sprintf("... More %d lines", linesLen-maxLines))
+		}
+
+		linesStr := strings.Join(lines, "\n")
+
+		msg = fmt.Sprintf("auto-commit: %s\n%s", time.Now().Format(time.RFC3339), linesStr)
+	}
+	if err := g.gitRepo.Commit(msg); err != nil {
+		slog.Error("failed to commit files", "error", err)
+	}
+}
+
 func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
 	// 1. Save user message.
@@ -174,17 +208,6 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	_, err = ag.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
-		OnFinish: func(result *fantasy.AgentResult) {
-			if g.gitRepo != nil {
-				if err := g.gitRepo.Add("."); err != nil {
-					slog.Error("failed to add files to git", "error", err)
-				}
-				msg := strings.TrimSpace(purpose.String())
-				if err := g.gitRepo.Commit(" " + msg); err != nil {
-					slog.Error("failed to commit files", "error", err)
-				}
-			}
-		},
 
 		OnToolCall: func(toolCall fantasy.ToolCallContent) error {
 			slog.Debug("tool call", "input", toolCall.Input, "name", toolCall.ToolName)
@@ -229,6 +252,8 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 		slog.Error("failed to stream chat", "error", err)
 		return err
 	}
+
+	g.syncGitRepo(purpose.String())
 
 	return nil
 }
