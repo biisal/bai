@@ -102,15 +102,16 @@ func start(configPath string, dev bool) error {
 	skillPaths := append([]string{}, cfg.SkillsPaths...)
 	skillPaths = append(skillPaths, config.DefaultSkillsPaths()...)
 
+	gitRepo := git.New(cfg.GitDirName)
+
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer, skillPaths)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer, skillPaths, gitRepo)
 	if err != nil {
 		return err
 	}
 
 	SetTheme(ctx, dbService, b)
 
-	gitRepo := git.New(cfg.GitDirName)
 	p := tea.NewProgram(tui.InitModel(ctx, gateway, dbService, b, cfg.Providers, gitRepo))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
