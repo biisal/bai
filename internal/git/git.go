@@ -17,20 +17,21 @@ func New(directory string) *Git {
 	return &Git{Directory: directory}
 }
 
-func (g *Git) runGitCommand(args ...string) error {
+func (g *Git) runGitCommand(args ...string) (string, error) {
 	args = append([]string{"--git-dir", g.Directory, "--work-tree", "."}, args...)
 	slog.Debug("runGitCommand", "args", args, "directory", g.Directory)
+	// TODO : use CommandContext
 	cmd := exec.Command("git", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		slog.Error("runGitCommand", "error", err, "output", string(output))
-		return err
+		return "", err
 	}
-	return nil
+	return string(output), nil
 }
 
 func (c *Git) CheckIfGitInitialized() (bool, error) {
-	if err := c.runGitCommand("status"); err != nil {
+	if _, err := c.runGitCommand("status"); err != nil {
 		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			if exitErr.ExitCode() == 128 {
 				return false, nil
@@ -42,17 +43,20 @@ func (c *Git) CheckIfGitInitialized() (bool, error) {
 }
 
 func (c *Git) Init() error {
-	return c.runGitCommand("init")
+	_, err := c.runGitCommand("init")
+	return err
 }
 
 func (c *Git) Add(paths ...string) error {
 	args := append([]string{"add"}, paths...)
-	return c.runGitCommand(args...)
+	_, err := c.runGitCommand(args...)
+	return err
 }
 
 func (c *Git) Commit(message string) error {
 	args := []string{"commit", "-m", message}
-	return c.runGitCommand(args...)
+	_, err := c.runGitCommand(args...)
+	return err
 }
 
 func normalizePath(path string) (s string) {
@@ -98,4 +102,13 @@ func (c *Git) InsertToGitIgnore(paths ...string) error {
 		return os.WriteFile(gitignore, b.Bytes(), 0o644)
 	}
 	return nil
+}
+
+func (c *Git) CheckIfDirty() (bool, string, error) {
+	args := []string{"status", "--porcelain"}
+	output, err := c.runGitCommand(args...)
+	if err != nil {
+		return false, "", err
+	}
+	return len(output) > 0, output, nil
 }
