@@ -13,6 +13,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/git"
 	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -28,7 +29,7 @@ type Gateway struct {
 	AudioPlayer      *audio.AudioPlayer
 	skills           []instruction.Skill
 	userInstructions []string
-	gitRepo          GitRepo
+	gitRepo          git.GitRepo
 }
 
 func NewGateway(
@@ -38,11 +39,8 @@ func NewGateway(
 	providerConfigs []config.ProviderConfig,
 	audioPlayer *audio.AudioPlayer,
 	skillPaths []string,
-	gitRepo GitRepo,
+	gitRepo git.GitRepo,
 ) (*Gateway, error) {
-	if gitRepo == nil {
-		gitRepo = noopGitRepo{}
-	}
 	providers, err := buildProviders(providerConfigs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build providers: %w", err)

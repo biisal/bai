@@ -15,9 +15,21 @@ type Git struct {
 	Directory string `json:"directory"`
 }
 
+type GitRepo interface {
+	Init() error
+	CheckIfDirty() (dirty bool, status string, err error)
+	Add(paths ...string) error
+	Commit(message string) error
+	CheckIfGitInitialized() (bool, error)
+	InsertToGitIgnore(paths ...string) error
+	Dir() string
+}
+
 func New(directory string) *Git {
 	return &Git{Directory: directory}
 }
+
+func (g *Git) Dir() string { return g.Directory }
 
 func (g *Git) command(ctx context.Context, args ...string) *exec.Cmd {
 	full := append([]string{"--git-dir", g.Directory, "--work-tree", "."}, args...)
