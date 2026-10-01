@@ -80,11 +80,6 @@ func gitInit(m *Model) tea.Cmd {
 	return func() tea.Msg {
 		slog.Debug("git init started")
 
-		if m.git == nil {
-			slog.Debug("git init", "error", "git repo is nil")
-			return nil
-		}
-
 		initialized, err := m.git.CheckIfGitInitialized()
 		if err != nil {
 			slog.Error("git status check", "error", err)

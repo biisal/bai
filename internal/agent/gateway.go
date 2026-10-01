@@ -13,7 +13,6 @@ import (
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
-	"github.com/biisal/bai/internal/git"
 	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -29,7 +28,7 @@ type Gateway struct {
 	AudioPlayer      *audio.AudioPlayer
 	skills           []instruction.Skill
 	userInstructions []string
-	gitRepo          *git.Git
+	gitRepo          GitRepo
 }
 
 func NewGateway(
@@ -39,8 +38,11 @@ func NewGateway(
 	providerConfigs []config.ProviderConfig,
 	audioPlayer *audio.AudioPlayer,
 	skillPaths []string,
-	gitRepo *git.Git,
+	gitRepo GitRepo,
 ) (*Gateway, error) {
+	if gitRepo == nil {
+		gitRepo = noopGitRepo{}
+	}
 	providers, err := buildProviders(providerConfigs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build providers: %w", err)
@@ -135,9 +137,6 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 
 // TODO : write test properly
 func (g *Gateway) syncGitRepo(purpose string) {
-	if g.gitRepo == nil {
-		return
-	}
 	isDirty, output, err := g.gitRepo.CheckIfDirty()
 	if err != nil {
 		slog.Error("failed to check if git repo is dirty", "error", err)
