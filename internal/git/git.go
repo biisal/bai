@@ -2,7 +2,9 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -17,17 +19,35 @@ func New(directory string) *Git {
 	return &Git{Directory: directory}
 }
 
+func (g *Git) command(ctx context.Context, args ...string) *exec.Cmd {
+	full := append([]string{"--git-dir", g.Directory, "--work-tree", "."}, args...)
+	slog.Debug("runGitCommand", "args", full, "directory", g.Directory)
+	return exec.CommandContext(ctx, "git", full...)
+}
+
 func (g *Git) runGitCommand(args ...string) (string, error) {
-	args = append([]string{"--git-dir", g.Directory, "--work-tree", "."}, args...)
-	slog.Debug("runGitCommand", "args", args, "directory", g.Directory)
-	// TODO : use CommandContext
-	cmd := exec.Command("git", args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		slog.Error("runGitCommand", "error", err, "output", string(output))
-		return "", err
+	return g.RunGitCommandContext(context.Background(), args...)
+}
+
+func (g *Git) RunGitCommandContext(ctx context.Context, args ...string) (string, error) {
+	cmd := g.command(ctx, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		slog.Error("runGitCommand", "error", err, "stderr", stderr.String())
+		return stdout.String(), fmt.Errorf("git %s: %w: %s",
+			strings.Join(args, " "), err, strings.TrimSpace(stderr.String()))
 	}
-	return string(output), nil
+	return stdout.String(), nil
+}
+
+func (g *Git) Passthrough(ctx context.Context, args ...string) error {
+	cmd := g.command(ctx, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func (c *Git) CheckIfGitInitialized() (bool, error) {
@@ -40,23 +60,6 @@ func (c *Git) CheckIfGitInitialized() (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func (c *Git) Init() error {
-	_, err := c.runGitCommand("init")
-	return err
-}
-
-func (c *Git) Add(paths ...string) error {
-	args := append([]string{"add"}, paths...)
-	_, err := c.runGitCommand(args...)
-	return err
-}
-
-func (c *Git) Commit(message string) error {
-	args := []string{"commit", "-m", message}
-	_, err := c.runGitCommand(args...)
-	return err
 }
 
 func normalizePath(path string) (s string) {

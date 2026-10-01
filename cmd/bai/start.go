@@ -55,12 +55,7 @@ func SetTheme(ctx context.Context, dbService *repo.Queries, b broker.Service) {
 	styles.UpdateStylesUsingConfigTheme(theme)
 }
 
-func start(configPath string, dev bool) error {
-	cfg, err := config.Load(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
+func start(cfg *config.Config, dev bool) error {
 	logLevel := slog.LevelInfo
 	if dev {
 		slog.Info("Starting in dev mode")
