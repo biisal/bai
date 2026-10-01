@@ -32,7 +32,7 @@ type directorySettings interface {
 type Model struct {
 	gateway         *agent.Gateway
 	settings        directorySettings
-	git             *git.Git
+	git             git.GitRepo
 	broker          broker.Service
 	messages        <-chan broker.Message
 	components      *Component
@@ -51,7 +51,7 @@ type Model struct {
 	commands *commands.Commands
 }
 
-func InitModel(ctx context.Context, gateway *agent.Gateway, settings directorySettings, broker broker.Service, providers []config.ProviderConfig, gitRepo *git.Git) *Model {
+func InitModel(ctx context.Context, gateway *agent.Gateway, settings directorySettings, broker broker.Service, providers []config.ProviderConfig, gitRepo git.GitRepo) *Model {
 	comp := NewComponent(gitRepo)
 	commands := commands.NewCommands(ctx, providers, gateway)
 

@@ -81,7 +81,7 @@ func (p *Prompt) Update(msg tea.KeyPressMsg) tea.Cmd {
 	return nil
 }
 
-func newGitPrompt(repo *git.Git) *Prompt {
+func newGitPrompt(repo git.GitRepo) *Prompt {
 	dismiss := func() tea.Msg { return commands.GitInitMsg{} }
 	return &Prompt{
 		Text: "Want to keep all changes in track, with a custom git repository?",
@@ -105,7 +105,7 @@ func newGitPrompt(repo *git.Git) *Prompt {
 				if err := repo.Init(); err != nil {
 					slog.Error("git init", "error", err)
 				}
-				if err := repo.InsertToGitIgnore(repo.Directory); err != nil {
+				if err := repo.InsertToGitIgnore(repo.Dir()); err != nil {
 					slog.Error("git insert to gitignore", "error", err)
 				}
 				cmds = append(

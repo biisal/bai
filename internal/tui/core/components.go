@@ -37,7 +37,7 @@ type Component struct {
 	spinner Spinner
 }
 
-func NewComponent(gitRepo *git.Git) *Component {
+func NewComponent(gitRepo git.GitRepo) *Component {
 	ta := textarea.New()
 	ta.Placeholder = "Send a message..."
 	ta.SetVirtualCursor(true)
