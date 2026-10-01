@@ -41,6 +41,7 @@ type Config struct {
 	SoundPath    string           `json:"sound_path"`
 	SkillsPaths  []string         `json:"skills_paths"`
 	Providers    []ProviderConfig `json:"providers"`
+	GitDirName   string           `json:"git_dir_name"`
 }
 
 func AppConfigDir() string {
@@ -61,6 +62,10 @@ func DefaultDatabasePath() string {
 
 func DefaultLogFilePath() string {
 	return filepath.Join(AppConfigDir(), "bai.log")
+}
+
+func DefaultGitDirName() string {
+	return ".bai_git"
 }
 
 func DefaultSkillsPaths() []string {
@@ -172,5 +177,9 @@ func Load(path string) (*Config, error) {
 	if config.LogFilePath == "" {
 		config.LogFilePath = DefaultLogFilePath()
 	}
+	if config.GitDirName == "" {
+		config.GitDirName = DefaultGitDirName()
+	}
+
 	return &config, nil
 }

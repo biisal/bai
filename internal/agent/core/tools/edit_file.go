@@ -13,6 +13,7 @@ import (
 
 type Edit struct {
 	OldText string
+	Purpose string
 	NewText string
 }
 

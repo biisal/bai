@@ -10,11 +10,13 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/biisal/bai/internal/git"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
 type CompSize struct {
+	Width  int
 	Height int
 }
 
@@ -29,11 +31,13 @@ type Component struct {
 	textArea     textarea.Model
 	chatViewPort viewport.Model
 	wasAtBottom  bool
+	prompt       *Prompt
+	showPrompt   bool
 
 	spinner Spinner
 }
 
-func NewComponent() *Component {
+func NewComponent(gitRepo git.GitRepo) *Component {
 	ta := textarea.New()
 	ta.Placeholder = "Send a message..."
 	ta.SetVirtualCursor(true)
@@ -67,8 +71,8 @@ func NewComponent() *Component {
 	return &Component{
 		textArea:     ta,
 		chatViewPort: vp,
-
-		spinner: Spinner{model: sp},
+		prompt:       newGitPrompt(gitRepo),
+		spinner:      Spinner{model: sp},
 	}
 }
 
