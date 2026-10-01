@@ -2,7 +2,9 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	fantasy "charm.land/fantasy"
 	broker "github.com/biisal/bai/internal/pubsub"
@@ -23,21 +25,25 @@ type readFileInput struct {
 
 type writeFileInput struct {
 	Path    string `json:"path"`
+	Purpose string `json:"purpose"`
 	Content string `json:"content"`
 }
 
 type editEntry struct {
 	OldText string `json:"old_text"`
+	Purpose string `json:"purpose"`
 	NewText string `json:"new_text"`
 }
 
 type editFileInput struct {
-	Path  string      `json:"path"`
-	Edits []editEntry `json:"edits"`
+	Path    string      `json:"path"`
+	Purpose string      `json:"purpose"`
+	Edits   []editEntry `json:"edits"`
 }
 
 type bashInput struct {
 	Command string `json:"command"`
+	Purpose string `json:"purpose"`
 	Timeout *int   `json:"timeout,omitempty"`
 }
 
@@ -104,6 +110,34 @@ func (t *toolSet) bash(ctx context.Context, input bashInput, _ fantasy.ToolCall)
 		return fantasy.NewTextErrorResponse(err.Error()), nil
 	}
 	return fantasy.NewTextResponse(out), nil
+}
+
+// PurposeFromToolCall returns the purpose of a tool call by looking up
+// the typed input for the named tool. Tools without a purpose field
+// (e.g. read_file) and unparseable inputs yield "".
+func PurposeFromToolCall(name, input string) string {
+	var purpose string
+	decode := func(v any) bool {
+		return json.Unmarshal([]byte(input), v) == nil
+	}
+	switch name {
+	case WriteFileName:
+		var in writeFileInput
+		if decode(&in) {
+			purpose = in.Purpose
+		}
+	case EditFileName:
+		var in editFileInput
+		if decode(&in) {
+			purpose = in.Purpose
+		}
+	case BashName:
+		var in bashInput
+		if decode(&in) {
+			purpose = in.Purpose
+		}
+	}
+	return strings.TrimSpace(purpose)
 }
 
 func NewTools(b broker.Service) []fantasy.AgentTool {

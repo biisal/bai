@@ -13,6 +13,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/git"
 	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -28,6 +29,7 @@ type Gateway struct {
 	AudioPlayer      *audio.AudioPlayer
 	skills           []instruction.Skill
 	userInstructions []string
+	gitRepo          git.GitRepo
 }
 
 func NewGateway(
@@ -37,6 +39,7 @@ func NewGateway(
 	providerConfigs []config.ProviderConfig,
 	audioPlayer *audio.AudioPlayer,
 	skillPaths []string,
+	gitRepo git.GitRepo,
 ) (*Gateway, error) {
 	providers, err := buildProviders(providerConfigs)
 	if err != nil {
@@ -57,6 +60,7 @@ func NewGateway(
 		AudioPlayer:      audioPlayer,
 		skills:           skills,
 		userInstructions: []string{userInstructions},
+		gitRepo:          gitRepo,
 	}
 	if err := g.SetActive(activeProvider, activeModel); err != nil {
 		return nil, err
@@ -129,6 +133,37 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 	}
 }
 
+// TODO : write test properly
+func (g *Gateway) syncGitRepo(purpose string) {
+	isDirty, output, err := g.gitRepo.CheckIfDirty()
+	if err != nil {
+		slog.Error("failed to check if git repo is dirty", "error", err)
+		return
+	}
+	if !isDirty {
+		return
+	}
+	if err := g.gitRepo.Add("."); err != nil {
+		slog.Error("failed to add files to git", "error", err)
+	}
+	msg := strings.TrimSpace(purpose)
+	if msg == "" {
+		maxLines := 10
+		lines := strings.Split(output, "\n")
+		linesLen := len(lines)
+		if linesLen > maxLines {
+			lines = append(lines[:maxLines], fmt.Sprintf("... More %d lines", linesLen-maxLines))
+		}
+
+		linesStr := strings.Join(lines, "\n")
+
+		msg = fmt.Sprintf("auto-commit: %s\n%s", time.Now().Format(time.RFC3339), linesStr)
+	}
+	if err := g.gitRepo.Commit(msg); err != nil {
+		slog.Error("failed to commit files", "error", err)
+	}
+}
+
 func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
 	// 1. Save user message.
@@ -165,12 +200,20 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	var partialReasoning strings.Builder
 	var partialText strings.Builder
 
+	var purpose strings.Builder
+
 	_, err = ag.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
 
 		OnToolCall: func(toolCall fantasy.ToolCallContent) error {
 			slog.Debug("tool call", "input", toolCall.Input, "name", toolCall.ToolName)
+			if p := tools.PurposeFromToolCall(toolCall.ToolName, toolCall.Input); p != "" {
+				if purpose.Len() > 0 {
+					purpose.WriteString("; ")
+				}
+				purpose.WriteString(p)
+			}
 			return nil
 		},
 
@@ -206,6 +249,8 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 		slog.Error("failed to stream chat", "error", err)
 		return err
 	}
+
+	g.syncGitRepo(purpose.String())
 
 	return nil
 }

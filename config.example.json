@@ -1,4 +1,9 @@
 {
+  "database_path": "~/.config/bai/bai.db",
+  "log_file_path": "~/.config/bai/bai.log",
+  "sound_path": "",
+  "skills_paths": [],
+  "git_dir_name": ".bai_git",
   "providers": [
     {
       "name": "OpenAI",
@@ -18,6 +23,33 @@
       "base_url": "https://opencode.ai/zen/v1",
       "models": [
         { "id": "grok-code", "context": 256000, "max_output": 32768 }
+      ]
+    },
+    {
+      "name": "Anthropic",
+      "format": "anthropic",
+      "api_key": "sk-ant-...",
+      "base_url": "https://api.anthropic.com",
+      "models": [
+        { "id": "claude-sonnet-4-20250514", "context": 200000, "max_output": 64000 }
+      ]
+    },
+    {
+      "name": "DeepSeek",
+      "format": "openai-compatible",
+      "api_key": "sk-...",
+      "base_url": "https://api.deepseek.com/v1",
+      "models": [
+        { "id": "deepseek-chat", "context": 64000, "max_output": 8192 }
+      ]
+    },
+    {
+      "name": "Qwen",
+      "format": "openai-compatible",
+      "api_key": "sk-...",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "models": [
+        { "id": "qwen-max", "context": 131072, "max_output": 8192 }
       ]
     },
     {

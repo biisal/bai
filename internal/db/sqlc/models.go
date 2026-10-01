@@ -27,6 +27,12 @@ type Conversation struct {
 	UpdatedAt time.Time
 }
 
+type DirectorySetting struct {
+	ID          any
+	Directory   string
+	AutoGitInit bool
+}
+
 type Message struct {
 	ID             int64
 	ConversationID int64

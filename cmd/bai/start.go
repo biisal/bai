@@ -13,6 +13,7 @@ import (
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/logger"
 	audio "github.com/biisal/bai/internal/player"
 	broker "github.com/biisal/bai/internal/pubsub"
@@ -54,12 +55,7 @@ func SetTheme(ctx context.Context, dbService *repo.Queries, b broker.Service) {
 	styles.UpdateStylesUsingConfigTheme(theme)
 }
 
-func start(configPath string, dev bool) error {
-	cfg, err := config.Load(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
+func start(cfg *config.Config, dev bool) error {
 	logLevel := slog.LevelInfo
 	if dev {
 		slog.Info("Starting in dev mode")
@@ -101,15 +97,17 @@ func start(configPath string, dev bool) error {
 	skillPaths := append([]string{}, cfg.SkillsPaths...)
 	skillPaths = append(skillPaths, config.DefaultSkillsPaths()...)
 
+	gitRepo := git.New(cfg.GitDirName)
+
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer, skillPaths)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer, skillPaths, gitRepo)
 	if err != nil {
 		return err
 	}
 
 	SetTheme(ctx, dbService, b)
 
-	p := tea.NewProgram(tui.InitModel(ctx, gateway, b, cfg.Providers))
+	p := tea.NewProgram(tui.InitModel(ctx, gateway, dbService, b, cfg.Providers, gitRepo))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}

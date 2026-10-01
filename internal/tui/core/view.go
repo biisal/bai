@@ -10,7 +10,13 @@ import (
 )
 
 func (m Model) View() tea.View {
-	inputView, inputSize := m.components.Input()
+	var promptView string
+	var promptSize CompSize
+	if m.components.showPrompt {
+		promptView, promptSize = m.components.prompt.View()
+	} else {
+		promptView, promptSize = m.components.Input()
+	}
 	provider, modelID := m.gateway.Active()
 	footer, footerHeight := m.components.Footer(FooterProps{
 		Provider: provider.Name(),
@@ -21,7 +27,7 @@ func (m Model) View() tea.View {
 	dirInfo := styles.StyleFooter.Render(files.CurrentDirWithGitCache)
 	spinner := m.components.SpinnerStatus()
 
-	usedHeight := inputSize.Height + footerHeight + lipgloss.Height(dirInfo)
+	usedHeight := promptSize.Height + footerHeight + lipgloss.Height(dirInfo)
 	if commandsView != "" {
 		usedHeight += lipgloss.Height(commandsView)
 	}
@@ -44,7 +50,7 @@ func (m Model) View() tea.View {
 	if queueView != "" {
 		rows = append(rows, queueView)
 	}
-	rows = append(rows, inputView)
+	rows = append(rows, promptView)
 	if commandsView != "" {
 		rows = append(rows, commandsView)
 	}

@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/config"
+	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/files"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/commands"
@@ -24,6 +25,18 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 			if playErr := m.gateway.AudioPlayer.Play(); playErr != nil {
 				slog.Error("failed to play notification sound", "error", playErr)
 			}
+		}
+		return nil
+	}
+}
+
+func (m Model) disableAutoGitInit() tea.Cmd {
+	return func() tea.Msg {
+		if err := m.settings.UpsertDirectorySettings(m.ctx, repo.UpsertDirectorySettingsParams{
+			Directory:   files.CurrentDir(),
+			AutoGitInit: false,
+		}); err != nil {
+			slog.Error("disable auto git init", "error", err)
 		}
 		return nil
 	}
@@ -131,6 +144,7 @@ func (m *Model) SetSize(w, h int) {
 	m.Height = h
 
 	m.components.textArea.SetWidth(w)
+	m.components.prompt.UpdateSize(w)
 
 	// using viewport
 	m.content.SetSize(w, h)
@@ -167,6 +181,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.content.ReRender()
 		m.components.SetChatContent(m.content.Render())
 
+	case commands.GitInitMsg:
+		m.components.showPrompt = msg.ShowPrompt
+		if msg.NeverAsk {
+			return m, m.disableAutoGitInit()
+		}
+		return m, nil
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc":
@@ -191,7 +212,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.submitMessage(text)
 			}
 			return m, m.MatchCommand()
+		default:
+			if m.components.showPrompt {
+				return m, m.components.prompt.Update(msg)
+			}
 		}
+
 	}
 	var textCmd, listCmd, vpCmd tea.Cmd
 
