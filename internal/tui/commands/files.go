@@ -4,13 +4,13 @@ import (
 	"io/fs"
 	"log/slog"
 	"path/filepath"
-	"slices"
+	"strings"
 
 	"charm.land/bubbles/v2/list"
 	"github.com/biisal/bai/internal/files"
+	"github.com/biisal/bai/internal/git"
 )
 
-// TODO : include git folders
 var ignoreFolders = []string{"node_modules", ".venv", ".git"}
 
 type FileItem struct {
@@ -31,28 +31,46 @@ func (t FileItem) FilterValue() string { return t.Name }
 func FileItems() []list.Item {
 	currentDir := files.CurrentDir()
 
-	var items []list.Item
-	if err := filepath.WalkDir(currentDir, func(path string, d fs.DirEntry, walkErr error) error {
+	gitIgnored, err := git.GitIgnoreFolders(filepath.Join(currentDir, ".gitignore"))
+	if err != nil {
+		slog.Error("git ignore folders", "error", err)
+	}
+
+	ignored := make(map[string]struct{}, len(gitIgnored)+len(ignoreFolders))
+	for _, n := range gitIgnored {
+		ignored[n] = struct{}{}
+	}
+	for _, n := range ignoreFolders {
+		ignored[n] = struct{}{}
+	}
+
+	prefix := currentDir + string(filepath.Separator)
+	items := make([]list.Item, 0, 1024)
+
+	err = filepath.WalkDir(currentDir, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if d.IsDir() {
-			if slices.Contains(ignoreFolders, d.Name()) {
+		if path == currentDir {
+			return nil // skip root
+		}
+		if _, skip := ignored[d.Name()]; skip {
+			if d.IsDir() {
 				return fs.SkipDir
 			}
 			return nil
 		}
-		relative, err := filepath.Rel(currentDir, path)
-		if err != nil {
+		if d.IsDir() {
 			return nil
 		}
 
 		items = append(items, FileItem{
 			Name:     d.Name(),
-			FilePath: relative,
+			FilePath: strings.TrimPrefix(path, prefix),
 		})
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		slog.Error("error getting file items", "err", err)
 		return nil
 	}
