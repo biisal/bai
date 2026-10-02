@@ -78,42 +78,43 @@ func TestFileItemsGitIgnore(t *testing.T) {
 	})
 
 	t.Run("dir_only_pattern_keeps_same_named_file", func(t *testing.T) {
-		// git: "build/" ignores the dir only; the FILE tools/build stays.
+		// git: "outdir/" ignores the dir only; the FILE tools/outdir stays.
+		// Names avoid ignoreFolders, which is checked before the matcher.
 		root := t.TempDir()
-		writeIgnore(t, root, "build/\n")
+		writeIgnore(t, root, "outdir/\n")
 		buildTree(
 			t, root,
-			[]string{"keep.txt", "build/out.txt", "tools/build"},
+			[]string{"keep.txt", "outdir/out.txt", "tools/outdir"},
 		)
-		want := []string{".gitignore", "keep.txt", "tools/build"}
+		want := []string{".gitignore", "keep.txt", "tools/outdir"}
 		if got := runFileItems(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
 
 	t.Run("anchored_pattern_keeps_nested_dir", func(t *testing.T) {
-		// git: "/dist/" ignores root dist only; vendor/dist stays.
+		// git: "/gen/" ignores root gen only; lib/gen stays.
 		root := t.TempDir()
-		writeIgnore(t, root, "/dist/\n")
+		writeIgnore(t, root, "/gen/\n")
 		buildTree(
 			t, root,
-			[]string{"keep.txt", "dist/a.txt", "vendor/dist/b.txt"},
+			[]string{"keep.txt", "gen/a.txt", "lib/gen/b.txt"},
 		)
-		want := []string{".gitignore", "keep.txt", "vendor/dist/b.txt"}
+		want := []string{".gitignore", "keep.txt", "lib/gen/b.txt"}
 		if got := runFileItems(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
 
 	t.Run("negation_reinclude", func(t *testing.T) {
-		// git: "!dist/" re-includes; dist/keep.txt stays visible.
+		// git: "!cfg/" re-includes; cfg/keep.txt stays visible.
 		root := t.TempDir()
-		writeIgnore(t, root, "dist/\n!dist/\n")
+		writeIgnore(t, root, "cfg/\n!cfg/\n")
 		buildTree(
 			t, root,
-			[]string{"top.txt", "dist/keep.txt"},
+			[]string{"top.txt", "cfg/keep.txt"},
 		)
-		want := []string{".gitignore", "dist/keep.txt", "top.txt"}
+		want := []string{".gitignore", "cfg/keep.txt", "top.txt"}
 		if got := runFileItems(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
