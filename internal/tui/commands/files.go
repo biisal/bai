@@ -3,8 +3,8 @@ package commands
 import (
 	"io/fs"
 	"log/slog"
+	"os"
 	"path/filepath"
-	"strings"
 
 	"charm.land/bubbles/v2/list"
 	"github.com/biisal/bai/internal/files"
@@ -31,42 +31,66 @@ func (t FileItem) FilterValue() string { return t.Name }
 func FileItems() []list.Item {
 	currentDir := files.CurrentDir()
 
-	gitIgnored, err := git.GitIgnoreFolders(filepath.Join(currentDir, ".gitignore"))
-	if err != nil {
-		slog.Error("git ignore folders", "error", err)
-	}
-
-	ignored := make(map[string]struct{}, len(gitIgnored)+len(ignoreFolders))
-	for _, n := range gitIgnored {
-		ignored[n] = struct{}{}
-	}
+	hardIgnored := make(map[string]struct{}, len(ignoreFolders))
 	for _, n := range ignoreFolders {
-		ignored[n] = struct{}{}
+		hardIgnored[n] = struct{}{}
 	}
 
-	prefix := currentDir + string(filepath.Separator)
+	var matcher git.Matcher
+	loadIgnore := func(dir, domain string) {
+		content, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+		if err != nil {
+			if !os.IsNotExist(err) {
+				slog.Error("read .gitignore", "dir", dir, "error", err)
+			}
+			return
+		}
+		matcher.Add(string(content), domain)
+	}
+	loadIgnore(currentDir, "")
+
 	items := make([]list.Item, 0, 1024)
 
-	err = filepath.WalkDir(currentDir, func(path string, d fs.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(currentDir, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
-			return walkErr
-		}
-		if path == currentDir {
-			return nil // skip root
-		}
-		if _, skip := ignored[d.Name()]; skip {
-			if d.IsDir() {
+			// Unreadable entry: skip it and keep walking the rest.
+			if d != nil && d.IsDir() {
 				return fs.SkipDir
 			}
 			return nil
 		}
-		if d.IsDir() {
+		if path == currentDir {
+			return nil // skip root
+		}
+
+		isDir := d.IsDir()
+		if _, skip := hardIgnored[d.Name()]; skip {
+			if isDir {
+				return fs.SkipDir
+			}
+			return nil
+		}
+
+		rel, err := filepath.Rel(currentDir, path)
+		if err != nil {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
+
+		if matcher.Ignored(rel, isDir) {
+			if isDir {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if isDir {
+			loadIgnore(path, rel) // nested .gitignore applies below this dir
 			return nil
 		}
 
 		items = append(items, FileItem{
 			Name:     d.Name(),
-			FilePath: strings.TrimPrefix(path, prefix),
+			FilePath: rel,
 		})
 		return nil
 	})

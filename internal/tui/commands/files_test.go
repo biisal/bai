@@ -154,6 +154,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			t, root,
 			[]string{"sub/.gitignore", "sub/cache/x.txt", "keep.txt"},
 		)
+		writeIgnore(t, filepath.Join(root, "sub"), "cache/\n")
 		want := []string{"keep.txt", "sub/.gitignore"}
 		if got := runFileItems(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
