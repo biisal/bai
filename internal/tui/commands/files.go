@@ -11,7 +11,59 @@ import (
 	"github.com/biisal/bai/internal/git"
 )
 
-var ignoreFolders = []string{"node_modules", ".venv", ".git"}
+var ignoreFolders = []string{
+	// Dependencies
+	"node_modules",
+	"vendor",
+	".venv",
+	"venv",
+	"env",
+	".env",
+
+	// Git / version control
+	".git",
+	".hg",
+	".svn",
+
+	// Python
+	"__pycache__",
+	".pytest_cache",
+	".mypy_cache",
+	".ruff_cache",
+
+	// JavaScript / TypeScript
+	".next",
+	".nuxt",
+	".turbo",
+	".parcel-cache",
+	".vite",
+	"dist",
+	"build",
+	"out",
+
+	// Go
+	"bin",
+
+	// Rust
+	"target",
+
+	// Java / JVM
+	".gradle",
+	"target",
+
+	// OS
+	".DS_Store",
+
+	// Coverage / test output
+	"coverage",
+	".nyc_output",
+
+	// Caches / temporary
+	".cache",
+	".tmp",
+	"tmp",
+	"temp",
+}
 
 type FileItem struct {
 	Name     string
@@ -28,12 +80,15 @@ func (t FileItem) Description() string {
 
 func (t FileItem) FilterValue() string { return t.Name }
 
-func FileItems() []list.Item {
+func FileItems(extraPaths ...string) []list.Item {
 	currentDir := files.CurrentDir()
 
 	hardIgnored := make(map[string]struct{}, len(ignoreFolders))
 	for _, n := range ignoreFolders {
 		hardIgnored[n] = struct{}{}
+	}
+	for _, p := range extraPaths {
+		hardIgnored[p] = struct{}{}
 	}
 
 	var matcher git.Matcher

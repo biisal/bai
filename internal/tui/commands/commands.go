@@ -11,6 +11,7 @@ import (
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/files"
+	"github.com/biisal/bai/internal/git"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -94,6 +95,7 @@ type commandEntry struct {
 
 func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 	gateway *agent.Gateway,
+	gitRepo git.GitRepo,
 ) *Commands {
 	models := parseModels(providers)
 	commands := map[string]*commandEntry{
@@ -167,7 +169,7 @@ func NewCommands(ctx context.Context, providers []config.ProviderConfig,
 			desc:              "find files",
 			showResultOnSpace: false,
 			items: func(c *Commands) []list.Item {
-				return FileItems()
+				return FileItems(gitRepo.Dir())
 			},
 		},
 	}
