@@ -53,7 +53,7 @@ type Model struct {
 
 func InitModel(ctx context.Context, gateway *agent.Gateway, settings directorySettings, broker broker.Service, providers []config.ProviderConfig, gitRepo git.GitRepo) *Model {
 	comp := NewComponent(gitRepo)
-	commands := commands.NewCommands(ctx, providers, gateway)
+	commands := commands.NewCommands(ctx, providers, gateway, gitRepo)
 
 	return &Model{
 		gateway:    gateway,
