@@ -84,7 +84,7 @@ func (p *Prompt) Update(msg tea.KeyPressMsg) tea.Cmd {
 func newGitPrompt(repo git.GitRepo) *Prompt {
 	dismiss := func() tea.Msg { return commands.GitInitMsg{} }
 	return &Prompt{
-		Text: "Want to keep all changes in track, with a custom git repository?",
+		Text: "Keep an undo history of every change — invisible to your project's git.",
 		Options: []PromptOption{
 			{Text: "Yes (Recommended)", KeyBind: "y", Variant: VariantSuccess, handler: func() tea.Cmd {
 				cmds := []tea.Cmd{
@@ -119,7 +119,7 @@ func newGitPrompt(repo git.GitRepo) *Prompt {
 				)
 				return tea.Sequence(cmds...)
 			}},
-			{Text: "No (Don't please!)", KeyBind: "n", Variant: VariantError, handler: func() tea.Cmd { return dismiss }},
+			{Text: "No", KeyBind: "n", Variant: VariantError, handler: func() tea.Cmd { return dismiss }},
 			{Text: "Don't ask again", KeyBind: "d", handler: func() tea.Cmd {
 				cmds := []tea.Cmd{
 					func() tea.Msg {
