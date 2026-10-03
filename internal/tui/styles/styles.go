@@ -37,7 +37,7 @@ var (
 	StyleQueueCounter = lipgloss.NewStyle().Background(lipgloss.Color("90"))
 
 	StylePromptText    = lipgloss.NewStyle().Padding(0, 1)
-	StylePromptButton  = lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("236")).Foreground(lipgloss.Color("7"))
+	StylePromptButton  = lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("236")).Foreground(lipgloss.Color("250"))
 	StylePromptSuccess = StylePromptButton.Background(lipgloss.Color("10")).Foreground(lipgloss.Color("0"))
 	StylePromptError   = StylePromptButton.Background(lipgloss.Color("1")).Foreground(lipgloss.Color("7"))
 )
