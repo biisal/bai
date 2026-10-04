@@ -145,12 +145,12 @@ func NewTools(b broker.Service, customToolsFilePath string) []fantasy.AgentTool 
 		fantasy.NewAgentTool(EditFileName, "Edit a file using exact text replacement. Each edit's old_text must be a unique, non-overlapping match in the original file and is replaced with new_text. Provide multiple edits in one call to change several locations at once.", ts.editFile),
 		fantasy.NewAgentTool(BashName, "Execute a bash command in the current working directory. Returns combined stdout and stderr, and the exit code when non-zero. Output is truncated to the last 2000 lines or 256KB. Optionally provide a timeout in seconds, after which the command is killed.", ts.bash),
 	}
-	customTools, err := ParseTooolsByPath(customToolsFilePath)
+	customTools, err := parseTooolsByPath(customToolsFilePath)
 	if err != nil {
 		return nil
 	}
 	for _, tool := range customTools {
-		tools = append(tools, MakeToolFromCustomTools(tool, b))
+		tools = append(tools, ts.makeToolFromCustomTools(tool))
 	}
 	return tools
 }

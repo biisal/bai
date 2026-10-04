@@ -24,14 +24,11 @@ type Gateway struct {
 	providers        map[string]fantasy.Provider
 	db               repo.Querier
 	conversation     *repo.Conversation
-	activeProvider   fantasy.Provider
-	activeModel      string
 	AudioPlayer      *audio.AudioPlayer
 	skills           []instruction.Skill
 	userInstructions []string
 	gitRepo          git.GitRepo
-
-	agentTools []fantasy.AgentTool
+	agent            *Agent
 }
 
 func NewGateway(
@@ -55,6 +52,21 @@ func NewGateway(
 	skills := instruction.LoadSkills(skillPaths...)
 	userInstructions := instruction.ReadAgentMd()
 
+	provider, ok := providers[activeProvider]
+	if !ok {
+		return nil, fmt.Errorf("unknown provider: %s", activeProvider)
+	}
+
+	agent, err := NewFantasyAgent(ctx, NewFantasyAgentParams{
+		Model:            activeModel,
+		Provider:         provider,
+		UserInstructions: []string{userInstructions},
+		Skills:           skills,
+		AgentTools:       tools.NewTools(b, cfg.PluginsPath),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create agent: %w", err)
+	}
 	g := &Gateway{
 		db:               db,
 		broker:           b,
@@ -63,10 +75,7 @@ func NewGateway(
 		skills:           skills,
 		userInstructions: []string{userInstructions},
 		gitRepo:          gitRepo,
-		agentTools:       tools.NewTools(b, cfg.PluginsPath),
-	}
-	if err := g.SetActive(activeProvider, activeModel); err != nil {
-		return nil, err
+		agent:            agent,
 	}
 	return g, nil
 }
@@ -78,23 +87,10 @@ func (g *Gateway) ActiveConversationTitle() string {
 	return fmt.Sprintf("bai | %s", g.conversation.Title)
 }
 
-func (g *Gateway) SetActive(providerID, modelID string) error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	provider, ok := g.providers[providerID]
-	if !ok {
-		return fmt.Errorf("unknown provider: %s", providerID)
-	}
-	g.activeProvider = provider
-	g.activeModel = modelID
-	return nil
-}
-
 func (g *Gateway) Active() (fantasy.Provider, string) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	return g.activeProvider, g.activeModel
+	return g.agent.provider, g.agent.model.Model()
 }
 
 func (g *Gateway) Providers() []string {
@@ -186,25 +182,16 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 		return err
 	}
 
-	provider, modelID := g.Active()
-	model, err := provider.LanguageModel(ctx, modelID)
-	if err != nil {
-		return fmt.Errorf("failed to get language model: %w", err)
+	if g.agent == nil {
+		return fmt.Errorf("agent not initialized")
 	}
-
-	ag := fantasy.NewAgent(
-		model,
-		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt(g.userInstructions, g.skills)),
-		fantasy.WithTools(g.agentTools...),
-		fantasy.WithMaxRetries(3),
-	)
 
 	var partialReasoning strings.Builder
 	var partialText strings.Builder
 
 	var purpose strings.Builder
 
-	_, err = ag.Stream(ctx, fantasy.AgentStreamCall{
+	_, err = g.agent.client.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
 

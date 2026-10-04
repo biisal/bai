@@ -68,17 +68,6 @@ func (g *Gateway) SetActiveConversation(ctx context.Context, conversationID int6
 	return nil
 }
 
-func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerName, modelID string) error {
-	if err := g.db.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
-		ProviderName: sql.NullString{Valid: true, String: providerName},
-		ModelID:      sql.NullString{Valid: true, String: modelID},
-	}); err != nil {
-		return err
-	}
-
-	return g.SetActive(providerName, modelID)
-}
-
 func (g *Gateway) GetProvider(ctx context.Context) (repo.Provider, error) {
 	return g.db.GetProvider(ctx)
 }
