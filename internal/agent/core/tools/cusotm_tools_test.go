@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"charm.land/fantasy"
+	broker "github.com/biisal/bai/internal/pubsub"
 )
 
 func TestCustomPluginParseAndRun(t *testing.T) {
@@ -33,7 +34,7 @@ func TestCustomPluginParseAndRun(t *testing.T) {
 		t.Fatalf("plugin executable not found at %q: %v", parsed[0].ExecutablePath, err)
 	}
 
-	tool := MakeToolFromCustomTools(parsed[0])
+	tool := MakeToolFromCustomTools(parsed[0], broker.New())
 	if got := tool.Info().Name; got != "echo" {
 		t.Errorf("tool name = %q, want %q", got, "echo")
 	}
