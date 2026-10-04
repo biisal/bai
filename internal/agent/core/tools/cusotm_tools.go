@@ -39,7 +39,7 @@ func makeNameFromPath(fileName string) string {
 	return name
 }
 
-func ParseTooolsByPath(jsonPath string) ([]CustomToolDef, error) {
+func parseTooolsByPath(jsonPath string) ([]CustomToolDef, error) {
 	file, err := os.ReadFile(jsonPath)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func ParseTooolsByPath(jsonPath string) ([]CustomToolDef, error) {
 	return customTools, nil
 }
 
-func MakeToolFromCustomTools(tool CustomToolDef, b broker.Service) fantasy.AgentTool {
+func (ts *toolSet) makeToolFromCustomTools(tool CustomToolDef) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
 		makeNameFromPath(tool.FileName),
 		tool.Description,
@@ -77,7 +77,7 @@ func MakeToolFromCustomTools(tool CustomToolDef, b broker.Service) fantasy.Agent
 			for k, v := range input {
 				args = append(args, k+"="+v)
 			}
-			b.Publish(ctx, broker.Message{
+			ts.broker.Publish(ctx, broker.Message{
 				Type:       broker.EventToolBash,
 				Text:       strings.Join(args, " "),
 				IsComplete: false,

@@ -23,7 +23,7 @@ func TestCustomPluginParseAndRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	parsed, err := ParseTooolsByPath(manifest)
+	parsed, err := parseTooolsByPath(manifest)
 	if err != nil {
 		t.Fatal(err)
 	}
