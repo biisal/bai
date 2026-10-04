@@ -182,16 +182,14 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 		return err
 	}
 
-	if g.agent == nil {
-		return fmt.Errorf("agent not initialized")
-	}
-
 	var partialReasoning strings.Builder
 	var partialText strings.Builder
 
 	var purpose strings.Builder
-
-	_, err = g.agent.client.Stream(ctx, fantasy.AgentStreamCall{
+	g.mu.Lock()
+	client := g.agent.client
+	g.mu.Unlock()
+	_, err = client.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
 

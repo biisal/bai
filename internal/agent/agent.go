@@ -51,17 +51,10 @@ func NewFantasyAgent(ctx context.Context, params NewFantasyAgentParams) (*Agent,
 }
 
 func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerID, modelId string) error {
-	if err := g.db.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
-		ProviderName: sql.NullString{Valid: true, String: providerID},
-		ModelID:      sql.NullString{Valid: true, String: modelId},
-	}); err != nil {
-		return err
-	}
-
 	g.mu.Lock()
-	defer g.mu.Unlock()
-
 	provider, ok := g.providers[providerID]
+	g.mu.Unlock()
+
 	if !ok {
 		return fmt.Errorf("unknown provider: %s", providerID)
 	}
@@ -71,6 +64,12 @@ func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerID, modelId s
 		return fmt.Errorf("failed to get language model: %w", err)
 	}
 
+	if err := g.db.AddOrUpdateProvider(ctx, repo.AddOrUpdateProviderParams{
+		ProviderName: sql.NullString{Valid: true, String: providerID},
+		ModelID:      sql.NullString{Valid: true, String: modelId},
+	}); err != nil {
+		return err
+	}
 	ag := fantasy.NewAgent(
 		model,
 		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt(g.agent.userInstructions, g.agent.skills, g.agent.agentTools)),
@@ -78,8 +77,11 @@ func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerID, modelId s
 		fantasy.WithMaxRetries(3),
 	)
 
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	g.agent.client = ag
 	g.agent.model = model
 	g.agent.provider = provider
+
 	return nil
 }
