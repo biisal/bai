@@ -21,11 +21,6 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error(), IsComplete: true})
 			return nil
 		}
-		if m.gateway.AudioPlayer != nil {
-			if playErr := m.gateway.AudioPlayer.Play(); playErr != nil {
-				slog.Error("failed to play notification sound", "error", playErr)
-			}
-		}
 		return nil
 	}
 }

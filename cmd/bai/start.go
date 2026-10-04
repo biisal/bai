@@ -15,7 +15,8 @@ import (
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/logger"
-	audio "github.com/biisal/bai/internal/player"
+	"github.com/biisal/bai/internal/notifier"
+	audio "github.com/biisal/bai/internal/notifier/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 	tui "github.com/biisal/bai/internal/tui/core"
 	"github.com/biisal/bai/internal/tui/styles"
@@ -80,18 +81,20 @@ func start(cfg *config.Config, dev bool) error {
 		return err
 	}
 
-	// Initialize audio player if sound path is configured
-	var audioPlayer *audio.AudioPlayer
+	// Notification sound is only the fallback when not running inside Herdr.
+	var sound notifier.Sound
 	if cfg.SoundPath != "" {
-		audioPlayer, err = audio.NewAudioPlayer(cfg.SoundPath)
+		audioPlayer, err := audio.NewAudioPlayer(cfg.SoundPath)
 		if err != nil {
 			slog.Error("failed to load audio player", "error", err, "path", cfg.SoundPath)
 			// Continue without audio
-			audioPlayer = nil
 		} else {
 			slog.Info("audio player loaded", "path", cfg.SoundPath)
+			sound = audioPlayer
 		}
 	}
+	n := notifier.New(sound)
+	defer n.Close(context.Background())
 
 	// Collect skill paths: config custom paths + standard default paths.
 	skillPaths := append([]string{}, cfg.SkillsPaths...)
@@ -100,12 +103,15 @@ func start(cfg *config.Config, dev bool) error {
 	gitRepo := git.New(cfg.GitDirName)
 
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, audioPlayer, skillPaths, gitRepo)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, n, skillPaths, gitRepo)
 	if err != nil {
 		return err
 	}
 
 	SetTheme(ctx, dbService, b)
+
+	// Claim the pane in Herdr so it knows bai is active and can restart it.
+	n.SessionStarted(ctx, "")
 
 	p := tea.NewProgram(tui.InitModel(ctx, gateway, dbService, b, cfg.Providers, gitRepo))
 	if _, err := p.Run(); err != nil {
