@@ -14,7 +14,7 @@ import (
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/git"
-	audio "github.com/biisal/bai/internal/player"
+	"github.com/biisal/bai/internal/notifier"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -24,7 +24,7 @@ type Gateway struct {
 	providers        map[string]fantasy.Provider
 	db               repo.Querier
 	conversation     *repo.Conversation
-	AudioPlayer      *audio.AudioPlayer
+	notifier         *notifier.Notifier
 	skills           []instruction.Skill
 	userInstructions []string
 	gitRepo          git.GitRepo
@@ -36,7 +36,7 @@ func NewGateway(
 	db repo.Querier,
 	b broker.Service,
 	cfg *config.Config,
-	audioPlayer *audio.AudioPlayer,
+	n *notifier.Notifier,
 	skillPaths []string,
 	gitRepo git.GitRepo,
 ) (*Gateway, error) {
@@ -71,7 +71,7 @@ func NewGateway(
 		db:               db,
 		broker:           b,
 		providers:        providers,
-		AudioPlayer:      audioPlayer,
+		notifier:         n,
 		skills:           skills,
 		userInstructions: []string{userInstructions},
 		gitRepo:          gitRepo,
@@ -164,7 +164,18 @@ func (g *Gateway) syncGitRepo(purpose string) {
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, message string) error {
+	g.notifier.Working(ctx)
+	if err := g.streamChat(ctx, message); err != nil {
+		g.notifier.Failed(ctx, err)
+		return err
+	}
+	g.notifier.Done(ctx)
+	return nil
+}
+
+func (g *Gateway) streamChat(ctx context.Context, message string) error {
 	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
+
 	// 1. Save user message.
 	if err := g.AddMessageToDB(ctx, fantasy.Message{
 		Role:    fantasy.MessageRoleUser,
