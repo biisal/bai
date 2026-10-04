@@ -100,7 +100,7 @@ func start(cfg *config.Config, dev bool) error {
 	gitRepo := git.New(cfg.GitDirName)
 
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg.Providers, audioPlayer, skillPaths, gitRepo)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, audioPlayer, skillPaths, gitRepo)
 	if err != nil {
 		return err
 	}

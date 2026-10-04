@@ -30,22 +30,24 @@ type Gateway struct {
 	skills           []instruction.Skill
 	userInstructions []string
 	gitRepo          git.GitRepo
+
+	agentTools []fantasy.AgentTool
 }
 
 func NewGateway(
 	ctx context.Context,
 	db repo.Querier,
 	b broker.Service,
-	providerConfigs []config.ProviderConfig,
+	cfg *config.Config,
 	audioPlayer *audio.AudioPlayer,
 	skillPaths []string,
 	gitRepo git.GitRepo,
 ) (*Gateway, error) {
-	providers, err := buildProviders(providerConfigs)
+	providers, err := buildProviders(cfg.Providers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build providers: %w", err)
 	}
-	activeProvider, activeModel, err := resolveProvider(ctx, db, providerConfigs)
+	activeProvider, activeModel, err := resolveProvider(ctx, db, cfg.Providers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve provider: %w", err)
 	}
@@ -61,6 +63,7 @@ func NewGateway(
 		skills:           skills,
 		userInstructions: []string{userInstructions},
 		gitRepo:          gitRepo,
+		agentTools:       tools.NewTools(b, cfg.PluginsPath),
 	}
 	if err := g.SetActive(activeProvider, activeModel); err != nil {
 		return nil, err
@@ -189,11 +192,10 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 		return fmt.Errorf("failed to get language model: %w", err)
 	}
 
-	agentTools := tools.NewTools(g.broker)
 	ag := fantasy.NewAgent(
 		model,
 		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt(g.userInstructions, g.skills)),
-		fantasy.WithTools(agentTools...),
+		fantasy.WithTools(g.agentTools...),
 		fantasy.WithMaxRetries(3),
 	)
 
