@@ -20,13 +20,26 @@ type ReadCustomTool struct {
 	InputSchema inputSchema `json:"input_schema"`
 }
 
-type CustomToolWithPath struct {
+type CustomToolDef struct {
+	FileName       string      `json:"file_name"`
 	ExecutablePath string      `json:"executable_path"`
 	Description    string      `json:"description"`
 	InputSchema    inputSchema `json:"input_schema"`
 }
 
-func ParseTooolsByPath(jsonPath string) ([]CustomToolWithPath, error) {
+func makeNameFromPath(fileName string) string {
+	name := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	name = strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '_', r == '-':
+			return r
+		}
+		return '_'
+	}, name)
+	return name
+}
+
+func ParseTooolsByPath(jsonPath string) ([]CustomToolDef, error) {
 	file, err := os.ReadFile(jsonPath)
 	if err != nil {
 		return nil, err
@@ -43,9 +56,10 @@ func ParseTooolsByPath(jsonPath string) ([]CustomToolWithPath, error) {
 		}
 		return desc
 	}
-	var customTools []CustomToolWithPath
+	var customTools []CustomToolDef
 	for _, tool := range tools {
-		customTools = append(customTools, CustomToolWithPath{
+		customTools = append(customTools, CustomToolDef{
+			FileName:       tool.FileName,
 			ExecutablePath: filepath.Join(filepath.Dir(jsonPath), tool.FileName),
 			Description:    describe(tool.Description, tool.InputSchema),
 			InputSchema:    tool.InputSchema,
@@ -54,17 +68,9 @@ func ParseTooolsByPath(jsonPath string) ([]CustomToolWithPath, error) {
 	return customTools, nil
 }
 
-func MakeToolFromCustomTools(tool CustomToolWithPath, b broker.Service) fantasy.AgentTool {
-	name := strings.TrimSuffix(filepath.Base(tool.ExecutablePath), filepath.Ext(tool.ExecutablePath))
-	name = strings.Map(func(r rune) rune {
-		switch {
-		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '_', r == '-':
-			return r
-		}
-		return '_'
-	}, name)
+func MakeToolFromCustomTools(tool CustomToolDef, b broker.Service) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
-		name,
+		makeNameFromPath(tool.FileName),
 		tool.Description,
 		func(ctx context.Context, input inputSchema, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			args := make([]string, 0, len(input))

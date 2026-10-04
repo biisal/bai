@@ -94,13 +94,13 @@ func DefaultSkillsPaths() []string {
 	return paths
 }
 
-func DefaultPlugins() string {
-	return filepath.Join(AppConfigDir(), "plugins", "plugins.json")
+func DefaultToolsPath() string {
+	return filepath.Join(AppConfigDir(), "tools", "tools.json")
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		PluginsPath: DefaultPlugins(),
+		PluginsPath: DefaultToolsPath(),
 		Providers: []ProviderConfig{
 			{
 				Format:  FormatOpenAI,
@@ -187,7 +187,7 @@ func Load(path string) (*Config, error) {
 		config.GitDirName = DefaultGitDirName()
 	}
 	if config.PluginsPath == "" {
-		config.PluginsPath = DefaultPlugins()
+		config.PluginsPath = DefaultToolsPath()
 	}
 
 	return &config, nil
