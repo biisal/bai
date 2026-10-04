@@ -37,7 +37,7 @@ func itemPaths(t *testing.T, items []list.Item) []string {
 		if !ok {
 			t.Fatalf("unexpected item type %T", it)
 		}
-		got = append(got, fi.FilePath)
+		got = append(got, fi.RelFilePath)
 	}
 	slices.Sort(got)
 	return got

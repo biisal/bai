@@ -42,6 +42,7 @@ type Config struct {
 	SkillsPaths  []string         `json:"skills_paths"`
 	Providers    []ProviderConfig `json:"providers"`
 	GitDirName   string           `json:"git_dir_name"`
+	PluginsPath  string           `json:"plugins_path"`
 }
 
 func AppConfigDir() string {
@@ -93,8 +94,13 @@ func DefaultSkillsPaths() []string {
 	return paths
 }
 
+func DefaultPlugins() string {
+	return filepath.Join(AppConfigDir(), "plugins", "plugins.json")
+}
+
 func DefaultConfig() *Config {
 	return &Config{
+		PluginsPath: DefaultPlugins(),
 		Providers: []ProviderConfig{
 			{
 				Format:  FormatOpenAI,
@@ -179,6 +185,9 @@ func Load(path string) (*Config, error) {
 	}
 	if config.GitDirName == "" {
 		config.GitDirName = DefaultGitDirName()
+	}
+	if config.PluginsPath == "" {
+		config.PluginsPath = DefaultPlugins()
 	}
 
 	return &config, nil

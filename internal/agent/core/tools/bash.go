@@ -11,14 +11,19 @@ import (
 	"time"
 )
 
-func executeBash(ctx context.Context, command string, timeoutSecs *int) (string, error) {
+func executeBash(ctx context.Context, command string, timeoutSecs *int, args ...string) (string, error) {
 	if timeoutSecs != nil && *timeoutSecs > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(*timeoutSecs)*time.Second)
 		defer cancel()
 	}
 
-	cmd := exec.CommandContext(ctx, "bash", "-c", command)
+	commandArgs := []string{"-c", command}
+	if len(args) > 0 {
+		commandArgs = append(commandArgs, "--")
+	}
+	commandArgs = append(commandArgs, args...)
+	cmd := exec.CommandContext(ctx, "bash", commandArgs...)
 	setProcessGroup(cmd)
 
 	var buf bytes.Buffer

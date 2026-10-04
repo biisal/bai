@@ -133,7 +133,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 	case commands.FileItem:
 		m.commands.ShowList = false
 		current := m.components.textArea.Value()
-		text := files.ReplaceFileQuery(current, item.FilePath)
+		text := files.ReplaceFileQuery(current, item.AbsFilePath)
 		m.components.textArea.SetValue(text)
 	}
 	return nil
