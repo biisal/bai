@@ -6,6 +6,7 @@ import (
 
 	"charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent/core/tools"
+	"github.com/biisal/bai/internal/skills"
 )
 
 func ReadAgentMd() string {
@@ -33,7 +34,19 @@ func formatUsersInstructions(usersInstructions []string) string {
 	return fmt.Sprintf("User instructions:\n%s", content)
 }
 
-func BuildSystemPrompt(usersInstructions []string, skills []Skill, agentTools []fantasy.AgentTool) string {
+func internalToolSkills() string {
+	internal := skills.InternalSkills()
+	if len(internal) == 0 {
+		return ""
+	}
+	ids := make([]string, len(internal))
+	for i, skill := range internal {
+		ids[i] = skill.Location
+	}
+	return fmt.Sprintf("Internal tools (can't read with bash, use %s to read):\n%s", tools.ReadFileName, strings.Join(ids, "\n"))
+}
+
+func BuildSystemPrompt(usersInstructions []string, skillList []skills.Skill, agentTools []fantasy.AgentTool) string {
 	guidelines := ""
 
 	addGuidelines := func(g string) {
@@ -46,7 +59,7 @@ func BuildSystemPrompt(usersInstructions []string, skills []Skill, agentTools []
 
 	addGuidelines("Be concise in your responses")
 	addGuidelines("Show file paths clearly when working with files")
-	addGuidelines(formatSkills(skills))
+	addGuidelines(skills.FormatSkills(skillList))
 
 	prompt := fmt.Sprintf(`
 You are an expert coding assistant operating inside bai, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
@@ -58,9 +71,11 @@ In addition to the tools above, you may have access to other custom tools depend
 
 %s
 
+%s
+
 Guidelines:
 %s
-	`, strings.Join(tools, ", "), formatUsersInstructions(usersInstructions), guidelines)
+	`, strings.Join(tools, ", "), formatUsersInstructions(usersInstructions), internalToolSkills(), guidelines)
 
 	return prompt
 }
