@@ -4,6 +4,7 @@ type EventType int
 
 const (
 	EventUserMessage EventType = iota
+	EventCustomTool
 	EventAgentThinking
 	EventAgentResponse
 	EventAgentError

@@ -45,7 +45,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	case CommandItem:
 		str = fmt.Sprintf("%s - %s", v.Name, v.Desc)
 	case FileItem:
-		str = v.FilePath
+		str = v.RelFilePath
 	}
 
 	style := d.styles.item

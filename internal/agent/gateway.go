@@ -14,7 +14,7 @@ import (
 	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/git"
-	audio "github.com/biisal/bai/internal/player"
+	"github.com/biisal/bai/internal/notifier"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -24,28 +24,27 @@ type Gateway struct {
 	providers        map[string]fantasy.Provider
 	db               repo.Querier
 	conversation     *repo.Conversation
-	activeProvider   fantasy.Provider
-	activeModel      string
-	AudioPlayer      *audio.AudioPlayer
+	notifier         *notifier.Notifier
 	skills           []instruction.Skill
 	userInstructions []string
 	gitRepo          git.GitRepo
+	agent            *Agent
 }
 
 func NewGateway(
 	ctx context.Context,
 	db repo.Querier,
 	b broker.Service,
-	providerConfigs []config.ProviderConfig,
-	audioPlayer *audio.AudioPlayer,
+	cfg *config.Config,
+	n *notifier.Notifier,
 	skillPaths []string,
 	gitRepo git.GitRepo,
 ) (*Gateway, error) {
-	providers, err := buildProviders(providerConfigs)
+	providers, err := buildProviders(cfg.Providers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build providers: %w", err)
 	}
-	activeProvider, activeModel, err := resolveProvider(ctx, db, providerConfigs)
+	activeProvider, activeModel, err := resolveProvider(ctx, db, cfg.Providers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve provider: %w", err)
 	}
@@ -53,17 +52,30 @@ func NewGateway(
 	skills := instruction.LoadSkills(skillPaths...)
 	userInstructions := instruction.ReadAgentMd()
 
+	provider, ok := providers[activeProvider]
+	if !ok {
+		return nil, fmt.Errorf("unknown provider: %s", activeProvider)
+	}
+
+	agent, err := NewFantasyAgent(ctx, NewFantasyAgentParams{
+		Model:            activeModel,
+		Provider:         provider,
+		UserInstructions: []string{userInstructions},
+		Skills:           skills,
+		AgentTools:       tools.NewTools(b, cfg.PluginsPath),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create agent: %w", err)
+	}
 	g := &Gateway{
 		db:               db,
 		broker:           b,
 		providers:        providers,
-		AudioPlayer:      audioPlayer,
+		notifier:         n,
 		skills:           skills,
 		userInstructions: []string{userInstructions},
 		gitRepo:          gitRepo,
-	}
-	if err := g.SetActive(activeProvider, activeModel); err != nil {
-		return nil, err
+		agent:            agent,
 	}
 	return g, nil
 }
@@ -75,23 +87,10 @@ func (g *Gateway) ActiveConversationTitle() string {
 	return fmt.Sprintf("bai | %s", g.conversation.Title)
 }
 
-func (g *Gateway) SetActive(providerID, modelID string) error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	provider, ok := g.providers[providerID]
-	if !ok {
-		return fmt.Errorf("unknown provider: %s", providerID)
-	}
-	g.activeProvider = provider
-	g.activeModel = modelID
-	return nil
-}
-
 func (g *Gateway) Active() (fantasy.Provider, string) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	return g.activeProvider, g.activeModel
+	return g.agent.provider, g.agent.model.Model()
 }
 
 func (g *Gateway) Providers() []string {
@@ -165,7 +164,18 @@ func (g *Gateway) syncGitRepo(purpose string) {
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, message string) error {
+	g.notifier.Working(ctx)
+	if err := g.streamChat(ctx, message); err != nil {
+		g.notifier.Failed(ctx, err)
+		return err
+	}
+	g.notifier.Done(ctx)
+	return nil
+}
+
+func (g *Gateway) streamChat(ctx context.Context, message string) error {
 	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
+
 	// 1. Save user message.
 	if err := g.AddMessageToDB(ctx, fantasy.Message{
 		Role:    fantasy.MessageRoleUser,
@@ -183,26 +193,14 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 		return err
 	}
 
-	provider, modelID := g.Active()
-	model, err := provider.LanguageModel(ctx, modelID)
-	if err != nil {
-		return fmt.Errorf("failed to get language model: %w", err)
-	}
-
-	agentTools := tools.NewTools(g.broker)
-	ag := fantasy.NewAgent(
-		model,
-		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt(g.userInstructions, g.skills)),
-		fantasy.WithTools(agentTools...),
-		fantasy.WithMaxRetries(3),
-	)
-
 	var partialReasoning strings.Builder
 	var partialText strings.Builder
 
 	var purpose strings.Builder
-
-	_, err = ag.Stream(ctx, fantasy.AgentStreamCall{
+	g.mu.Lock()
+	client := g.agent.client
+	g.mu.Unlock()
+	_, err = client.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
 

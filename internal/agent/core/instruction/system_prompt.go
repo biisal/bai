@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent/core/tools"
 )
 
@@ -32,13 +33,16 @@ func formatUsersInstructions(usersInstructions []string) string {
 	return fmt.Sprintf("User instructions:\n%s", content)
 }
 
-func BuildSystemPrompt(usersInstructions []string, skills []Skill) string {
+func BuildSystemPrompt(usersInstructions []string, skills []Skill, agentTools []fantasy.AgentTool) string {
 	guidelines := ""
 
 	addGuidelines := func(g string) {
 		guidelines += fmt.Sprintf("%s\n", g)
 	}
-	tools := []string{tools.ReadFileName, tools.WriteFileName, tools.BashName, tools.EditFileName}
+	tools := []string{}
+	for _, tool := range agentTools {
+		tools = append(tools, tool.Info().Name)
+	}
 
 	addGuidelines("Be concise in your responses")
 	addGuidelines("Show file paths clearly when working with files")

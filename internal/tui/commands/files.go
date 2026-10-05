@@ -66,8 +66,9 @@ var ignoreFolders = []string{
 }
 
 type FileItem struct {
-	Name     string
-	FilePath string
+	Name        string
+	RelFilePath string
+	AbsFilePath string
 }
 
 func (t FileItem) Title() string {
@@ -75,7 +76,7 @@ func (t FileItem) Title() string {
 }
 
 func (t FileItem) Description() string {
-	return t.FilePath
+	return t.RelFilePath
 }
 
 func (t FileItem) FilterValue() string { return t.Name }
@@ -144,8 +145,9 @@ func FileItems(extraPaths ...string) []list.Item {
 		}
 
 		items = append(items, FileItem{
-			Name:     d.Name(),
-			FilePath: rel,
+			Name:        d.Name(),
+			RelFilePath: rel,
+			AbsFilePath: path,
 		})
 		return nil
 	})

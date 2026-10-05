@@ -21,11 +21,6 @@ func (m Model) streamChat(ctx context.Context, text string) tea.Cmd {
 			m.broker.Publish(m.ctx, broker.Message{Type: broker.EventAgentError, Text: err.Error(), IsComplete: true})
 			return nil
 		}
-		if m.gateway.AudioPlayer != nil {
-			if playErr := m.gateway.AudioPlayer.Play(); playErr != nil {
-				slog.Error("failed to play notification sound", "error", playErr)
-			}
-		}
 		return nil
 	}
 }
@@ -133,7 +128,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 	case commands.FileItem:
 		m.commands.ShowList = false
 		current := m.components.textArea.Value()
-		text := files.ReplaceFileQuery(current, item.FilePath)
+		text := files.ReplaceFileQuery(current, item.AbsFilePath)
 		m.components.textArea.SetValue(text)
 	}
 	return nil
