@@ -16,6 +16,7 @@ import (
 	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/notifier"
 	broker "github.com/biisal/bai/internal/pubsub"
+	"github.com/biisal/bai/internal/skills"
 )
 
 type Gateway struct {
@@ -25,7 +26,7 @@ type Gateway struct {
 	db               repo.Querier
 	conversation     *repo.Conversation
 	notifier         *notifier.Notifier
-	skills           []instruction.Skill
+	skills           []skills.Skill
 	userInstructions []string
 	gitRepo          git.GitRepo
 	agent            *Agent
@@ -49,7 +50,7 @@ func NewGateway(
 		return nil, fmt.Errorf("failed to resolve provider: %w", err)
 	}
 
-	skills := instruction.LoadSkills(skillPaths...)
+	skillList := skills.LoadSkills(skillPaths...)
 	userInstructions := instruction.ReadAgentMd()
 
 	provider, ok := providers[activeProvider]
@@ -61,7 +62,7 @@ func NewGateway(
 		Model:            activeModel,
 		Provider:         provider,
 		UserInstructions: []string{userInstructions},
-		Skills:           skills,
+		Skills:           skillList,
 		AgentTools:       tools.NewTools(b, cfg.PluginsPath),
 	})
 	if err != nil {
@@ -72,7 +73,7 @@ func NewGateway(
 		broker:           b,
 		providers:        providers,
 		notifier:         n,
-		skills:           skills,
+		skills:           skillList,
 		userInstructions: []string{userInstructions},
 		gitRepo:          gitRepo,
 		agent:            agent,

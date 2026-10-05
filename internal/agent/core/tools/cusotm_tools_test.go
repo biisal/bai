@@ -17,7 +17,7 @@ func TestCustomPluginParseAndRun(t *testing.T) {
 	if err := os.WriteFile(script, []byte("#!/usr/bin/env bash\nprintf 'echo.sh got: %s\\n' \"$0 $*\"\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	manifest := filepath.Join(dir, "plugins.json")
+	manifest := filepath.Join(dir, "tools.json")
 	content := `[{"file_name":"echo.sh","description":"Echo test plugin.","input_schema":{"text":"text to echo"}}]`
 	if err := os.WriteFile(manifest, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
@@ -34,7 +34,7 @@ func TestCustomPluginParseAndRun(t *testing.T) {
 		t.Fatalf("plugin executable not found at %q: %v", parsed[0].ExecutablePath, err)
 	}
 
-	ts := toolSet{broker.New()}
+	ts := toolSet{broker: broker.New()}
 	tool := ts.makeToolFromCustomTools(parsed[0])
 	if got := tool.Info().Name; got != "echo" {
 		t.Errorf("tool name = %q, want %q", got, "echo")

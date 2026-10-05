@@ -1,4 +1,4 @@
-package instruction
+package skills
 
 import (
 	"fmt"
@@ -120,7 +120,7 @@ func parseSkill(dirName, location, content string) (Skill, bool) {
 	}, true
 }
 
-func formatSkills(skills []Skill) string {
+func FormatSkills(skills []Skill) string {
 	if len(skills) == 0 {
 		return ""
 	}
