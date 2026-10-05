@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"path/filepath"
 	"strings"
 
 	fantasy "charm.land/fantasy"
 	broker "github.com/biisal/bai/internal/pubsub"
+	"github.com/biisal/bai/internal/skills"
 )
 
 const (
@@ -49,9 +52,29 @@ type bashInput struct {
 
 type toolSet struct {
 	broker broker.Service
+	// toolsPath is the configured custom tools manifest path (plugins_path).
+	toolsPath string
+}
+
+// fillInternalTool resolves the placeholders internal skills use for the
+// user's configured tools manifest, so the agent never guesses the location.
+func (t *toolSet) fillInternalTool(content string) string {
+	manifest := t.toolsPath
+	if abs, err := filepath.Abs(manifest); err == nil && manifest != "" {
+		manifest = abs
+	}
+	return strings.NewReplacer(
+		"{{tools_manifest}}", manifest,
+		"{{tools_dir}}", filepath.Dir(manifest),
+	).Replace(content)
 }
 
 func (t *toolSet) readFile(ctx context.Context, input readFileInput, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	tool, ok := skills.GetInternalTool(input.Path)
+	if ok {
+		return fantasy.NewTextResponse(t.fillInternalTool(tool)), nil
+	}
+
 	var offset, limit int64
 	if input.Offset != nil {
 		offset = *input.Offset
@@ -138,7 +161,7 @@ func PurposeFromToolCall(name, input string) string {
 }
 
 func NewTools(b broker.Service, customToolsFilePath string) []fantasy.AgentTool {
-	ts := &toolSet{broker: b}
+	ts := &toolSet{broker: b, toolsPath: customToolsFilePath}
 	tools := []fantasy.AgentTool{
 		fantasy.NewAgentTool(ReadFileName, "Read a file from the filesystem using path, offset, and limit", ts.readFile),
 		fantasy.NewAgentTool(WriteFileName, "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.", ts.writeFile),
@@ -147,7 +170,8 @@ func NewTools(b broker.Service, customToolsFilePath string) []fantasy.AgentTool 
 	}
 	customTools, err := parseTooolsByPath(customToolsFilePath)
 	if err != nil {
-		return nil
+		slog.Warn("NewTools() =", "error", err)
+		return tools
 	}
 	for _, tool := range customTools {
 		tools = append(tools, ts.makeToolFromCustomTools(tool))

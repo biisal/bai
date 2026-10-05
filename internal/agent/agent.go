@@ -8,13 +8,14 @@ import (
 	"charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent/core/instruction"
 	repo "github.com/biisal/bai/internal/db/sqlc"
+	"github.com/biisal/bai/internal/skills"
 )
 
 type NewFantasyAgentParams struct {
 	Model            string
 	Provider         fantasy.Provider
 	UserInstructions []string
-	Skills           []instruction.Skill
+	Skills           []skills.Skill
 	AgentTools       []fantasy.AgentTool
 }
 
@@ -23,7 +24,7 @@ type Agent struct {
 	provider         fantasy.Provider
 	client           fantasy.Agent
 	userInstructions []string
-	skills           []instruction.Skill
+	skills           []skills.Skill
 	agentTools       []fantasy.AgentTool
 }
 
