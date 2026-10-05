@@ -112,9 +112,6 @@ func (t *toolSet) bash(ctx context.Context, input bashInput, _ fantasy.ToolCall)
 	return fantasy.NewTextResponse(out), nil
 }
 
-// PurposeFromToolCall returns the purpose of a tool call by looking up
-// the typed input for the named tool. Tools without a purpose field
-// (e.g. read_file) and unparseable inputs yield "".
 func PurposeFromToolCall(name, input string) string {
 	var purpose string
 	decode := func(v any) bool {
@@ -140,12 +137,20 @@ func PurposeFromToolCall(name, input string) string {
 	return strings.TrimSpace(purpose)
 }
 
-func NewTools(b broker.Service) []fantasy.AgentTool {
+func NewTools(b broker.Service, customToolsFilePath string) []fantasy.AgentTool {
 	ts := &toolSet{broker: b}
-	return []fantasy.AgentTool{
+	tools := []fantasy.AgentTool{
 		fantasy.NewAgentTool(ReadFileName, "Read a file from the filesystem using path, offset, and limit", ts.readFile),
 		fantasy.NewAgentTool(WriteFileName, "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.", ts.writeFile),
 		fantasy.NewAgentTool(EditFileName, "Edit a file using exact text replacement. Each edit's old_text must be a unique, non-overlapping match in the original file and is replaced with new_text. Provide multiple edits in one call to change several locations at once.", ts.editFile),
 		fantasy.NewAgentTool(BashName, "Execute a bash command in the current working directory. Returns combined stdout and stderr, and the exit code when non-zero. Output is truncated to the last 2000 lines or 256KB. Optionally provide a timeout in seconds, after which the command is killed.", ts.bash),
 	}
+	customTools, err := parseTooolsByPath(customToolsFilePath)
+	if err != nil {
+		return nil
+	}
+	for _, tool := range customTools {
+		tools = append(tools, ts.makeToolFromCustomTools(tool))
+	}
+	return tools
 }
