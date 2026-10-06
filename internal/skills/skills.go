@@ -8,7 +8,7 @@ import (
 var ToolsMaker string
 
 // internalSkills are skills shipped with bai instead of living on disk.
-// Their Location is the id read_file uses to fetch them.
+// Their Location is the id read uses to fetch them.
 var internalSkills = buildInternalSkills()
 
 func buildInternalSkills() []Skill {
@@ -21,7 +21,7 @@ func buildInternalSkills() []Skill {
 }
 
 // InternalSkills returns the skills shipped with bai, kept separate from the
-// ones loaded from disk: they are fetched by id through read_file.
+// ones loaded from disk: they are fetched by id through read.
 func InternalSkills() []Skill {
 	return internalSkills
 }
