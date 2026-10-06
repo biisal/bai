@@ -19,7 +19,7 @@ The manifest path comes from the `plugins_path` key in the user's config, so it 
 ### Before you write anything
 
 1. Run `ls -la {{tools_dir}}` and read `{{tools_manifest}}`. If either is missing, create the directory and start the manifest as `[]`. Existing entries are your style reference and the file you must not break.
-2. Check the request is not already covered by a built-in tool (`read_file`, `write_file`, `edit_file`, `bash`) or an existing custom tool. If it is, say so instead of building a duplicate.
+2. Check the request is not already covered by a built-in tool (`read`, `write_file`, `edit_file`, `bash`) or an existing custom tool. If it is, say so instead of building a duplicate.
 
 ### Manifest format
 
