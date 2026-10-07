@@ -1,6 +1,6 @@
 export const siteName = 'bAI'
 export const siteTagline = 'A terminal AI coding agent'
-export const siteTitle = `${siteName} — ${siteTagline}`
+export const siteTitle = `${siteName}, a terminal coding agent`
 export const repoUrl = 'https://github.com/biisal/bai'
 export const providers = [
   { name: 'OpenAI', model: 'gpt-6-astra' },
