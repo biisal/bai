@@ -38,15 +38,18 @@ export default function Hero() {
         
         {/* Left Copy */}
         <div className="w-full max-w-2xl">
-          <p className="text-primary text-xs font-semibold tracking-[0.2em] uppercase mb-6">
-            LightWeight. Less Bloat.
+          <p className="mb-6 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            LightWeight. Less Bloat. 
+            <span className="rounded-sm border border-primary/50 bg-primary/10 px-2 py-1 font-['JetBrains_Mono'] tracking-normal">
+              14 MB
+            </span>Binary only
           </p>
           <h1 className="text-6xl sm:text-7xl lg:text-8xl font-['Playfair_Display'] text-white leading-[1.1] tracking-tight mb-6">
-            Build Things.<br />
+            Build Things,<br />
             <span className="text-foreground">Don't Break.</span>
           </h1>
           <p className="text-xl text-neutral-300 mb-10 max-w-lg">
-            Invisible undo. Queue while it works. Zero git pollution.
+            A super minimal AI coding agent for your terminal. Your keys, your models, your machine.
           </p>
 
           {/* Install command / terminal */}
@@ -90,12 +93,9 @@ export default function Hero() {
               </button>
             </div>
           </div>
-          <div className="mt-6 flex items-center gap-3 font-['JetBrains_Mono'] text-xs">
-            <span className="rounded-sm border border-primary/50 bg-primary/10 px-2.5 py-1.5 font-semibold text-primary">
-              14 MB
-            </span>
-            <span className="text-muted-foreground">one static binary. no runtime, no model downloads.</span>
-          </div>
+          <p className="mt-6 font-['JetBrains_Mono'] text-xs text-muted-foreground">
+            one static binary. no runtime, no model downloads.
+          </p>
         </div>
 
         

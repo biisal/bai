@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from './ui/button'
 import { siteName } from '@/config'
@@ -79,10 +78,7 @@ export default function Navbar() {
 
       {/* Actions */}
       <div className="flex items-center gap-6">
-        <Button variant="ghost" size="icon" aria-label="Search">
-          <Search className="w-5 h-5" />
-        </Button>
-        <Button variant="outline" render={<a href="https://github.com/biisal/bai" />}>
+        <Button variant="outline" render={<Link to="/docs" />}>
           Get Started &rarr;
         </Button>
       </div>
