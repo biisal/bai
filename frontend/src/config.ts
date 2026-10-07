@@ -1,5 +1,5 @@
 export const siteName = 'bAI'
-export const siteTagline = 'The Autonomous Terminal AI Coding Agent'
+export const siteTagline = 'A terminal AI coding agent'
 export const siteTitle = `${siteName} — ${siteTagline}`
 export const repoUrl = 'https://github.com/biisal/bai'
 export const providers = [

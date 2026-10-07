@@ -1,7 +1,7 @@
 const skips = [
   { no: 'No runtime to install', yes: 'One CGO-free binary. Drop it in and run.' },
   { no: 'No git pollution', yes: 'Every turn is committed to a private .bai_git, never your repo history.' },
-  { no: 'No tool sprawl', yes: 'Four built-in tools: read, write, edit, bash. Add your own through a manifest.' },
+  { no: 'No tool sprawl', yes: 'Four built-in tools: read, write_file, edit_file, bash. Add your own through a manifest.' },
   { no: 'No locked-in provider', yes: 'OpenAI, Anthropic, Groq, or any OpenAI-compatible endpoint from config.' },
   { no: 'No waiting around', yes: 'Keep typing while the agent works. Messages queue up in order.' },
   { no: 'No cloud account', yes: 'Bring an API key. Sessions live in a local SQLite file.' },

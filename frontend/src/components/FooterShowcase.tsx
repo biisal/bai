@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from './ui/button'
 import { installUrl, repoUrl, siteName } from '@/config'
@@ -26,7 +27,7 @@ export default function FooterShowcase() {
         {/* Carousel */}
         <div className="w-full lg:w-3/5">
           <div className="mb-6 flex items-center justify-between">
-            <Button variant="outline" render={<a href={repoUrl} />}>
+            <Button variant="outline" render={<Link to="/docs" />}>
               Explore Shadow Git &rarr;
             </Button>
             <div className="flex gap-2">
@@ -81,7 +82,7 @@ export default function FooterShowcase() {
         <span>{siteName} — a terminal AI coding agent.</span>
         <div className="flex gap-6">
           <a href={repoUrl} className="transition-colors hover:text-foreground">GitHub</a>
-          <a href={`${repoUrl}#readme`} className="transition-colors hover:text-foreground">Docs</a>
+          <Link to="/docs" className="transition-colors hover:text-foreground">Docs</Link>
           <a href={installUrl} className="transition-colors hover:text-foreground">Install script</a>
         </div>
       </footer>

@@ -4,6 +4,8 @@ import TuiPreview from '@/components/TuiPreview'
 import FeatureBar from '@/components/FeatureBar'
 import EverydayCoding from '@/components/EverydayCoding'
 import WhatWeSkip from '@/components/WhatWeSkip'
+import CustomTools from '@/components/CustomTools'
+import Themes from '@/components/Themes'
 import UndoSection from '@/components/UndoSection'
 import FAQ from '@/components/FAQ'
 import FooterShowcase from '@/components/FooterShowcase'
@@ -18,6 +20,8 @@ export default function App() {
         <section id="features"><FeatureBar /></section>
         <section id="sessions"><EverydayCoding /></section>
         <WhatWeSkip />
+        <CustomTools />
+        <Themes />
         <UndoSection />
         <FAQ />
         <FooterShowcase />

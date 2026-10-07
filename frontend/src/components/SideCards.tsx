@@ -27,7 +27,7 @@ export default function SideCards() {
         <div className="pl-3.5">split config loading</div>
       </Card>
 
-      <Card id="themes" icon={<Palette className="w-4 h-4" />} title="Themes">
+      <Card icon={<Palette className="w-4 h-4" />} title="Themes">
         <div className="flex gap-1.5 mb-2">
           {swatches.map(c => (
             <span key={c} className={`h-5 w-5 rounded-sm border border-border ${c}`} />
