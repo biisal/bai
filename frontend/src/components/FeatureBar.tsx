@@ -10,7 +10,7 @@ export default function FeatureBar() {
     {
       icon: <Database className="w-5 h-5" />,
       title: 'Sessions',
-      desc: 'SQLite-backed history',
+      desc: 'Local & resumable',
     },
     {
       icon: <Palette className="w-5 h-5" />,

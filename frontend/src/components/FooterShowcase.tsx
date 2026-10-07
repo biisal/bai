@@ -12,7 +12,7 @@ const cards = [
 const stats = [
   { value: '1', label: 'Binary' },
   { value: '6', label: 'Providers' },
-  { value: 'SQLite', label: 'Sessions' },
+  { value: 'Local', label: 'Sessions' },
   { value: '4', label: 'Built-in tools' },
 ]
 
