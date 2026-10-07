@@ -7,7 +7,6 @@ import { siteName } from '@/config'
 const links = [
   { label: 'Home', href: '#home' },
   { label: 'Features', href: '#features' },
-  { label: 'Sessions', href: '#sessions' },
   { label: 'Tools', href: '#tools' },
   { label: 'Themes', href: '#themes' },
 ]
