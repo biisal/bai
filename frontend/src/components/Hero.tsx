@@ -28,7 +28,7 @@ export default function Hero() {
         <div className="absolute inset-0 bg-linear-to-t  from-background via-transparent to-background/50 z-10" />
         <img
           src="cat-hero-2.png"
-          alt="Serene mountain lake with glowing ring"
+          alt="Cat in the hero background"
           className="w-full h-full object-cover object-right md:object-center"
         />
       </div>
@@ -41,7 +41,7 @@ export default function Hero() {
           <p className="mb-6 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
             LightWeight. Less Bloat. 
             <span className="rounded-sm border border-primary/50 bg-primary/10 px-2 py-1 font-['JetBrains_Mono'] tracking-normal">
-              14 MB
+              ~16 MB
             </span>Binary only
           </p>
           <h1 className="text-6xl sm:text-7xl lg:text-8xl font-['Playfair_Display'] text-white leading-[1.1] tracking-tight mb-6">
