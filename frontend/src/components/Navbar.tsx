@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Button } from './ui/button'
 import { siteName } from '@/config'
 
@@ -8,7 +9,7 @@ const links = [
   { label: 'Features', href: '#features' },
   { label: 'Sessions', href: '#sessions' },
   { label: 'Themes', href: '#themes' },
-  { label: 'Docs', href: '#docs' },
+
 ]
 
 export default function Navbar() {
@@ -68,6 +69,12 @@ export default function Navbar() {
             {link.label}
           </a>
         ))}
+        <Link
+          to="/docs"
+          className="border-b border-transparent pb-1 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Docs
+        </Link>
       </div>
 
       {/* Actions */}
@@ -75,10 +82,8 @@ export default function Navbar() {
         <Button variant="ghost" size="icon" aria-label="Search">
           <Search className="w-5 h-5" />
         </Button>
-        <Button variant="outline" asChild>
-          <a href="https://github.com/biisal/bai">
-            Get Started &rarr;
-          </a>
+        <Button variant="outline" render={<a href="https://github.com/biisal/bai" />}>
+          Get Started &rarr;
         </Button>
       </div>
     </nav>
