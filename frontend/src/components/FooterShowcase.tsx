@@ -26,8 +26,8 @@ export default function FooterShowcase() {
         {/* Carousel */}
         <div className="w-full lg:w-3/5">
           <div className="mb-6 flex items-center justify-between">
-            <Button variant="outline" asChild>
-              <a href={repoUrl}>Explore Shadow Git &rarr;</a>
+            <Button variant="outline" render={<a href={repoUrl} />}>
+              Explore Shadow Git &rarr;
             </Button>
             <div className="flex gap-2">
               <button

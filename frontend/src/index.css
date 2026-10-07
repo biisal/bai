@@ -1,19 +1,12 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
 
+@custom-variant dark (&:is(.dark *));
+
+/* Brand tokens with no shadcn equivalent */
 @theme {
-  --color-background: #15100b;
-  --color-foreground: #d4c4a8;
-  --color-muted: #2e2620;
-  --color-muted-foreground: #7a6b58;
-  --color-primary: #c4956a;
-  --color-primary-foreground: #1e1712;
-  --color-secondary: #8b6f5c;
-  --color-secondary-foreground: #d4c4a8;
-  --color-accent: #d4876a;
-  --color-accent-foreground: #1e1712;
-  --color-border: #3d3228;
-  --color-destructive: #c45a4a;
-  --color-destructive-foreground: #d4c4a8;
   --color-success: #7a9c6a;
   --color-success-foreground: #1e1712;
   --color-warning: #c4a84f;
@@ -28,3 +21,94 @@
   scrollbar-width: none;
 }
 
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Single theme — the original brand palette */
+:root {
+  --background: #15100b;
+  --foreground: #d4c4a8;
+  --card: #1e1712;
+  --card-foreground: #d4c4a8;
+  --popover: #1e1712;
+  --popover-foreground: #d4c4a8;
+  --primary: #c4956a;
+  --primary-foreground: #1e1712;
+  --secondary: #8b6f5c;
+  --secondary-foreground: #d4c4a8;
+  --muted: #2e2620;
+  --muted-foreground: #7a6b58;
+  --accent: #d4876a;
+  --accent-foreground: #1e1712;
+  --destructive: #c45a4a;
+  --destructive-foreground: #d4c4a8;
+  --border: #3d3228;
+  --input: #3d3228;
+  --ring: #c4956a;
+  --chart-1: #c4956a;
+  --chart-2: #d4876a;
+  --chart-3: #7a9c6a;
+  --chart-4: #c4a84f;
+  --chart-5: #8b6f5c;
+  --radius: 0.625rem;
+  --sidebar: #1e1712;
+  --sidebar-foreground: #d4c4a8;
+  --sidebar-primary: #c4956a;
+  --sidebar-primary-foreground: #1e1712;
+  --sidebar-accent: #2e2620;
+  --sidebar-accent-foreground: #d4c4a8;
+  --sidebar-border: #3d3228;
+  --sidebar-ring: #c4956a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
