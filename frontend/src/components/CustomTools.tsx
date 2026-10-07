@@ -25,7 +25,7 @@ const STEPS: Step[] = [
   { kind: 'bash', text: `${DIR}/weather.sh city=Patna` },
   {
     kind: 'assistant',
-    text: 'Added the weather tool. It takes a city and an optional units argument.',
+    text: 'Done. The tool is ready. I will use this to find the weather for a city.',
   },
 ]
 

@@ -5,6 +5,7 @@ import { Streamdown } from 'streamdown'
 import { code as codePlugin } from '@streamdown/code'
 import '@/styles/streamdown.css'
 import { installCmd, repoUrl, siteName } from '@/config'
+import { ThemeJsonEditor } from '@/components/Themes'
 import {
   Sidebar,
   SidebarContent,
@@ -296,21 +297,7 @@ Any other OpenAI-compatible endpoint works too — point \`base_url\` at it and 
         title: 'Themes',
         body: `Themes are JSON files in \`~/.config/bai/themes\`. Pick one with \`/themes\`; the choice is persisted and reloaded on start.
 
-\`\`\`json
-{
-  "background": "",         "foreground": "7",
-  "muted": "236",           "mutedForeground": "244",
-  "primary": "6",           "primaryForeground": "0",
-  "secondary": "240",       "secondaryForeground": "7",
-  "accent": "6",            "accentForeground": "0",
-  "border": "238",
-  "destructive": "1",       "destructiveForeground": "0",
-  "success": "2",           "successForeground": "0",
-  "warning": "3",           "warningForeground": "0"
-}
-\`\`\`
-
-Values are ANSI color numbers (or full RGB strings). Missing keys fall back to the built-in default theme, and a theme that disappears from disk falls back the same way.`,
+The keys are shadcn-inspired token names. Values are ANSI color numbers or hex colors. Missing keys fall back to the built-in default theme, and a theme that disappears from disk falls back the same way.`,
       },
       {
         id: 'project-layout',
@@ -406,6 +393,11 @@ export default function Docs() {
               >
                 {current.body}
               </Streamdown>
+              {current.id === 'themes' && (
+                <div className="mt-6">
+                  <ThemeJsonEditor />
+                </div>
+              )}
             </article>
 
             {/* Prev / Next */}

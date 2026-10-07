@@ -2,7 +2,6 @@ import Navbar from '@/components/Navbar'
 import Hero from '@/components/Hero'
 import TuiPreview from '@/components/TuiPreview'
 import FeatureBar from '@/components/FeatureBar'
-import EverydayCoding from '@/components/EverydayCoding'
 import WhatWeSkip from '@/components/WhatWeSkip'
 import CustomTools from '@/components/CustomTools'
 import Themes from '@/components/Themes'
@@ -18,9 +17,8 @@ export default function App() {
         <section id="home"><Hero /></section>
         <TuiPreview />
         <section id="features"><FeatureBar /></section>
-        <section id="sessions"><EverydayCoding /></section>
-        <WhatWeSkip />
         <CustomTools />
+        <WhatWeSkip />
         <Themes />
         <UndoSection />
         <FAQ />
