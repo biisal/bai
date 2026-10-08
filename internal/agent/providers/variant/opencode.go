@@ -66,7 +66,7 @@ func ocID(prefix string, descending bool) string {
 	b.Grow(len(prefix) + 1 + ocIDLength)
 	b.WriteString(prefix)
 	b.WriteByte('_')
-	b.WriteString(fmt.Sprintf("%012x", value))
+	fmt.Fprintf(&b, "%012x", value)
 
 	rnd := make([]byte, ocIDLength-12)
 	_, _ = rand.Read(rnd)
