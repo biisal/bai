@@ -3,7 +3,7 @@ SHELL := /bin/bash
 BINARY_PATH := ./bin/bai
 INSTALL_PATH := ~/.local/bin
 
-.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate
+.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate frontend-build frontend-dev
 .ONESHELL:
 
 default:
@@ -38,9 +38,11 @@ release-full:
 
 lint:
 	golangci-lint run
+	cd frontend && pnpm lint
 
 lint-fix:
 	golangci-lint run --fix
+	cd frontend && pnpm lint:fix
 
 clean:
 	rm -rf bin/
@@ -48,10 +50,18 @@ clean:
 
 format:
 	gofmt -w .
+	cd frontend && pnpm format
 
 format-check:
 	gofmt -l .
+	cd frontend && pnpm format:check
 
 db-generate:
 	@sqlc generate
 	@gofmt -w -r 'interface{} -> any' ./internal/db
+
+frontend-build:
+	cd frontend && pnpm build
+
+frontend-dev:
+	cd frontend && pnpm dev

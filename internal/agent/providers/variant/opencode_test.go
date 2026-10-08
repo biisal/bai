@@ -1,6 +1,8 @@
 package variant
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,19 +54,85 @@ func TestSessionsKeysAreIndependent(t *testing.T) {
 }
 
 func TestOcIDFormat(t *testing.T) {
-	id := ocID("msg")
+	id := ocID("msg", false)
 
-	if len(id) <= len("msg_") {
-		t.Fatalf("ocID() too short: %q", id)
+	// opencode IDs: prefix + "_" + 12 lowercase hex time + 14 base62 chars.
+	body := strings.TrimPrefix(id, "msg_")
+	if len(body) != 26 {
+		t.Fatalf("ocID() body length = %d, want 26: %q", len(body), id)
 	}
-	if id[:4] != "msg_" {
-		t.Errorf("ocID() prefix = %q, want %q", id[:4], "msg_")
+	if _, err := strconv.ParseUint(body[:12], 16, 64); err != nil {
+		t.Errorf("ocID() time = %q, want 12 lowercase hex chars", body[:12])
+	}
+	for _, c := range body[12:] {
+		if !strings.ContainsRune(ocBase62, c) {
+			t.Errorf("ocID() suffix contains non-base62 char %q in %q", c, id)
+		}
 	}
 
 	// Two calls should practically never collide.
-	first, second := ocID("msg"), ocID("msg")
+	first, second := ocID("msg", false), ocID("msg", false)
 	if first == second {
 		t.Errorf("ocID() produced identical IDs twice: %q", first)
+	}
+}
+
+func TestOcIDDescendingSession(t *testing.T) {
+	id := ocID("ses", true)
+	body := strings.TrimPrefix(id, "ses_")
+	if len(body) != 26 {
+		t.Fatalf("ocID() body length = %d, want 26: %q", len(body), id)
+	}
+	// Descending IDs are bitwise-inverted, so a fresh one starts with a
+	// high hex nibble and sorts lexicographically above ascending IDs.
+	if body[0] < '8' {
+		t.Errorf("ocID(ses, descending) = %q, want inverted time prefix", id)
+	}
+}
+
+func TestOpenCodeHeadersMatchCapturedRequest(t *testing.T) {
+	f, _ := Get(OpenCode)
+	spec, err := f(config.ProviderConfig{})
+	if err != nil {
+		t.Fatalf("factory error: %v", err)
+	}
+
+	got := map[string]string{}
+	for _, h := range spec.Headers {
+		got[h.Key] = h.Value()
+	}
+
+	want := map[string]string{
+		"User-Agent":            "opencode/1.18.34 ai-sdk/provider-utils/4.0.23 runtime/browser",
+		"x-opencode-client":     "cli",
+		"x-opencode-project":    "global",
+		"x-opencode-session":    "",
+		"x-opencode-session-id": "",
+		"x-opencode-request":    "",
+	}
+	for k, v := range want {
+		gv, ok := got[k]
+		if !ok {
+			t.Errorf("missing header %q", k)
+			continue
+		}
+		if v != "" && gv != v {
+			t.Errorf("%s = %q, want %q", k, gv, v)
+		}
+	}
+
+	// session and session-id must be the same rotating value.
+	if got["x-opencode-session"] != got["x-opencode-session-id"] {
+		t.Errorf("session %q != session-id %q", got["x-opencode-session"], got["x-opencode-session-id"])
+	}
+	if !strings.HasPrefix(got["x-opencode-session"], "ses_") {
+		t.Errorf("session = %q, want ses_ prefix", got["x-opencode-session"])
+	}
+	if !strings.HasPrefix(got["x-opencode-request"], "msg_") {
+		t.Errorf("request = %q, want msg_ prefix", got["x-opencode-request"])
+	}
+	if spec.AuthScheme != "Bearer" || spec.AuthFallback != "public" {
+		t.Errorf("auth = %q %q, want Bearer public", spec.AuthScheme, spec.AuthFallback)
 	}
 }
 
