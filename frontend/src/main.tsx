@@ -1,14 +1,14 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import App from '@/App'
-import Docs from '@/Docs'
-import { siteTitle } from '@/config'
-import '@/index.css'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import App from "@/App";
+import Docs from "@/Docs";
+import { siteTitle } from "@/config";
+import "@/index.css";
 
-document.title = siteTitle
+document.title = siteTitle;
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
@@ -16,5 +16,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/docs" element={<Docs />} />
       </Routes>
     </BrowserRouter>
-  </React.StrictMode>,
-)
+  </React.StrictMode>
+);

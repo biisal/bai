@@ -38,9 +38,11 @@ release-full:
 
 lint:
 	golangci-lint run
+	cd frontend && pnpm lint
 
 lint-fix:
 	golangci-lint run --fix
+	cd frontend && pnpm lint:fix
 
 clean:
 	rm -rf bin/
@@ -48,9 +50,11 @@ clean:
 
 format:
 	gofmt -w .
+	cd frontend && pnpm format
 
 format-check:
 	gofmt -l .
+	cd frontend && pnpm format:check
 
 db-generate:
 	@sqlc generate
