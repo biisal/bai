@@ -1,6 +1,7 @@
 # bAI Landing Page Implementation Plan
 
 ## 1. Visual Aesthetic & Theme
+
 The design features a dark, highly polished, "zen/mindful" aesthetic. We will adapt the placeholder text (which references sleep/meditation) to strictly highlight **bAI's** features while maintaining the calming, focused, and elegant vibe.
 
 - **Color Palette**:
@@ -9,7 +10,7 @@ The design features a dark, highly polished, "zen/mindful" aesthetic. We will ad
   - **Text**: White for primary headings, light greenish-gray (`#94a3b8` or `#8ba6a5`) for descriptions.
   - **Cards & UI**: Glassmorphic overlays, semi-transparent dark backgrounds (`bg-white/5` or `bg-[#0d2222]/80`) with subtle 1px glowing borders (`border-white/10`).
 - **Typography**:
-  - **Headings**: An elegant Serif font (e.g., *Playfair Display* or *Instrument Serif*) to give that premium, editorial look ("Your Coding Agent in the Terminal.").
+  - **Headings**: An elegant Serif font (e.g., _Playfair Display_ or _Instrument Serif_) to give that premium, editorial look ("Your Coding Agent in the Terminal.").
   - **Body & UI**: Clean Sans-Serif (Geist, Inter) for standard text.
   - **Terminal/Code**: Monospace (Geist Mono).
 
@@ -18,11 +19,13 @@ The design features a dark, highly polished, "zen/mindful" aesthetic. We will ad
 The page is structured as a continuous scrolling landing page divided into horizontal bands.
 
 ### A. `Navbar`
+
 - **Left**: bAI Logo (Custom icon `>` + text).
 - **Center**: Nav links (Home, Features, Sessions, Themes, Docs).
 - **Right**: Search icon, "Get Started &rarr;" pill button (outline style).
 
 ### B. `HeroSection`
+
 - **Left Column**:
   - Eyebrow: `ONE BINARY. ANY MODEL.`
   - Serif Headline: `Your Coding Agent\nin the Terminal.`
@@ -36,6 +39,7 @@ The page is structured as a continuous scrolling landing page divided into horiz
   - Decorative wave/chart at the bottom.
 
 ### C. `FeatureBar`
+
 - A wide, bordered, pill-shaped container spanning the screen width.
 - Contains 5 distinct feature highlights separated by subtle vertical dividers:
   1. **Shadow Git**: Invisible undo history.
@@ -45,24 +49,28 @@ The page is structured as a continuous scrolling landing page divided into horiz
   5. **Notifications**: Herdr & audio alerts.
 
 ### D. `EverydayCoding` (Split Section)
+
 - **Left**: Serif Headline "Built for everyday coding." + description + "Explore All Features &rarr;" CTA.
 - **Center/Right UI Showcase**:
   - A large central glass panel showing a terminal/TUI mockup of bAI running.
   - A vertical stack of 3 smaller interaction cards on the right (Sessions, Themes, Shadow Git) showing active states.
 
 ### E. `TestimonialSection`
+
 - Right-aligned text over a beautiful nature background.
 - Eyebrow: `SMALL STEPS. BIG CHANGES.`
 - Serif Headline: `A cleaner repo builds better code.`
 - Quote text with user profile picture and left/right navigation arrows.
 
 ### F. `FooterShowcase` (Bottom Split)
+
 - **Left**: "Undo Anything. Keep Shipping." + CTA "Explore Shadow Git".
 - **Center**: A mini-carousel of 3 landscape cards representing features (e.g., Safe Experimentation, Atomic Edits, Easy Rollbacks).
 - **Right**: "Built for developer productivity."
   - Stats Grid: 1 (Binary), 8+ (Providers), SQLite (DB), 50+ (Tools).
 
 ## 3. Tech Stack & Dependencies
+
 - **Framework**: React 19 + Vite.
 - **Styling**: Tailwind CSS v4.
 - **Icons**: `lucide-react`.

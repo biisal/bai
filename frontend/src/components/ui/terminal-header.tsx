@@ -5,8 +5,10 @@ export default function TerminalHeader({ title }: { title?: string }) {
       <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
       <span className="w-3 h-3 rounded-full bg-[#28c840]" />
       {title && (
-        <span className="text-muted-foreground text-xs font-['JetBrains_Mono'] ml-2">{title}</span>
+        <span className="text-muted-foreground text-xs font-['JetBrains_Mono'] ml-2">
+          {title}
+        </span>
       )}
     </div>
-  )
+  );
 }

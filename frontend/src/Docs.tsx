@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
-import { Streamdown } from 'streamdown'
-import { code as codePlugin } from '@streamdown/code'
-import '@/styles/streamdown.css'
-import { installCmd, repoUrl, siteName } from '@/config'
-import { ThemeJsonEditor } from '@/components/Themes'
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { Streamdown } from "streamdown";
+import { code as codePlugin } from "@streamdown/code";
+import "@/styles/streamdown.css";
+import { installCmd, repoUrl, siteName } from "@/config";
+import { ThemeJsonEditor } from "@/components/Themes";
 import {
   Sidebar,
   SidebarContent,
@@ -19,17 +19,17 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from '@/components/ui/sidebar'
+} from "@/components/ui/sidebar";
 
-type Doc = { id: string; title: string; body: string }
+type Doc = { id: string; title: string; body: string };
 
 const docs: { group: string; items: Doc[] }[] = [
   {
-    group: 'Getting Started',
+    group: "Getting Started",
     items: [
       {
-        id: 'introduction',
-        title: 'Introduction',
+        id: "introduction",
+        title: "Introduction",
         body: `${siteName} is a terminal-based AI coding agent. Single binary, TUI interface. Status: early development — the core chat loop and coding agent tools work.
 
 ## Features
@@ -51,8 +51,8 @@ const docs: { group: string; items: Doc[] }[] = [
 - Go 1.26+ — only if you build from source; the curl install doesn't need it`,
       },
       {
-        id: 'installation',
-        title: 'Installation',
+        id: "installation",
+        title: "Installation",
         body: `One static binary, ~16 MB. No runtime, no model downloads.
 
 ## With curl
@@ -89,11 +89,11 @@ make clean            remove build artifacts
     ],
   },
   {
-    group: 'Guides',
+    group: "Guides",
     items: [
       {
-        id: 'configuration',
-        title: 'Configuration',
+        id: "configuration",
+        title: "Configuration",
         body: `Config lives at \`~/.config/bai/config.json\`. Copy the example and fill in your API keys:
 
 \`\`\`bash
@@ -142,8 +142,8 @@ cp config.example.json ~/.config/bai/config.json
 - Missing \`database_path\`, \`log_file_path\`, \`git_dir_name\` and \`plugins_path\` fall back to defaults`,
       },
       {
-        id: 'usage',
-        title: 'Usage',
+        id: "usage",
+        title: "Usage",
         body: `\`\`\`bash
 bai                        use the default config
 bai -config path/to.json   use a specific config
@@ -167,8 +167,8 @@ ctrl+p       move up in a list
 \`\`\``,
       },
       {
-        id: 'commands',
-        title: 'Commands',
+        id: "commands",
+        title: "Commands",
         body: `Type \`/\` to list commands, keep typing to filter, enter to run.
 
 \`\`\`text
@@ -184,8 +184,8 @@ ctrl+p       move up in a list
 Sessions, models and themes are persisted: the active model and theme survive a restart, and each conversation is stored with the directory it was started in, so \`/sessions\` only ever shows the current folder's history.`,
       },
       {
-        id: 'tools-and-skills',
-        title: 'Tools & Skills',
+        id: "tools-and-skills",
+        title: "Tools & Skills",
         body: `## Built-in tools
 
 \`\`\`text
@@ -229,8 +229,8 @@ Skills are folders containing a \`SKILL.md\` with YAML frontmatter (\`name\` mus
 bAI also ships one built-in skill, \`internal:skills:tools_maker\`, which teaches the agent how to write new custom tools. Add \`AGENTS.md\` (or \`agents.md\` / \`agent.md\`) in the project root for instructions that are always injected into the system prompt.`,
       },
       {
-        id: 'shadow-git',
-        title: 'Shadow Git',
+        id: "shadow-git",
+        title: "Shadow Git",
         body: `Shadow git keeps an undo history of every change — invisible to your project's git. It runs the real \`git\` binary against a separate directory (\`.bai_git\` by default) while your work tree stays untouched:
 
 \`\`\`bash
@@ -255,8 +255,8 @@ bai git show
 \`\`\``,
       },
       {
-        id: 'notifications',
-        title: 'Notifications',
+        id: "notifications",
+        title: "Notifications",
         body: `bAI reports turn state (working / done / failed / blocked) so you can look away from the terminal.
 
 ## Sound
@@ -270,11 +270,11 @@ When running inside a Herdr pane (\`HERDR_ENV=1\`), bAI claims the pane on start
     ],
   },
   {
-    group: 'Reference',
+    group: "Reference",
     items: [
       {
-        id: 'providers',
-        title: 'Providers',
+        id: "providers",
+        title: "Providers",
         body: `Any of these can be configured via config.json:
 
 \`\`\`text
@@ -293,15 +293,15 @@ Any other OpenAI-compatible endpoint works too — point \`base_url\` at it and 
 \`/models\` lists every configured provider/model pair. The selection is written to SQLite and restored on the next start.`,
       },
       {
-        id: 'themes',
-        title: 'Themes',
+        id: "themes",
+        title: "Themes",
         body: `Themes are JSON files in \`~/.config/bai/themes\`. Pick one with \`/themes\`; the choice is persisted and reloaded on start.
 
 The keys are shadcn-inspired token names. Values are ANSI color numbers or hex colors. Missing keys fall back to the built-in default theme, and a theme that disappears from disk falls back the same way.`,
       },
       {
-        id: 'project-layout',
-        title: 'Project Layout',
+        id: "project-layout",
+        title: "Project Layout",
         body: `\`\`\`text
 cmd/bai/              CLI entry: flags, config, shadow git passthrough
 internal/agent/       gateway, streaming loop, provider building, DB store
@@ -318,20 +318,20 @@ internal/files/       current directory and the @ file finder
       },
     ],
   },
-]
+];
 
 export default function Docs() {
-  const [active, setActive] = useState(docs[0].items[0].id)
+  const [active, setActive] = useState(docs[0].items[0].id);
 
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [active])
+    window.scrollTo(0, 0);
+  }, [active]);
 
-  const flat = docs.flatMap(g => g.items)
-  const idx = flat.findIndex(d => d.id === active)
-  const current = flat[idx]
-  const prev = flat[idx - 1]
-  const next = flat[idx + 1]
+  const flat = docs.flatMap((g) => g.items);
+  const idx = flat.findIndex((d) => d.id === active);
+  const current = flat[idx];
+  const prev = flat[idx - 1];
+  const next = flat[idx + 1];
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
@@ -343,12 +343,12 @@ export default function Docs() {
             </div>
           </SidebarHeader>
           <SidebarContent>
-            {docs.map(group => (
+            {docs.map((group) => (
               <SidebarGroup key={group.group}>
                 <SidebarGroupLabel>{group.group}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {group.items.map(doc => (
+                    {group.items.map((doc) => (
                       <SidebarMenuItem key={doc.id}>
                         <SidebarMenuButton
                           isActive={doc.id === active}
@@ -377,7 +377,9 @@ export default function Docs() {
                 {siteName}
               </Link>
             </div>
-            <span className="font-['JetBrains_Mono'] text-xs text-muted-foreground">docs</span>
+            <span className="font-['JetBrains_Mono'] text-xs text-muted-foreground">
+              docs
+            </span>
           </header>
 
           <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
@@ -388,12 +390,12 @@ export default function Docs() {
               <Streamdown
                 mode="static"
                 plugins={{ code: codePlugin }}
-                shikiTheme={['gruvbox-dark-hard', 'gruvbox-dark-hard']}
+                shikiTheme={["gruvbox-dark-hard", "gruvbox-dark-hard"]}
                 controls={{ code: { download: false } }}
               >
                 {current.body}
               </Streamdown>
-              {current.id === 'themes' && (
+              {current.id === "themes" && (
                 <div className="mt-6">
                   <ThemeJsonEditor />
                 </div>
@@ -437,5 +439,5 @@ export default function Docs() {
         </SidebarInset>
       </SidebarProvider>
     </div>
-  )
+  );
 }

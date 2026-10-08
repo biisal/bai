@@ -130,7 +130,8 @@ article [data-code-block-header="true"] {
 .doc-md pre,
 .doc-md [data-streamdown="code-block-body"] {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 55%, transparent) transparent;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 55%, transparent)
+    transparent;
 }
 
 .doc-md pre::-webkit-scrollbar,
