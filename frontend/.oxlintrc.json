@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "prefer-const": "error",
+    "no-var": "error",
+    "typescript/no-explicit-any": "error",
+    "no-unused-vars": "error"
+  }
+}

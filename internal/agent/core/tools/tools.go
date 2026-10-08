@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ReadFileName  = "read_file"
+	ReadFileName  = "read"
 	WriteFileName = "write_file"
 	EditFileName  = "edit_file"
 	BashName      = "bash"
