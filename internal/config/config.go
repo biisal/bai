@@ -21,12 +21,13 @@ const (
 )
 
 type ProviderConfig struct {
-	Name    string         `json:"name"`
-	APIKey  string         `json:"api_key"`
-	Format  ProviderFormat `json:"format"`
-	BaseURL string         `json:"base_url"`
-	Variant string         `json:"variant"`
-	Models  []ModelConfig  `json:"models"`
+	Name           string         `json:"name"`
+	APIKey         string         `json:"api_key"`
+	Format         ProviderFormat `json:"format"`
+	BaseURL        string         `json:"base_url"`
+	Variant        string         `json:"variant"`
+	Models         []ModelConfig  `json:"models"`
+	UseResponseAPI bool           `json:"use_response_api"`
 }
 
 type ModelConfig struct {

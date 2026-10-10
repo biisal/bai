@@ -10,7 +10,7 @@ import (
 	fantasy "charm.land/fantasy"
 	"charm.land/fantasy/providers/anthropic"
 	"charm.land/fantasy/providers/openaicompat"
-	"github.com/openai/openai-go/v3/option"
+	"github.com/charmbracelet/openai-go/option"
 
 	"github.com/biisal/bai/internal/agent/providers/variant"
 	"github.com/biisal/bai/internal/config"
@@ -109,14 +109,18 @@ func buildOpenAIProvider(cfg config.ProviderConfig) (fantasy.Provider, error) {
 		openaicompat.WithName(cfg.Name),
 	}
 
+	if cfg.UseResponseAPI {
+		opts = append(opts, openaicompat.WithUseResponsesAPI())
+	}
+
 	spec, err := resolveVariant(cfg)
 	if err != nil {
 		return nil, err
 	}
 	if spec != nil {
-		opts = append(opts, openaicompat.WithSDKOptions(
-			option.WithMiddleware(variantMiddleware(spec, cfg.APIKey)),
-		))
+		mw := option.WithMiddleware(variantMiddleware(spec, cfg.APIKey))
+
+		opts = append(opts, openaicompat.WithSDKOptions(mw))
 	}
 
 	return openaicompat.New(opts...)

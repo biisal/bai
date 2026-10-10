@@ -2,6 +2,7 @@ package chatbuilder
 
 import (
 	"encoding/json"
+	"log/slog"
 	"strings"
 
 	"charm.land/fantasy"
@@ -16,16 +17,18 @@ func bashWithDollarPrefix(text string) string {
 }
 
 type Segment struct {
-	Kind broker.EventType
-	buf  strings.Builder
+	Kind  broker.EventType
+	buf   strings.Builder
+	mdBuf strings.Builder
 }
 
 type Content struct {
-	active   *Segment
-	rendered strings.Builder
-	blocks   []*Segment
-	width    int
-	height   int
+	active     *Segment
+	rendered   strings.Builder
+	blocks     []*Segment
+	width      int
+	height     int
+	mdRenderer *MarkdownRenderer
 }
 
 func (c *Content) SetSize(width, height int) {
@@ -33,11 +36,19 @@ func (c *Content) SetSize(width, height int) {
 	c.height = height
 
 	styles.UpdateChatStyleWidth(width)
+
+	c.mdRenderer.UpdateSize(width, height)
 }
 
 func NewContent() *Content {
+	mdRenderer, err := NewMarkdownRenderer()
+	if err != nil {
+		// TODO :handle the error
+		slog.Error("error term renderer init", "error", err)
+	}
 	return &Content{
-		blocks: []*Segment{},
+		blocks:     []*Segment{},
+		mdRenderer: mdRenderer,
 	}
 }
 
@@ -48,6 +59,13 @@ func (c *Content) AddSegment(kind broker.EventType, text string, isComplete bool
 	if c.active == nil || c.active.Kind != kind || isComplete {
 		c.flushActive()
 		c.active = &Segment{Kind: kind, buf: strings.Builder{}}
+		mdRenderer, err := NewMarkdownRenderer()
+		if err != nil {
+			// TODO :handle the error
+			slog.Error("error term renderer init", "error", err)
+		}
+
+		c.mdRenderer = mdRenderer
 	}
 	c.active.buf.WriteString(text)
 }
@@ -58,20 +76,24 @@ func (c *Content) Render() string {
 	}
 	var out strings.Builder
 	out.WriteString(c.rendered.String())
-	out.WriteString(renderSegment(c.active))
+	out.WriteString(renderSegment(c.active, c.toMarkdown))
 	return out.String()
 }
 
-func renderSegment(seg *Segment) string {
+func renderSegment(seg *Segment, fn func(string) string) string {
 	var style lipgloss.Style
 	content := seg.buf.String()
 	switch seg.Kind {
 	case broker.EventAgentThinking:
 		style = styles.StyleAgentThinking
+		// TODO: will make it better
+		return fn(content)
+
 	case broker.EventAgentError:
 		style = styles.StyleError
 	case broker.EventAgentResponse:
 		style = styles.StyleAgentResponse
+		return fn(content)
 	case broker.EventUserMessage:
 		style = styles.StyleUserInput
 	case broker.EventSystemNotice:
@@ -91,7 +113,7 @@ func renderSegment(seg *Segment) string {
 
 func (c *Content) flushActive() {
 	if c.active != nil {
-		c.rendered.WriteString(renderSegment(c.active))
+		c.rendered.WriteString(renderSegment(c.active, c.toMarkdown))
 		c.blocks = append(c.blocks, c.active)
 	}
 
@@ -103,7 +125,7 @@ func (c *Content) ReRender() {
 	c.rendered.Reset()
 	c.rendered.WriteString(Intro())
 	for _, block := range c.blocks {
-		c.rendered.WriteString(renderSegment(block))
+		c.rendered.WriteString(renderSegment(block, c.toMarkdown))
 		c.rendered.WriteString("\n")
 	}
 }
