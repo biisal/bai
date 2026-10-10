@@ -178,18 +178,17 @@ func Load(path string) (*Config, error) {
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("invalid config:\n%s", strings.Join(errs, "\n"))
 	}
-	if config.DatabasePath == "" {
-		config.DatabasePath = DefaultDatabasePath()
+
+	originalOrFallback := func(str, fallback string) string {
+		if str == "" {
+			return fallback
+		}
+		return str
 	}
-	if config.LogFilePath == "" {
-		config.LogFilePath = DefaultLogFilePath()
-	}
-	if config.GitDirName == "" {
-		config.GitDirName = DefaultGitDirName()
-	}
-	if config.PluginsPath == "" {
-		config.PluginsPath = DefaultToolsPath()
-	}
+	config.DatabasePath = originalOrFallback(config.DatabasePath, DefaultDatabasePath())
+	config.LogFilePath = originalOrFallback(config.LogFilePath, DefaultLogFilePath())
+	config.GitDirName = originalOrFallback(config.GitDirName, DefaultGitDirName())
+	config.PluginsPath = originalOrFallback(config.PluginsPath, DefaultToolsPath())
 
 	return &config, nil
 }

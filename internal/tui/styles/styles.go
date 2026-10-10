@@ -42,6 +42,9 @@ var (
 	StylePromptError   = StylePromptButton.Background(lipgloss.Color("1")).Foreground(lipgloss.Color("7"))
 )
 
+// ActiveTheme is the theme the styles were last built from; markdown rendering reads it.
+var ActiveTheme = config.DefaultTheme()
+
 func UpdateChatStyleWidth(w int) {
 	StyleAgentThinking = StyleAgentThinking.Width(w)
 	StyleToolFileReading = StyleToolFileReading.Width(w)
@@ -56,6 +59,8 @@ func UpdateChatStyleWidth(w int) {
 }
 
 func UpdateStylesUsingConfigTheme(theme *config.Theme) {
+	ActiveTheme = theme
+
 	StyleAgentThinking = StyleAgentThinking.Foreground(lipgloss.Color(theme.MutedForeground))
 	StyleToolFileReading = StyleToolFileReading.Foreground(lipgloss.Color(theme.Success))
 	StyleToolFileWriting = StyleToolFileWriting.Foreground(lipgloss.Color(theme.Warning))

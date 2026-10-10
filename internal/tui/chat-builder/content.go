@@ -2,7 +2,6 @@ package chatbuilder
 
 import (
 	"encoding/json"
-	"log/slog"
 	"strings"
 
 	"charm.land/fantasy"
@@ -41,14 +40,9 @@ func (c *Content) SetSize(width, height int) {
 }
 
 func NewContent() *Content {
-	mdRenderer, err := NewMarkdownRenderer()
-	if err != nil {
-		// TODO :handle the error
-		slog.Error("error term renderer init", "error", err)
-	}
 	return &Content{
 		blocks:     []*Segment{},
-		mdRenderer: mdRenderer,
+		mdRenderer: NewMarkdownRenderer(0, styles.ActiveTheme),
 	}
 }
 
@@ -59,13 +53,6 @@ func (c *Content) AddSegment(kind broker.EventType, text string, isComplete bool
 	if c.active == nil || c.active.Kind != kind || isComplete {
 		c.flushActive()
 		c.active = &Segment{Kind: kind, buf: strings.Builder{}}
-		mdRenderer, err := NewMarkdownRenderer()
-		if err != nil {
-			// TODO :handle the error
-			slog.Error("error term renderer init", "error", err)
-		}
-
-		c.mdRenderer = mdRenderer
 	}
 	c.active.buf.WriteString(text)
 }
@@ -122,6 +109,7 @@ func (c *Content) flushActive() {
 }
 
 func (c *Content) ReRender() {
+	c.mdRenderer.UpdateSize(c.width, c.height)
 	c.rendered.Reset()
 	c.rendered.WriteString(Intro())
 	for _, block := range c.blocks {
