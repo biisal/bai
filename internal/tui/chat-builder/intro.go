@@ -19,7 +19,7 @@ func Intro() string {
 	sb.WriteString("\n\n")
 
 	logo := styles.StyleIntroLogo.Render("bai")
-	version := styles.StyleIntroVersion.Render("v0.0.1")
+	version := styles.StyleIntroVersion.Render("v0.0.10")
 
 	sb.WriteString(styles.StyleSystemNotice.Render(logo + " " + version))
 

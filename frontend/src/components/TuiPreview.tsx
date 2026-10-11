@@ -247,7 +247,7 @@ export default function TuiPreview() {
               <div className="mt-6 space-y-1 px-5">
                 <p>
                   <span className="font-bold text-[#e8742a]">bai</span>{" "}
-                  <span className="text-[#8a5a5a]">v0.0.1</span>
+                  <span className="text-[#8a5a5a]">v0.0.10</span>
                 </p>
                 {hints.map((h) => (
                   <p key={h.key}>
