@@ -150,6 +150,7 @@ func getSb(text string) strings.Builder {
 }
 
 func Test_renderSegment(t *testing.T) {
+	content := NewContent()
 	tests := []struct {
 		name  string
 		seg   *Segment
@@ -189,7 +190,7 @@ func Test_renderSegment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := renderSegment(tt.seg)
+			got := renderSegment(tt.seg, content.textToMarkdown)
 			if got != tt.want {
 				t.Errorf("renderSegment() = %q, want %q", got, tt.want)
 			}
@@ -271,6 +272,8 @@ func TestContent_SetSize(t *testing.T) {
 }
 
 func TestContent_Render(t *testing.T) {
+	content := NewContent()
+
 	tests := []struct {
 		name  string
 		setup func(t *testing.T, c *Content) (want string)
@@ -288,7 +291,7 @@ func TestContent_Render(t *testing.T) {
 				seg := &Segment{Kind: broker.EventAgentResponse, buf: getSb("test_agent_response")}
 				c.active = seg
 				c.rendered.WriteString("test_rendered")
-				return "test_rendered" + renderSegment(seg)
+				return "test_rendered" + renderSegment(seg, content.textToMarkdown)
 			},
 		},
 		{
@@ -300,7 +303,7 @@ func TestContent_Render(t *testing.T) {
 				}
 				c.active = seg
 
-				return renderSegment(seg)
+				return renderSegment(seg, content.textToMarkdown)
 			},
 		},
 	}
@@ -336,7 +339,7 @@ func TestContent_ReRender(t *testing.T) {
 		renderdSegString.WriteString(Intro())
 
 		for _, block := range c.blocks {
-			renderdSegString.WriteString(renderSegment(block))
+			renderdSegString.WriteString(renderSegment(block, c.textToMarkdown))
 			renderdSegString.WriteString("\n")
 		}
 
@@ -378,6 +381,7 @@ func assertBlocks(t *testing.T, expected []*Segment, actual []*Segment) {
 }
 
 func TestContent_RerenderFromDbConversation(t *testing.T) {
+	content := NewContent()
 	tests := []struct {
 		name  string
 		setup func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string)
@@ -422,7 +426,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 						buf:  getSb("test content"),
 					},
 				}
-				want = Intro() + renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
+				want = Intro() + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
 
 				return
 			},
@@ -444,7 +448,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 					{Kind: broker.EventAgentThinking, buf: getSb("let me think")},
 					{Kind: broker.EventAgentResponse, buf: getSb("the answer")},
 				}
-				want = Intro() + renderSegment(expectedSegments[0]) + "\n" + renderSegment(expectedSegments[1]) + "\n"
+				want = Intro() + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
 
 				return
 			},

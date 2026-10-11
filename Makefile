@@ -3,14 +3,22 @@ SHELL := /bin/bash
 BINARY_PATH := ./bin/bai
 INSTALL_PATH := ~/.local/bin
 
+FRONTEND_CMD := pnpm
+FRONTEND_PATH := ./frontend
+
 .PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate frontend-build frontend-dev
 .ONESHELL:
 
 default:
 	@echo "$(GREETING)"
 
-build:
+deps:
+	go mod download
+	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} install
+
+build: deps
 	go build -o ${BINARY_PATH} ./cmd/bai/...
+	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} build
 	echo "build was successful"
 
 install: build
@@ -38,11 +46,11 @@ release-full:
 
 lint:
 	golangci-lint run
-	cd frontend && pnpm lint
+	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} lint
 
 lint-fix:
 	golangci-lint run --fix
-	cd frontend && pnpm lint:fix
+	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} lint:fix
 
 clean:
 	rm -rf bin/
@@ -61,7 +69,7 @@ db-generate:
 	@gofmt -w -r 'interface{} -> any' ./internal/db
 
 frontend-build:
-	cd frontend && pnpm build
+	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} build
 
 frontend-dev:
-	cd frontend && pnpm dev
+	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} dev

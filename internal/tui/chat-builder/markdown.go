@@ -69,7 +69,7 @@ func (r *MarkdownRenderer) UpdateSize(width, height int) {
 	*r = *NewMarkdownRenderer(width, styles.ActiveTheme)
 }
 
-func (c *Content) toMarkdown(content string) string {
+func (c *Content) textToMarkdown(content string) string {
 	if c.mdRenderer == nil || c.mdRenderer.renderer == nil {
 		return content
 	}

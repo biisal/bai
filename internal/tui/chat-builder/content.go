@@ -16,9 +16,8 @@ func bashWithDollarPrefix(text string) string {
 }
 
 type Segment struct {
-	Kind  broker.EventType
-	buf   strings.Builder
-	mdBuf strings.Builder
+	Kind broker.EventType
+	buf  strings.Builder
 }
 
 type Content struct {
@@ -63,24 +62,20 @@ func (c *Content) Render() string {
 	}
 	var out strings.Builder
 	out.WriteString(c.rendered.String())
-	out.WriteString(renderSegment(c.active, c.toMarkdown))
+	out.WriteString(renderSegment(c.active, c.textToMarkdown))
 	return out.String()
 }
 
-func renderSegment(seg *Segment, fn func(string) string) string {
+func renderSegment(seg *Segment, toMarkdown func(string) string) string {
 	var style lipgloss.Style
 	content := seg.buf.String()
 	switch seg.Kind {
 	case broker.EventAgentThinking:
 		style = styles.StyleAgentThinking
-		// TODO: will make it better
-		return fn(content)
-
 	case broker.EventAgentError:
 		style = styles.StyleError
 	case broker.EventAgentResponse:
-		style = styles.StyleAgentResponse
-		return fn(content)
+		return toMarkdown(content)
 	case broker.EventUserMessage:
 		style = styles.StyleUserInput
 	case broker.EventSystemNotice:
@@ -100,7 +95,7 @@ func renderSegment(seg *Segment, fn func(string) string) string {
 
 func (c *Content) flushActive() {
 	if c.active != nil {
-		c.rendered.WriteString(renderSegment(c.active, c.toMarkdown))
+		c.rendered.WriteString(renderSegment(c.active, c.textToMarkdown))
 		c.blocks = append(c.blocks, c.active)
 	}
 
@@ -113,7 +108,7 @@ func (c *Content) ReRender() {
 	c.rendered.Reset()
 	c.rendered.WriteString(Intro())
 	for _, block := range c.blocks {
-		c.rendered.WriteString(renderSegment(block, c.toMarkdown))
+		c.rendered.WriteString(renderSegment(block, c.textToMarkdown))
 		c.rendered.WriteString("\n")
 	}
 }
