@@ -21,11 +21,12 @@ type Segment struct {
 }
 
 type Content struct {
-	active   *Segment
-	rendered strings.Builder
-	blocks   []*Segment
-	width    int
-	height   int
+	active     *Segment
+	rendered   strings.Builder
+	blocks     []*Segment
+	width      int
+	height     int
+	mdRenderer *MarkdownRenderer
 }
 
 func (c *Content) SetSize(width, height int) {
@@ -33,11 +34,14 @@ func (c *Content) SetSize(width, height int) {
 	c.height = height
 
 	styles.UpdateChatStyleWidth(width)
+
+	c.mdRenderer.UpdateSize(width, height)
 }
 
 func NewContent() *Content {
 	return &Content{
-		blocks: []*Segment{},
+		blocks:     []*Segment{},
+		mdRenderer: NewMarkdownRenderer(0, styles.ActiveTheme),
 	}
 }
 
@@ -58,11 +62,11 @@ func (c *Content) Render() string {
 	}
 	var out strings.Builder
 	out.WriteString(c.rendered.String())
-	out.WriteString(renderSegment(c.active))
+	out.WriteString(renderSegment(c.active, c.textToMarkdown))
 	return out.String()
 }
 
-func renderSegment(seg *Segment) string {
+func renderSegment(seg *Segment, toMarkdown func(string) string) string {
 	var style lipgloss.Style
 	content := seg.buf.String()
 	switch seg.Kind {
@@ -71,7 +75,7 @@ func renderSegment(seg *Segment) string {
 	case broker.EventAgentError:
 		style = styles.StyleError
 	case broker.EventAgentResponse:
-		style = styles.StyleAgentResponse
+		return toMarkdown(content)
 	case broker.EventUserMessage:
 		style = styles.StyleUserInput
 	case broker.EventSystemNotice:
@@ -91,7 +95,7 @@ func renderSegment(seg *Segment) string {
 
 func (c *Content) flushActive() {
 	if c.active != nil {
-		c.rendered.WriteString(renderSegment(c.active))
+		c.rendered.WriteString(renderSegment(c.active, c.textToMarkdown))
 		c.blocks = append(c.blocks, c.active)
 	}
 
@@ -100,10 +104,11 @@ func (c *Content) flushActive() {
 }
 
 func (c *Content) ReRender() {
+	c.mdRenderer.UpdateSize(c.width, c.height)
 	c.rendered.Reset()
 	c.rendered.WriteString(Intro())
 	for _, block := range c.blocks {
-		c.rendered.WriteString(renderSegment(block))
+		c.rendered.WriteString(renderSegment(block, c.textToMarkdown))
 		c.rendered.WriteString("\n")
 	}
 }
