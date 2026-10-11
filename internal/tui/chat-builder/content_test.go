@@ -1,7 +1,6 @@
 package chatbuilder
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
@@ -119,26 +118,31 @@ func TestContent_AddSegment(t *testing.T) {
 
 func TestNewContent(t *testing.T) {
 	tests := []struct {
-		name string
-		want *Content
+		name  string
+		check func(t *testing.T, c *Content)
 	}{
 		{
 			name: "active should be nil, blocks should be empty not nil,render must not nil",
-			want: &Content{
-				active:   nil,
-				rendered: strings.Builder{},
-				blocks:   []*Segment{},
-				width:    0,
-				height:   0,
+			check: func(t *testing.T, c *Content) {
+				if c.active != nil {
+					t.Errorf("expected active to be nil, got %v", c.active)
+				}
+				if len(c.blocks) != 0 {
+					t.Errorf("expected blocks to be empty, got %v", c.blocks)
+				}
+				if c.rendered.String() != "" {
+					t.Errorf("expected rendered to be empty, got %q", c.rendered.String())
+				}
+				if c.mdRenderer == nil {
+					t.Errorf("expected mdRenderer to be not nil")
+				}
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewContent()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewContent() = %v, want %v", got, tt.want)
-			}
+			tt.check(t, got)
 		})
 	}
 }
@@ -164,10 +168,10 @@ func Test_renderSegment(t *testing.T) {
 			want:  styles.StyleUserInput.MarginBottom(1).Render("test_text"),
 		},
 		{
-			name:  "apply agent response style to text",
+			name:  "apply markdown style to text",
 			seg:   &Segment{buf: getSb("test_text"), Kind: broker.EventAgentResponse},
 			width: 0,
-			want:  styles.StyleAgentResponse.MarginBottom(1).Render("test_text"),
+			want:  content.textToMarkdown("test_text"),
 		},
 		{
 			name:  "apply error style to text",
