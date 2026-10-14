@@ -29,7 +29,7 @@ func opencodeFactory(cfg config.ProviderConfig) (*Spec, error) {
 		Headers: []Header{
 			{
 				Key:   "User-Agent",
-				Value: func() string { return "opencode/1.18.34 ai-sdk/provider-utils/4.0.23 runtime/browser" },
+				Value: func() string { return "opencode/1.18.35 ai-sdk/provider-utils/4.0.23 runtime/browser" },
 			},
 			{
 				Key:   "x-opencode-request",

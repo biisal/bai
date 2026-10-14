@@ -103,7 +103,7 @@ func TestOpenCodeHeadersMatchCapturedRequest(t *testing.T) {
 	}
 
 	want := map[string]string{
-		"User-Agent":            "opencode/1.18.34 ai-sdk/provider-utils/4.0.23 runtime/browser",
+		"User-Agent":            "opencode/1.18.35 ai-sdk/provider-utils/4.0.23 runtime/browser",
 		"x-opencode-client":     "cli",
 		"x-opencode-project":    "global",
 		"x-opencode-session":    "",

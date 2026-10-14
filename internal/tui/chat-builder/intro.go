@@ -3,6 +3,7 @@ package chatbuilder
 import (
 	"strings"
 
+	"github.com/biisal/bai/internal/consts"
 	"github.com/biisal/bai/internal/tui/styles"
 )
 
@@ -19,9 +20,9 @@ func Intro() string {
 	sb.WriteString("\n\n")
 
 	logo := styles.StyleIntroLogo.Render("bai")
-	version := styles.StyleIntroVersion.Render("v0.0.1")
+	ver := styles.StyleIntroVersion.Render(consts.Version)
 
-	sb.WriteString(styles.StyleSystemNotice.Render(logo + " " + version))
+	sb.WriteString(styles.StyleSystemNotice.Render(logo + " " + ver))
 
 	for _, h := range helps {
 		key := styles.StyleIntroHelpKey.Render(h.key)
