@@ -91,6 +91,26 @@ export default function TuiPreview() {
   const [working, setWorking] = useState(false);
   const [palette, setPalette] = useState<Palette | null>(null);
   const [model, setModel] = useState(START_MODEL);
+  const [version, setVersion] = useState("v0.0.15");
+
+  useEffect(() => {
+    let on = true;
+    const load = async () => {
+      try {
+        const r = await fetch(
+          "https://api.github.com/repos/biisal/bai/releases"
+        );
+        if (!r.ok) return;
+        const data: { tag_name?: string }[] = await r.json();
+        const tag = data[0]?.tag_name;
+        if (on && tag) setVersion(tag);
+      } catch {}
+    };
+    load();
+    return () => {
+      on = false;
+    };
+  }, []);
 
   // Like a web chat: new content flows top to bottom, and the view follows once it overflows.
   useEffect(() => {
@@ -247,7 +267,7 @@ export default function TuiPreview() {
               <div className="mt-6 space-y-1 px-5">
                 <p>
                   <span className="font-bold text-[#e8742a]">bai</span>{" "}
-                  <span className="text-[#8a5a5a]">v0.0.1</span>
+                  <span className="text-[#8a5a5a]">{version}</span>
                 </p>
                 {hints.map((h) => (
                   <p key={h.key}>
