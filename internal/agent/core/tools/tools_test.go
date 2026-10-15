@@ -9,6 +9,7 @@ import (
 
 	"charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent/core/tools"
+	"github.com/biisal/bai/internal/config"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
 
@@ -155,6 +156,24 @@ func TestReadFileInternalSkillFillsToolPaths(t *testing.T) {
 	}
 	if !strings.Contains(resp.Content, filepath.Dir(abs)) {
 		t.Errorf("content missing tools dir %q", filepath.Dir(abs))
+	}
+
+	resp, err = read.Run(context.Background(), fantasy.ToolCall{
+		ID:    "call-2",
+		Name:  tools.ReadFileName,
+		Input: `{"path":"internal:skills:theme_maker"}`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.IsError {
+		t.Fatalf("read_file error: %s", resp.Content)
+	}
+	if strings.Contains(resp.Content, "{{") {
+		t.Errorf("unreplaced placeholder left in content: %.200s", resp.Content)
+	}
+	if !strings.Contains(resp.Content, config.ThemeConfigDir()) {
+		t.Errorf("content missing themes dir %q", config.ThemeConfigDir())
 	}
 }
 
