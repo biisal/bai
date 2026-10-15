@@ -1,6 +1,7 @@
 package chatbuilder
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -474,4 +475,76 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 			assertBlocks(t, expectedSegments, c.blocks)
 		})
 	}
+}
+
+func Test_settledMarkdown(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		want int
+	}{
+		{"empty text settles nothing", "", 0},
+		{"a line without a blank line after it is still open", "hello world\n", 0},
+		{"an unterminated last line is still open", "one\n\ntwo", len("one\n\n")},
+		{"a finished blank line ends a block", "one\n\ntwo\n\n", len("one\n\ntwo\n\n")},
+		{"only the last blank line counts", "one\n\ntwo\n\nthree", len("one\n\ntwo\n\n")},
+		{"a blank line inside a code fence is not a boundary", "one\n\n```go\nx\n\ny\n", len("one\n\n")},
+		{"fence close ends the block again", "```go\nx\n```\n\n", len("```go\nx\n```\n\n")},
+		{"tilde fences count too", "one\n\n~~~\nx\n\ny\n", len("one\n\n")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := settledMarkdown(tt.text); got != tt.want {
+				t.Errorf("settledMarkdown(%q) = %d, want %d", tt.text, got, tt.want)
+			}
+		})
+	}
+}
+
+// Streaming a response must show the same text as rendering it in one piece. The
+// settled prefix and the tail are rendered separately, so an off-by-one in the
+// split loses or duplicates a chunk of the reply.
+func TestContent_StreamingPreservesText(t *testing.T) {
+	reply := "Here is a paragraph.\n\n- one\n- two\n\n```go\nfmt.Println(\"hi\")\n```\n\nDone.\n"
+
+	whole := NewContent()
+	whole.SetSize(40, 20)
+	want := visible(renderSegment(&Segment{Kind: broker.EventAgentResponse, buf: getSb(reply)}, whole.textToMarkdown))
+
+	tests := []struct {
+		name  string
+		chunk int
+	}{
+		{name: "one byte at a time", chunk: 1},
+		{name: "one line at a time", chunk: 7},
+		{name: "whole reply at once", chunk: len(reply)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			streamed := NewContent()
+			streamed.SetSize(40, 20)
+			for i := 0; i < len(reply); i += tt.chunk {
+				streamed.AddSegment(broker.EventAgentResponse, reply[i:min(i+tt.chunk, len(reply))], false)
+				streamed.Render()
+			}
+
+			if got := visible(streamed.Render()); got != want {
+				t.Errorf("streamed text = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+var ansiEscape = regexp.MustCompile("\x1b\\[[0-9;]*m")
+
+// visible drops styling and blank filler lines, leaving the text a reader sees.
+func visible(s string) string {
+	lines := strings.Split(ansiEscape.ReplaceAllString(s, ""), "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line = strings.TrimSpace(line); line != "" {
+			kept = append(kept, line)
+		}
+	}
+	return strings.Join(kept, "\n")
 }
