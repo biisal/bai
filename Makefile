@@ -16,19 +16,24 @@ deps:
 	go mod download
 	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} install
 
-build: deps
-	go build -o ${BINARY_PATH} ./cmd/bai/...
+build-frontend:
 	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} build
+
+
+build-bai: 
+	go build -o ${BINARY_PATH} ./cmd/bai/...
 	echo "build was successful"
+
+build: deps build-frontend build-bai
 
 install: build
 	@mv ${BINARY_PATH} ${INSTALL_PATH} 
 	echo "installed to ${INSTALL_PATH}"
 
-run: build
+run: build-bai
 	./${BINARY_PATH}
 
-dev: build
+dev: build-bai
 	./${BINARY_PATH} --dev
 
 watch:

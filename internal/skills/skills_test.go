@@ -3,6 +3,7 @@ package skills
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -53,8 +54,20 @@ func TestGetInternalTool(t *testing.T) {
 		t.Error("expected miss for unknown tool")
 	}
 	internal := InternalSkills()
-	if len(internal) != 1 || internal[0].Location != "internal:skills:tools_maker" {
-		t.Errorf("InternalSkills() = %+v, want tools_maker", internal)
+	if len(internal) != 2 {
+		t.Fatalf("InternalSkills() = %+v, want tools_maker and theme_maker", internal)
+	}
+	var ids []string
+	for _, s := range internal {
+		ids = append(ids, s.Location)
+		if strings.TrimSpace(s.Context) == "" || s.Description == "" {
+			t.Errorf("internal skill %+v is missing description or content", s)
+		}
+	}
+	for _, want := range []string{"internal:skills:tools_maker", "internal:skills:theme_maker"} {
+		if !slices.Contains(ids, want) {
+			t.Errorf("InternalSkills() = %v, want %s", ids, want)
+		}
 	}
 	if got := LoadSkills(); len(got) != 0 {
 		t.Errorf("LoadSkills() = %+v, want no disk skills", got)

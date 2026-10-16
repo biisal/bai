@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	fantasy "charm.land/fantasy"
+	"github.com/biisal/bai/internal/config"
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/skills"
 )
@@ -66,6 +67,7 @@ func (t *toolSet) fillInternalTool(content string) string {
 	return strings.NewReplacer(
 		"{{tools_manifest}}", manifest,
 		"{{tools_dir}}", filepath.Dir(manifest),
+		"{{themes_dir}}", config.ThemeConfigDir(),
 	).Replace(content)
 }
 
