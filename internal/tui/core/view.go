@@ -56,7 +56,14 @@ func (m Model) View() tea.View {
 	}
 	rows = append(rows, footer)
 
-	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, rows...))
+	body := lipgloss.JoinVertical(lipgloss.Top, rows...)
+	if badge := m.components.noticeView(); badge != "" {
+		body = lipgloss.NewCompositor(
+			lipgloss.NewLayer(body),
+			lipgloss.NewLayer(badge).X(m.Width-lipgloss.Width(badge)-1).Z(1),
+		).Render()
+	}
+	v := tea.NewView(body)
 	v.AltScreen = true
 	v.ReportFocus = true
 	v.BackgroundColor = styles.StyleColorBackground
