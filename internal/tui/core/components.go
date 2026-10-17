@@ -31,6 +31,9 @@ type Component struct {
 	textArea     textarea.Model
 	chatViewPort viewport.Model
 	wasAtBottom  bool
+	sel          selection
+	notice       string
+	noticeID     int
 	prompt       *Prompt
 	showPrompt   bool
 
@@ -113,7 +116,7 @@ func (c *Component) ChatViewPort(height int) string {
 	if c.chatViewPort.PastBottom() {
 		c.chatViewPort.GotoBottom()
 	}
-	return c.chatViewPort.View()
+	return c.highlightSelection(c.chatViewPort.View())
 }
 
 func (c *Component) Input() (string, CompSize) {
