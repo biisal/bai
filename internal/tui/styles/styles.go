@@ -23,6 +23,7 @@ var (
 	StyleIntroHelpKey  = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	StyleIntroHelpVal  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("7"))
 	StyleIntroHelpLine = lipgloss.NewStyle().PaddingLeft(1)
+	StyleNotification  = lipgloss.NewStyle().Padding(0, 1).Bold(true).Foreground(lipgloss.Color("0")).Background(lipgloss.Color("10"))
 	StyleFooter        = lipgloss.NewStyle().Padding(0, 1).Foreground(lipgloss.Color("244"))
 
 	StyleViewportSelectedHighlight = lipgloss.NewStyle().Background(lipgloss.Color("236"))
@@ -78,6 +79,7 @@ func UpdateStylesUsingConfigTheme(theme *config.Theme) {
 	StyleIntroHelpVal = StyleIntroHelpVal.Foreground(lipgloss.Color(theme.Foreground))
 
 	StyleFooter = StyleFooter.Foreground(lipgloss.Color(theme.MutedForeground))
+	StyleNotification = StyleNotification.Foreground(lipgloss.Color(theme.SuccessForeground)).Background(lipgloss.Color(theme.Success))
 
 	StyleViewportSelectedHighlight = StyleViewportSelectedHighlight.Background(lipgloss.Color(theme.Accent))
 

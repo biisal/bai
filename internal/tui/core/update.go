@@ -183,6 +183,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case NotifyMsg:
+		return m, m.components.showNotice(string(msg))
+	case notifyExpiredMsg:
+		m.components.expireNotice(int(msg))
+		return m, nil
+
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return m, m.components.handleMouse(msg.(tea.MouseMsg))
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc":
