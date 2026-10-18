@@ -341,7 +341,7 @@ func TestContent_ReRender(t *testing.T) {
 
 		renderdSegString := strings.Builder{}
 
-		renderdSegString.WriteString(Intro())
+		renderdSegString.WriteString(Intro(80))
 
 		for _, block := range c.blocks {
 			renderdSegString.WriteString(renderSegment(block, c.textToMarkdown))
@@ -363,7 +363,7 @@ func TestContent_ReRender(t *testing.T) {
 
 		c.ReRender()
 
-		renderdSegString := Intro()
+		renderdSegString := Intro(80)
 
 		if c.rendered.String() != renderdSegString {
 			t.Errorf("expected %q but got %q", renderdSegString, c.rendered.String())
@@ -395,14 +395,14 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 			name: "should render only intro when no messages",
 			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
 				messages = []fantasy.Message{}
-				want = Intro()
+				want = Intro(0)
 				return
 			},
 		},
 		{
 			name: "active should be nil after rerender",
 			setup: func(t *testing.T) (messages []fantasy.Message, expectedSegments []*Segment, want string) {
-				want = Intro()
+				want = Intro(0)
 				return
 			},
 		},
@@ -431,7 +431,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 						buf:  getSb("test content"),
 					},
 				}
-				want = Intro() + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
+				want = Intro(0) + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
 
 				return
 			},
@@ -453,7 +453,7 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 					{Kind: broker.EventAgentThinking, buf: getSb("let me think")},
 					{Kind: broker.EventAgentResponse, buf: getSb("the answer")},
 				}
-				want = Intro() + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
+				want = Intro(0) + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
 
 				return
 			},

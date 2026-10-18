@@ -21,7 +21,7 @@ build-frontend:
 
 
 build-bai: 
-	go build -o ${BINARY_PATH} ./cmd/bai/...
+	go build -ldflags "-s -w -X github.com/biisal/bai/internal/consts.Version=local" -o ${BINARY_PATH} ./cmd/bai/... 
 	echo "build was successful"
 
 build: deps build-frontend build-bai

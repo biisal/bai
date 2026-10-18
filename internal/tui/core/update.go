@@ -119,11 +119,7 @@ func (m *Model) MatchCommand() tea.Cmd {
 				Text: fmt.Sprintf("failed to set theme to db: %s", err.Error()),
 			})
 		}
-		m.broker.Publish(m.ctx, broker.Message{
-			Type:       broker.EventSystemNotice,
-			Text:       fmt.Sprintf("Theme changed to: %s", item.Name),
-			IsComplete: true,
-		})
+		return Notify(fmt.Sprintf("Theme changed to: %s", item.Name))
 
 	case commands.FileItem:
 		m.commands.ShowList = false

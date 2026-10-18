@@ -1,3 +1,8 @@
 package consts
 
-var Version = "dev"
+var (
+	VersionDev     = "dev"
+	VersionLocal   = "local"
+	Version        = VersionDev
+	RepositoryName = "biisal/bai"
+)
