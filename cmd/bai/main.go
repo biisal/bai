@@ -12,7 +12,6 @@ import (
 
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/git"
-	_ "github.com/biisal/bai/internal/update"
 )
 
 func main() {

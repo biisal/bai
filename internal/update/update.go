@@ -6,96 +6,87 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/biisal/bai/internal/consts"
 )
 
-func checkIfUpdateAvailable(ctx context.Context, current string, latest string) (bool, error) {
-	const versionPattern = `^v[0-9]+\.[0-9]+\.[0-9]+$`
+const binaryName = "bai"
 
-	matched, err := regexp.MatchString(versionPattern, latest)
-	if err != nil {
-		return false, err
-	}
-	if !matched {
-		return false, fmt.Errorf("invalid latest version: %s", latest)
-	}
+var versionPattern = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
 
-	matched, err = regexp.MatchString(versionPattern, current)
-	if err != nil {
-		return false, err
-	}
-	if !matched {
-		return false, fmt.Errorf("invalid current version: %s", current)
+func parseVersion(v string) ([3]int, error) {
+	m := versionPattern.FindStringSubmatch(v)
+	if m == nil {
+		return [3]int{}, fmt.Errorf("invalid version: %q", v)
 	}
 
-	latestParts := strings.Split(latest[1:], ".")
-	currentParts := strings.Split(current[1:], ".")
-
-	for i := range latestParts {
-		latestNum, err := strconv.Atoi(latestParts[i])
+	var parts [3]int
+	for i := range parts {
+		n, err := strconv.Atoi(m[i+1])
 		if err != nil {
-			return false, err
+			return [3]int{}, err
 		}
-
-		currentNum, err := strconv.Atoi(currentParts[i])
-		if err != nil {
-			return false, err
-		}
-
-		if latestNum > currentNum {
-			return true, nil
-		}
-		if latestNum < currentNum {
-			return false, nil
-		}
+		parts[i] = n
 	}
-
-	return false, nil
+	return parts, nil
 }
 
-func Update(ctx context.Context, version string) error {
+func isNewer(current, latest string) (bool, error) {
+	cur, err := parseVersion(current)
+	if err != nil {
+		return false, err
+	}
+	lat, err := parseVersion(latest)
+	if err != nil {
+		return false, err
+	}
+	return slices.Compare(lat[:], cur[:]) > 0, nil
+}
+
+// Update installs the latest release if it is newer than version and returns
+// its tag. It returns an empty tag when nothing was installed.
+func Update(ctx context.Context, version string) (string, error) {
+	if version == "" || version == consts.VersionLocal || version == consts.VersionDev {
+		return "", nil
+	}
+
 	binPath, err := os.Executable()
 	if err != nil {
-		return err
+		return "", err
 	}
-	ext := filepath.Ext(binPath)
-	bp := filepath.Base(binPath)
-
-	if err := Cleanup(ctx, bp, ext); err != nil {
-		return err
+	binPath, err = filepath.EvalSymlinks(binPath)
+	if err != nil {
+		return "", err
 	}
 
-	if (version == "") ||
-		(version == consts.VersionLocal) ||
-		(version == consts.VersionDev) {
-		return nil
-	}
+	cleanup(binPath)
 
 	fetcher := NewFetcher()
-	latest, err := fetcher.GetLatestVersion(ctx)
+	release, err := fetcher.LatestRelease(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	updateAvailable, err := checkIfUpdateAvailable(ctx, consts.Version, latest.TagName)
+	newer, err := isNewer(version, release.TagName)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if !updateAvailable {
-		return nil
-	}
-
-	fileName := fmt.Sprintf("%s.downlaoded.%s", bp, ext)
-	if err := fetcher.DownloadUpdate(ctx, latest, fileName); err != nil {
-		return err
+	if !newer {
+		return "", nil
 	}
 
-	if err := RenameFile(fileName, binPath, ext); err != nil {
-		return err
-	}
+	ext := filepath.Ext(binPath)
+	newPath := strings.TrimSuffix(binPath, ext) + ".update" + ext
+	defer func() { _ = os.Remove(newPath) }()
 
-	return nil
+	if err := fetcher.Download(ctx, release, newPath); err != nil {
+		return "", err
+	}
+	if err := replaceBinary(newPath, binPath); err != nil {
+		return "", err
+	}
+	return release.TagName, nil
 }

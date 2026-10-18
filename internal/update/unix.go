@@ -2,15 +2,10 @@
 
 package update
 
-import (
-	"context"
-	"os"
-)
+import "os"
 
-func Cleanup(ctx context.Context, binFolderPath string, ext string) error {
-	return nil
-}
+func cleanup(string) {}
 
-func RenameFile(latestFilePath, binPath string, ext string) error {
-	return os.Rename(latestFilePath, binPath)
+func replaceBinary(newPath, binPath string) error {
+	return os.Rename(newPath, binPath)
 }

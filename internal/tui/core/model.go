@@ -11,12 +11,14 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/consts"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/files"
 	"github.com/biisal/bai/internal/git"
 	broker "github.com/biisal/bai/internal/pubsub"
 	chatbuilder "github.com/biisal/bai/internal/tui/chat-builder"
 	"github.com/biisal/bai/internal/tui/commands"
+	"github.com/biisal/bai/internal/update"
 )
 
 type chatContext struct {
@@ -96,6 +98,20 @@ func gitInit(m *Model) tea.Cmd {
 	}
 }
 
+func selfUpdate(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		tag, err := update.Update(ctx, consts.Version)
+		if err != nil {
+			slog.Warn("self-update failed", "error", err)
+			return nil
+		}
+		if tag == "" {
+			return nil
+		}
+		return NotifyMsg(fmt.Sprintf("Updated to %s, restart to apply", tag))
+	}
+}
+
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(waitForMsg(m.messages), gitInit(&m))
+	return tea.Batch(waitForMsg(m.messages), gitInit(&m), selfUpdate(m.ctx))
 }
