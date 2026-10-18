@@ -3,6 +3,7 @@ package consts
 var (
 	VersionDev     = "dev"
 	VersionLocal   = "local"
-	Version        = VersionDev
 	RepositoryName = "biisal/bai"
 )
+
+var Version = "dev" // can't use VersionDev directly due to ldflags

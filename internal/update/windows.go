@@ -3,38 +3,40 @@
 package update
 
 import (
-	"context"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
-	"uuid"
+	"strings"
+	"time"
 )
 
-func patternOrPath(ext string, prefix ...string) string {
-	if len(prefix) == 0 {
-		return "*.bai.old" + ext
-	}
-	return prefix[0] + ".bai.old" + ext
-}
+const oldSuffix = ".old"
 
-func Cleanup(ctx context.Context, binFolderPath string, ext string) error {
-	files, err := filepath.Glob(filepath.Join(binFolderPath, patternOrPath(ext)))
+func cleanup(binPath string) {
+	dir := filepath.Dir(binPath)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return err
+		return
 	}
 
-	for _, file := range files {
-		if err := os.Remove(file); err != nil {
-			return err
+	prefix := filepath.Base(binPath) + "."
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, oldSuffix) {
+			_ = os.Remove(filepath.Join(dir, name))
 		}
 	}
-	return nil
 }
 
-func RenameFile(latestFilePath, binPath, ext string) error {
-	uniquePath := patternOrPath(ext, uuid.New().String())
-	if err := os.Rename(binPath, uniquePath); err != nil {
-		_ = os.Rename(uniquePath, binPath) // roolback try
+func replaceBinary(newPath, binPath string) error {
+	oldPath := fmt.Sprintf("%s.%d%s", binPath, time.Now().UnixNano(), oldSuffix)
+
+	if err := os.Rename(binPath, oldPath); err != nil {
 		return err
+	}
+	if err := os.Rename(newPath, binPath); err != nil {
+		return errors.Join(err, os.Rename(oldPath, binPath))
 	}
 	return nil
 }
