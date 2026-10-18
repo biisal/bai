@@ -181,7 +181,7 @@ func (c *Content) ReRender() {
 	c.mdRenderer.UpdateSize(c.width, c.height)
 	c.resetSettled()
 	c.rendered.Reset()
-	c.rendered.WriteString(Intro())
+	c.rendered.WriteString(Intro(c.width))
 	for _, block := range c.blocks {
 		c.rendered.WriteString(renderSegment(block, c.textToMarkdown))
 		c.rendered.WriteString("\n")

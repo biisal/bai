@@ -14,9 +14,12 @@ var helps = []struct{ key, val string }{
 	{"@", "find files"},
 }
 
-func Intro() string {
+func Intro(width int) string {
 	var sb strings.Builder
 
+	sb.WriteString("\n\n")
+
+	sb.WriteString(styles.StyleIntroLogo.Render(strings.TrimSpace(getGretting(width))))
 	sb.WriteString("\n\n")
 
 	logo := styles.StyleIntroLogo.Render("bai")
