@@ -72,6 +72,10 @@ func (g *Gateway) GetProvider(ctx context.Context) (repo.Provider, error) {
 	return g.db.GetProvider(ctx)
 }
 
+func (g *Gateway) GetConversation(ctx context.Context, id int64) (repo.Conversation, error) {
+	return g.db.GetConversation(ctx, id)
+}
+
 func (g *Gateway) GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]fantasy.Message, error) {
 	messages, err := g.db.GetMessagesByConversation(ctx, conversationID)
 	if err != nil {
@@ -110,4 +114,20 @@ func toFantasyMessage(m repo.Message) fantasy.Message {
 
 func (g *Gateway) SetThemeToDB(ctx context.Context, theme string) error {
 	return g.db.AddOrUpdateSettings(ctx, sql.NullString{Valid: true, String: theme})
+}
+
+func (g *Gateway) GetMessageRowsByConversationID(ctx context.Context, conversationID int64) ([]repo.Message, error) {
+	return g.db.GetMessagesByConversation(ctx, conversationID)
+}
+
+func (g *Gateway) RenameConversation(ctx context.Context, id int64, title string) (repo.Conversation, error) {
+	return g.db.UpdateConversationTitle(ctx, repo.UpdateConversationTitleParams{ID: id, Title: title})
+}
+
+func (g *Gateway) DeleteConversation(ctx context.Context, id int64) error {
+	if _, err := g.db.DeleteMessagesByConversation(ctx, id); err != nil {
+		return err
+	}
+	_, err := g.db.DeleteConversation(ctx, id)
+	return err
 }

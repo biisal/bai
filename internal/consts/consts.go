@@ -7,3 +7,7 @@ var (
 )
 
 var Version = "dev" // can't use VersionDev directly due to ldflags
+
+const (
+	CommitOnRoundNumber = 10
+)

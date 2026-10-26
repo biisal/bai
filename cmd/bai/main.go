@@ -47,6 +47,10 @@ func run() int {
 		}
 	}
 
+	if args := flag.Args(); len(args) > 0 && args[0] == "web" {
+		return runWeb(cfg, *dev, args[1:])
+	}
+
 	if err := start(cfg, *dev); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 		return 1
