@@ -42,6 +42,18 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (i
 	return id, err
 }
 
+const deleteMessagesByConversation = `-- name: DeleteMessagesByConversation :execrows
+DELETE FROM messages WHERE conversation_id = ?1
+`
+
+func (q *Queries) DeleteMessagesByConversation(ctx context.Context, conversationID int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteMessagesByConversation, conversationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getMessagesByConversation = `-- name: GetMessagesByConversation :many
 SELECT id, conversation_id, role, parts, error, created_at, finished_at
 FROM messages

@@ -12,6 +12,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/instruction"
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/consts"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/notifier"
@@ -134,14 +135,13 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 }
 
 // TODO : write test properly
-func (g *Gateway) syncGitRepo(purpose string) {
+func (g *Gateway) syncGitRepo(purpose string) error {
 	isDirty, output, err := g.gitRepo.CheckIfDirty()
 	if err != nil {
-		slog.Error("failed to check if git repo is dirty", "error", err)
-		return
+		return err
 	}
 	if !isDirty {
-		return
+		return nil
 	}
 	if err := g.gitRepo.Add("."); err != nil {
 		slog.Error("failed to add files to git", "error", err)
@@ -159,14 +159,19 @@ func (g *Gateway) syncGitRepo(purpose string) {
 
 		msg = fmt.Sprintf("auto-commit: %s\n%s", time.Now().Format(time.RFC3339), linesStr)
 	}
-	if err := g.gitRepo.Commit(msg); err != nil {
-		slog.Error("failed to commit files", "error", err)
-	}
+	return g.gitRepo.Commit(msg)
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, message string) error {
+	return g.StreamChatDecorated(ctx, message, nil)
+}
+
+// StreamChatDecorated runs a chat and applies decorator to the built Fantasy
+// stream call. The decorator must chain any existing callbacks instead of
+// replacing them, because they persist messages and sync the shadow git repo.
+func (g *Gateway) StreamChatDecorated(ctx context.Context, message string, decorator func(*fantasy.AgentStreamCall)) error {
 	g.notifier.Working(ctx)
-	if err := g.streamChat(ctx, message); err != nil {
+	if err := g.streamChat(ctx, message, decorator); err != nil {
 		g.notifier.Failed(ctx, err)
 		return err
 	}
@@ -174,7 +179,7 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	return nil
 }
 
-func (g *Gateway) streamChat(ctx context.Context, message string) error {
+func (g *Gateway) streamChat(ctx context.Context, message string, decorator func(*fantasy.AgentStreamCall)) error {
 	defer g.broker.Publish(context.Background(), broker.Message{Type: broker.EventStreamDone, IsComplete: true})
 
 	// 1. Save user message.
@@ -201,7 +206,9 @@ func (g *Gateway) streamChat(ctx context.Context, message string) error {
 	g.mu.Lock()
 	client := g.agent.client
 	g.mu.Unlock()
-	_, err = client.Stream(ctx, fantasy.AgentStreamCall{
+
+	rounds := 0
+	call := fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
 
@@ -233,23 +240,40 @@ func (g *Gateway) streamChat(ctx context.Context, message string) error {
 		},
 
 		OnStepFinish: func(step fantasy.StepResult) error {
-			partialReasoning.Reset()
 			partialText.Reset()
+			partialReasoning.Reset()
 			for _, fm := range step.Messages {
 				if saveErr := g.AddMessageToDB(ctx, fm); saveErr != nil {
 					slog.Error("failed to save step message", "error", saveErr)
 				}
 			}
+
+			if rounds < consts.CommitOnRoundNumber {
+				rounds++
+				return nil
+			}
+			if err := g.syncGitRepo(purpose.String()); err != nil {
+				slog.Error("failed to sync git repo", "error", err)
+				return nil
+			}
+			purpose.Reset()
+			rounds = 0
 			return nil
 		},
-	})
+	}
+	if decorator != nil {
+		decorator(&call)
+	}
+	_, err = client.Stream(ctx, call)
 	if err != nil {
 		g.trySavingMsgToDB(&partialReasoning, &partialText)
 		slog.Error("failed to stream chat", "error", err)
 		return err
 	}
 
-	g.syncGitRepo(purpose.String())
+	if err := g.syncGitRepo(purpose.String()); err != nil {
+		slog.Error("failed to sync git repo", "error", err)
+	}
 
 	return nil
 }

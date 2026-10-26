@@ -78,7 +78,7 @@ func (ts *toolSet) makeToolFromCustomTools(tool CustomToolDef) fantasy.AgentTool
 				args = append(args, k+"="+v)
 			}
 			ts.broker.Publish(ctx, broker.Message{
-				Type:       broker.EventToolBash,
+				Type:       broker.EventCustomTool,
 				Text:       strings.Join(args, " "),
 				IsComplete: false,
 			})

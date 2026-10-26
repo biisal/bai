@@ -14,12 +14,15 @@ type Querier interface {
 	AddOrUpdateSettings(ctx context.Context, theme sql.NullString) error
 	CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (int64, error)
+	DeleteConversation(ctx context.Context, id int64) (int64, error)
+	DeleteMessagesByConversation(ctx context.Context, conversationID int64) (int64, error)
 	GetConversation(ctx context.Context, id int64) (Conversation, error)
 	GetConversationsByDirectory(ctx context.Context, directory string) ([]Conversation, error)
 	GetDirectorySettings(ctx context.Context, directory string) (DirectorySetting, error)
 	GetMessagesByConversation(ctx context.Context, conversationID int64) ([]Message, error)
 	GetProvider(ctx context.Context) (Provider, error)
 	GetSettings(ctx context.Context) (UserSetting, error)
+	UpdateConversationTitle(ctx context.Context, arg UpdateConversationTitleParams) (Conversation, error)
 	UpsertDirectorySettings(ctx context.Context, arg UpsertDirectorySettingsParams) error
 }
 

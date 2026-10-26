@@ -60,6 +60,9 @@ changelog:
     - title: "Others"
       order: 999
 
+sboms:
+  - id: default
+
 release:
   github:
     owner: biisal

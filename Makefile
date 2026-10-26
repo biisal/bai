@@ -6,7 +6,7 @@ INSTALL_PATH := ~/.local/bin
 FRONTEND_CMD := pnpm
 FRONTEND_PATH := ./frontend
 
-.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate frontend-build frontend-dev
+.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate frontend-build frontend-dev build-web
 .ONESHELL:
 
 default:
@@ -24,7 +24,10 @@ build-bai:
 	go build -ldflags "-s -w -X github.com/biisal/bai/internal/consts.Version=local" -o ${BINARY_PATH} ./cmd/bai/... 
 	echo "build was successful"
 
-build: deps build-frontend build-bai
+build-web:
+	cd web && pnpm install --frozen-lockfile && pnpm build && touch dist/.gitkeep
+
+build: deps build-frontend build-web build-bai
 
 install: build
 	@mv ${BINARY_PATH} ${INSTALL_PATH} 
