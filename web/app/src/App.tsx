@@ -1,6 +1,11 @@
 import { ChatView, type ChatCommand } from "@/components/chat";
 import { Button } from "@/components/ui/button";
 import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
@@ -16,11 +21,14 @@ import { navigate, replacePath, useRoute } from "@/lib/use-route";
 import {
   applyAppearance,
   readAppearance,
+  resolvedTheme,
   writeAppearance,
   type Appearance,
 } from "@/lib/theme";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { SettingsTab } from "@/components/settings-dialog";
 import { FolderIcon, GitBranchIcon } from "lucide-react";
+import type { PanelImperativeHandle } from "react-resizable-panels";
 import {
   lazy,
   Suspense,
@@ -90,6 +98,9 @@ export default function App() {
   const [changesOpen, setChangesOpen] = useState(false);
   const [searchNonce, setSearchNonce] = useState(0);
   const initialised = useRef(false);
+  const isMobile = useIsMobile();
+  const changesPanel = useRef<PanelImperativeHandle | null>(null);
+  const changesWidth = useRef("40%");
 
   const load = useCallback(async () => {
     setFatal(null);
@@ -169,6 +180,18 @@ export default function App() {
   useEffect(() => {
     setActiveId(route.conversationId);
   }, [route.conversationId]);
+
+  useEffect(() => {
+    const panel = changesPanel.current;
+    if (!panel) {
+      return;
+    }
+    if (changesOpen && !isMobile) {
+      panel.resize(changesWidth.current);
+    } else {
+      panel.collapse();
+    }
+  }, [changesOpen, isMobile]);
 
   const refreshConversations = useCallback(async () => {
     try {
@@ -277,6 +300,18 @@ export default function App() {
   const initialResume =
     route.conversationId !== null && route.conversationId === runningId;
   const modelValue = models ? `${models.provider}:${models.model}` : "";
+  const chatView = (
+    <ChatView
+      conversationId={route.conversationId}
+      directory={state.directory}
+      initialResume={initialResume}
+      key={`${route.conversationId ?? "new"}:${sessionKey}`}
+      notify={appearance.notify}
+      onCommand={handleChatCommand}
+      onConversation={handleConversation}
+      onRunEnd={handleRunEnd}
+    />
+  );
 
   return (
     <>
@@ -332,8 +367,9 @@ export default function App() {
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <Button
+                aria-pressed={changesOpen}
                 disabled={!route.conversationId}
-                onClick={() => setChangesOpen(true)}
+                onClick={() => setChangesOpen((open) => !open)}
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -361,16 +397,45 @@ export default function App() {
             </div>
           </header>
 
-          <ChatView
-            conversationId={route.conversationId}
-            directory={state.directory}
-            initialResume={initialResume}
-            key={`${route.conversationId ?? "new"}:${sessionKey}`}
-            notify={appearance.notify}
-            onCommand={handleChatCommand}
-            onConversation={handleConversation}
-            onRunEnd={handleRunEnd}
-          />
+          <ResizablePanelGroup
+            className="min-h-0 flex-1"
+            orientation="horizontal"
+          >
+            <ResizablePanel minSize="35%" style={{ overflow: "hidden" }}>
+              <div className="flex h-full min-h-0 flex-col">{chatView}</div>
+            </ResizablePanel>
+            <ResizableHandle
+              className={changesOpen && !isMobile ? undefined : "hidden"}
+              withHandle
+            />
+            <ResizablePanel
+              className="min-w-0"
+              collapsedSize="0%"
+              collapsible
+              defaultSize="0%"
+              maxSize="70%"
+              minSize="25%"
+              onResize={(size) => {
+                if (size.asPercentage > 0) {
+                  changesWidth.current = `${size.asPercentage}%`;
+                }
+              }}
+              panelRef={changesPanel}
+              style={{ overflow: "hidden" }}
+            >
+              {!isMobile && changesOpen && (
+                <Suspense fallback={<div className="h-full bg-background" />}>
+                  <ChangesPanel
+                    conversationId={route.conversationId}
+                    inline
+                    onOpenChange={setChangesOpen}
+                    open={changesOpen}
+                    theme={resolvedTheme(appearance.mode)}
+                  />
+                </Suspense>
+              )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </SidebarInset>
       </SidebarProvider>
       <Suspense fallback={null}>
@@ -386,13 +451,16 @@ export default function App() {
           open={settingsOpen}
         />
       </Suspense>
-      <Suspense fallback={null}>
-        <ChangesPanel
-          conversationId={route.conversationId}
-          onOpenChange={setChangesOpen}
-          open={changesOpen}
-        />
-      </Suspense>
+      {isMobile && (
+        <Suspense fallback={null}>
+          <ChangesPanel
+            conversationId={route.conversationId}
+            onOpenChange={setChangesOpen}
+            open={changesOpen}
+            theme={resolvedTheme(appearance.mode)}
+          />
+        </Suspense>
+      )}
       <Suspense fallback={null}>
         <CommandPalette
           conversations={conversations}

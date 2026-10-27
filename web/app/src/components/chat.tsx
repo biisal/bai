@@ -25,6 +25,12 @@ import {
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
 import {
+  Command,
+  CommandEmpty,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Tool,
   ToolContent,
   ToolHeader,
@@ -39,13 +45,7 @@ import { useChat } from "@ai-sdk/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import {
-  CheckIcon,
-  CopyIcon,
-  FileIcon,
-  RefreshCwIcon,
-  TerminalIcon,
-} from "lucide-react";
+import { CheckIcon, CopyIcon, FileIcon, RefreshCwIcon } from "lucide-react";
 
 export type ChatCommand = "new" | "models" | "sessions";
 
@@ -256,15 +256,42 @@ function ChatSession({
     })();
   };
 
+  const errorNotice = error ? (
+    <div className="mx-auto w-full max-w-3xl px-3 pb-2" role="alert">
+      <div className="flex items-start justify-between gap-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <span>{errorText(error)}</span>
+        <button
+          className="shrink-0 rounded px-1 text-xs underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={clearError}
+          type="button"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <PromptInputProvider>
       <div className="flex min-h-0 flex-1 flex-col">
-        <Conversation>
-          <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6">
-            {messages.length === 0 ? (
+        {messages.length === 0 ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10">
               <EmptyState directory={directory} />
-            ) : (
-              <>
+              {errorNotice}
+              <PromptComposer
+                onCommand={onCommand}
+                onStop={handleStop}
+                onSubmit={handleSubmit}
+                status={status}
+                stopped={stopped}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <Conversation>
+              <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6">
                 {messages.map((message, index) => (
                   <ChatMessage
                     canRegenerate={
@@ -286,34 +313,21 @@ function ChatSession({
                     Response stopped.
                   </p>
                 )}
-              </>
-            )}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
+              </ConversationContent>
+              <ConversationScrollButton />
+            </Conversation>
 
-        {error && (
-          <div className="mx-auto w-full max-w-3xl px-3 pb-2" role="alert">
-            <div className="flex items-start justify-between gap-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              <span>{errorText(error)}</span>
-              <button
-                className="shrink-0 rounded px-1 text-xs underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                onClick={clearError}
-                type="button"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
+            {errorNotice}
+
+            <PromptComposer
+              onCommand={onCommand}
+              onStop={handleStop}
+              onSubmit={handleSubmit}
+              status={status}
+              stopped={stopped}
+            />
+          </>
         )}
-
-        <PromptComposer
-          onCommand={onCommand}
-          onStop={handleStop}
-          onSubmit={handleSubmit}
-          status={status}
-          stopped={stopped}
-        />
 
         <p aria-live="polite" className="sr-only" role="status">
           {status === "submitted"
@@ -490,60 +504,76 @@ function PromptComposer({
     <div className="px-3 pb-3 md:px-4 md:pb-4">
       <div className="relative mx-auto w-full max-w-3xl">
         {slashOpen && (
-          <Menu>
+          <Menu
+            onValueChange={(next) => {
+              const index = slashResults.findIndex(
+                (command) => command.id === next
+              );
+              if (index >= 0) {
+                setActiveIndex(index);
+              }
+            }}
+            value={slashResults[activeIndex]?.id ?? slashResults[0]?.id ?? ""}
+          >
             {slashResults.length === 0 ? (
-              <MenuEmpty>No matching command</MenuEmpty>
+              <CommandEmpty>No matching command</CommandEmpty>
             ) : (
-              slashResults.map((command, index) => (
-                <MenuButton
-                  active={index === activeIndex}
+              slashResults.map((command) => (
+                <CommandItem
                   key={command.id}
-                  onClick={() => pickSlash(command.id)}
-                  onMouseEnter={() => setActiveIndex(index)}
+                  onSelect={() => pickSlash(command.id)}
+                  value={command.id}
                 >
                   <span className="font-mono text-xs">{command.name}</span>
                   <span className="text-xs text-muted-foreground">
                     {command.description}
                   </span>
-                </MenuButton>
+                </CommandItem>
               ))
             )}
           </Menu>
         )}
 
         {mentionOpen && (
-          <Menu>
-            {fileLoading && files.length === 0 ? (
-              <MenuEmpty>Looking for files...</MenuEmpty>
-            ) : files.length === 0 ? (
-              <MenuEmpty>No files found</MenuEmpty>
+          <Menu
+            onValueChange={(next) => {
+              const index = files.findIndex((file) => file.path === next);
+              if (index >= 0) {
+                setActiveIndex(index);
+              }
+            }}
+            value={files[activeIndex]?.path ?? files[0]?.path ?? ""}
+          >
+            {files.length === 0 ? (
+              <CommandEmpty>
+                {fileLoading ? "Looking for files..." : "No files found"}
+              </CommandEmpty>
             ) : (
-              files.map((file, index) => (
-                <MenuButton
-                  active={index === activeIndex}
+              files.map((file) => (
+                <CommandItem
                   key={file.path}
-                  onClick={() => pickMention(file.path)}
-                  onMouseEnter={() => setActiveIndex(index)}
+                  onSelect={() => pickMention(file.path)}
+                  value={file.path}
                 >
                   <FileIcon />
                   <span className="min-w-0 truncate font-mono text-xs">
                     {file.path}
                   </span>
-                </MenuButton>
+                </CommandItem>
               ))
             )}
           </Menu>
         )}
 
         <PromptInput
-          className="[&_[data-slot=input-group]]:rounded-xl [&_[data-slot=input-group]]:border-0 [&_[data-slot=input-group]]:bg-muted/50 [&_[data-slot=input-group]]:shadow-xs dark:[&_[data-slot=input-group]]:bg-muted/50"
+          className="[&_[data-slot=input-group]]:rounded-3xl [&_[data-slot=input-group]]:border-0 [&_[data-slot=input-group]]:bg-muted/50 [&_[data-slot=input-group]]:shadow-xs dark:[&_[data-slot=input-group]]:bg-muted/50"
           onSubmit={onSubmit}
         >
           <PromptInputBody>
             <PromptInputTextarea
               id="prompt-input"
               onKeyDown={handleKeyDown}
-              placeholder="Ask bai anything... @ files, / commands"
+              placeholder="Ask bai anything..."
             />
           </PromptInputBody>
           <PromptInputFooter>
@@ -566,93 +596,48 @@ function PromptComposer({
   );
 }
 
-function Menu({ children }: { children: ReactNode }) {
+function Menu({
+  value,
+  onValueChange,
+  children,
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  children: ReactNode;
+}) {
   return (
-    <div
-      className="absolute inset-x-0 bottom-full z-20 mb-2 max-h-64 overflow-y-auto rounded-xl bg-popover p-1 shadow-md ring-1 ring-foreground/10"
-      role="listbox"
-    >
-      {children}
+    <div className="absolute inset-x-0 bottom-full z-20 mb-2 overflow-hidden rounded-xl bg-popover shadow-md ring-1 ring-foreground/10">
+      <Command onValueChange={onValueChange} shouldFilter={false} value={value}>
+        <CommandList className="max-h-64">{children}</CommandList>
+      </Command>
     </div>
   );
 }
 
-function MenuEmpty({ children }: { children: ReactNode }) {
-  return <p className="px-3 py-2 text-xs text-muted-foreground">{children}</p>;
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) {
+    return "Good morning";
+  }
+  if (hour >= 12 && hour < 17) {
+    return "Good afternoon";
+  }
+  if (hour >= 17 && hour < 21) {
+    return "Good evening";
+  }
+  return "Hello, night owl";
 }
-
-function MenuButton({
-  active,
-  children,
-  onClick,
-  onMouseEnter,
-}: {
-  active: boolean;
-  children: ReactNode;
-  onClick: () => void;
-  onMouseEnter: () => void;
-}) {
-  return (
-    <button
-      aria-selected={active}
-      className={cn(
-        "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors",
-        active ? "bg-accent text-accent-foreground" : " hover:bg-muted"
-      )}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      role="option"
-      type="button"
-    >
-      {children}
-    </button>
-  );
-}
-
-const suggestions = [
-  "Explain this project",
-  "Find TODOs",
-  "Run the tests",
-  "Summarize recent changes",
-];
 
 function EmptyState({ directory }: { directory: string }) {
-  const { textInput } = usePromptInputController();
   const folder = directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
 
-  const fillPrompt = (text: string) => {
-    textInput.setInput(text);
-    document.getElementById("prompt-input")?.focus();
-  };
-
   return (
-    <div className="flex min-h-[55vh] items-center justify-center">
-      <div className="flex max-w-lg flex-col items-center gap-6 text-center">
-        <div className="grid size-12 place-items-center rounded-xl bg-muted text-muted-foreground">
-          <TerminalIcon className="size-6" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold tracking-tight">
-            How can I help?
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Ask bai to inspect files, run commands, or explain{" "}
-            <span className="font-medium text-foreground">{folder}</span>.
-          </p>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2">
-          {suggestions.map((suggestion) => (
-            <button
-              className="rounded-full bg-muted/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              key={suggestion}
-              onClick={() => fillPrompt(suggestion)}
-              type="button"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="text-center">
+      <h1 className="text-3xl font-semibold tracking-tight">{greeting()}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        What should we explore in{" "}
+        <span className="font-medium text-foreground">{folder}</span>?
+      </p>
     </div>
   );
 }

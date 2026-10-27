@@ -28,8 +28,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { api, errorText, type Conversation } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
-  FolderIcon,
-  MessageSquareIcon,
   MoreHorizontalIcon,
   PlusIcon,
   SearchIcon,
@@ -80,7 +78,6 @@ export function AppSidebar({
   conversations,
   activeId,
   loading,
-  directory,
   version,
   searchNonce,
   onNew,
@@ -98,8 +95,6 @@ export function AppSidebar({
       setOpenMobile(false);
     }
   };
-  const folder = directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
-
   useEffect(() => {
     if (searchNonce > 0) {
       searchRef.current?.focus();
@@ -163,7 +158,7 @@ export function AppSidebar({
                 <SidebarMenu>
                   {Array.from({ length: 4 }).map((_, index) => (
                     <SidebarMenuItem key={index}>
-                      <SidebarMenuSkeleton showIcon />
+                      <SidebarMenuSkeleton />
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
@@ -193,7 +188,6 @@ export function AppSidebar({
                           }}
                           tooltip={conversation.title}
                         >
-                          <MessageSquareIcon />
                           <span>{conversation.title}</span>
                         </SidebarMenuButton>
                         <SidebarMenuAction
@@ -228,12 +222,6 @@ export function AppSidebar({
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-            <FolderIcon className="size-3.5 shrink-0" />
-            <span className="truncate" title={directory}>
-              {folder}
-            </span>
-          </div>
           <div className="px-1 text-[11px] text-muted-foreground/80">
             v{version}
           </div>

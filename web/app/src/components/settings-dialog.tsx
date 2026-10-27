@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   api,
   errorText,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/api";
 import type { Appearance, ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -198,13 +200,42 @@ function ModelsTab({
   switching: boolean;
   onSwitch: (provider: string, model: string) => Promise<void>;
 }) {
+  const [search, setSearch] = useState("");
+  const query = search.trim().toLowerCase();
+  const visible = models
+    .map((provider) => ({
+      ...provider,
+      models: provider.models.filter(
+        (model) =>
+          !query ||
+          model.id.toLowerCase().includes(query) ||
+          provider.name.toLowerCase().includes(query)
+      ),
+    }))
+    .filter((provider) => provider.models.length > 0);
+
   return (
     <div className="space-y-5">
       <Section
         description="Only configured secrets are reported; they never leave the server."
         title="Models"
       />
-      {models.map((provider) => (
+      <div className="relative">
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          aria-label="Search models"
+          className="h-8 border-0 bg-muted/50 pl-8 text-sm shadow-none focus-visible:bg-background"
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search models..."
+          value={search}
+        />
+      </div>
+      {visible.length === 0 && (
+        <p className="text-center text-xs text-muted-foreground">
+          No models found.
+        </p>
+      )}
+      {visible.map((provider) => (
         <div className="space-y-2" key={provider.id}>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-medium">{provider.name}</h3>

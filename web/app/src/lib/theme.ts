@@ -33,11 +33,16 @@ export function writeAppearance(appearance: Appearance): void {
   localStorage.setItem(storageKey, JSON.stringify(appearance));
 }
 
+export function resolvedTheme(mode: ThemeMode): "light" | "dark" {
+  return mode === "dark" ||
+    (mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches)
+    ? "dark"
+    : "light";
+}
+
 export function applyAppearance(appearance: Appearance): void {
-  const root = document.documentElement;
-  const dark =
-    appearance.mode === "dark" ||
-    (appearance.mode === "system" &&
-      matchMedia("(prefers-color-scheme: dark)").matches);
-  root.classList.toggle("dark", dark);
+  document.documentElement.classList.toggle(
+    "dark",
+    resolvedTheme(appearance.mode) === "dark"
+  );
 }
