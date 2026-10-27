@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -82,23 +80,13 @@ func runWeb(cfg *config.Config, dev bool, args []string) int {
 		slog.Info("shadow git repo is not initialized; runs will continue without checkpoints", "dir", gitRepo.Dir())
 	}
 
-	token := os.Getenv("BAI_WEB_TOKEN")
-	if token == "" {
-		var err error
-		token, err = randomToken()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to generate web token: %v\n", err)
-			return 1
-		}
-	}
-
 	ln, listenAddr, err := listen(*addr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to listen on %s: %v\n", *addr, err)
 		return 1
 	}
 	if !isLoopback(listenAddr) {
-		fmt.Fprintf(os.Stderr, "WARNING: bai web is listening on a non-loopback address %s. Anyone who can reach it and has the token can run commands as you.\n", listenAddr)
+		fmt.Fprintf(os.Stderr, "WARNING: bai web is listening on a non-loopback address %s. Anyone who can reach it can run commands as you.\n", listenAddr)
 	}
 
 	static, err := bundle.Dist()
@@ -111,7 +99,6 @@ func runWeb(cfg *config.Config, dev bool, args []string) int {
 		Gateway:  gateway,
 		Config:   cfg,
 		Registry: registry,
-		Token:    token,
 		Addr:     listenAddr,
 		Dev:      dev,
 		Static:   static,
@@ -137,7 +124,7 @@ func runWeb(cfg *config.Config, dev bool, args []string) int {
 		errCh <- httpServer.Serve(ln)
 	}()
 
-	url := fmt.Sprintf("http://%s/?t=%s", urlHost(listenAddr), token)
+	url := fmt.Sprintf("http://%s/", urlHost(listenAddr))
 	fmt.Printf("bai web: %s\n", url)
 	if !*noOpen {
 		go openBrowser(url)
@@ -159,14 +146,6 @@ func runWeb(cfg *config.Config, dev bool, args []string) int {
 		slog.Error("shutdown web server", "error", err)
 	}
 	return 0
-}
-
-func randomToken() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
 }
 
 func isLoopback(addr string) bool {
