@@ -1,4 +1,7 @@
 import type { UIMessage } from "ai";
+import { z } from "zod";
+
+const errorBody = z.object({ error: z.string() });
 
 export type ConversationData = {
   id: number;
@@ -56,17 +59,12 @@ async function readError(response: Response): Promise<string> {
     return response.statusText || `Request failed (${response.status})`;
   }
   try {
-    const data: unknown = JSON.parse(text);
-    if (
-      typeof data === "object" &&
-      data !== null &&
-      "error" in data &&
-      typeof data.error === "string"
-    ) {
-      return data.error;
+    const body = errorBody.safeParse(JSON.parse(text));
+    if (body.success) {
+      return body.data.error;
     }
   } catch {
-    return text;
+    // not JSON; fall through to the raw text
   }
   return text;
 }

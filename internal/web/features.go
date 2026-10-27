@@ -5,17 +5,13 @@ import (
 	"strings"
 
 	"github.com/biisal/bai/internal/config"
-	"github.com/biisal/bai/internal/tui/commands"
+	"github.com/biisal/bai/internal/files"
 )
 
 const (
 	fileResultLimit = 20
 	maxDiffBytes    = 1 << 20
 )
-
-var diffArgs = []string{
-	"show", "--format=", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--unified=3", "HEAD", "--",
-}
 
 func validFileQuery(q string) bool {
 	if filepath.IsAbs(q) || filepath.VolumeName(q) != "" {
@@ -38,12 +34,11 @@ func validFileQuery(q string) bool {
 func searchFiles(q string) []fileResult {
 	lower := strings.ToLower(q)
 	out := make([]fileResult, 0, fileResultLimit)
-	for _, item := range commands.FileItems() {
-		f, ok := item.(commands.FileItem)
-		if !ok || !strings.Contains(strings.ToLower(f.RelFilePath), lower) {
+	for _, f := range files.List() {
+		if !strings.Contains(strings.ToLower(f.RelPath), lower) {
 			continue
 		}
-		out = append(out, fileResult{Path: f.RelFilePath})
+		out = append(out, fileResult{Path: f.RelPath})
 		if len(out) == fileResultLimit {
 			break
 		}
@@ -66,11 +61,6 @@ func settingsProviders(providers []config.ProviderConfig) []settingsProvider {
 		})
 	}
 	return out
-}
-
-type pluginManifest struct {
-	FileName    string `json:"file_name"`
-	Description string `json:"description"`
 }
 
 func capDiff(diff string) (string, bool) {

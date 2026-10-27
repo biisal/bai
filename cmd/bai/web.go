@@ -19,7 +19,6 @@ import (
 
 	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
-	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/logger"
 	"github.com/biisal/bai/internal/notifier"
 	broker "github.com/biisal/bai/internal/pubsub"
@@ -64,15 +63,13 @@ func runWeb(cfg *config.Config, dev bool, args []string) int {
 	n := notifier.New(nil)
 	defer n.Close(context.Background())
 
-	skillPaths := append([]string{}, cfg.SkillsPaths...)
-	skillPaths = append(skillPaths, config.DefaultSkillsPaths()...)
-	gitRepo := git.New(cfg.GitDirName)
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, n, skillPaths, gitRepo)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, n)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return 1
 	}
+	gitRepo := gateway.Git()
 
 	if initialized, err := gitRepo.CheckIfGitInitialized(); err != nil {
 		slog.Warn("could not check shadow git repo", "error", err)

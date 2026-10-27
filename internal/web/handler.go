@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -13,20 +12,18 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/biisal/bai/internal/agent"
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/consts"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/domain"
 	"github.com/biisal/bai/internal/files"
-	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/update"
 )
 
@@ -95,8 +92,9 @@ func (s *Server) handleState(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 	activeProvider, activeModel := s.gateway.Active()
-	providers := make([]providerModels, 0, len(s.config.Providers))
-	for _, p := range s.config.Providers {
+	configured := s.gateway.Models()
+	providers := make([]providerModels, 0, len(configured))
+	for _, p := range configured {
 		models := make([]string, 0, len(p.Models))
 		for _, m := range p.Models {
 			models = append(models, m.ID)
@@ -112,30 +110,16 @@ func (s *Server) handleSetModel(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if !s.validModel(req.Provider, req.Model) {
-		writeError(w, http.StatusBadRequest, "unknown provider or model")
-		return
-	}
 	if err := s.gateway.AddOrUpdateProvider(r.Context(), req.Provider, req.Model); err != nil {
+		if errors.Is(err, agent.ErrUnknownModel) {
+			writeError(w, http.StatusBadRequest, "unknown provider or model")
+			return
+		}
 		slog.Error("set model", "error", err)
 		writeError(w, http.StatusBadRequest, "could not switch model")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) validModel(providerID, modelID string) bool {
-	for _, p := range s.config.Providers {
-		if p.Name != providerID {
-			continue
-		}
-		for _, m := range p.Models {
-			if m.ID == modelID {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func (s *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +142,7 @@ func (s *Server) handleMessages(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid conversation id")
 		return
 	}
-	conversation, err := s.conversationFor(r.Context(), id)
+	conversation, err := s.gateway.ConversationInDir(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "conversation not found")
 		return
@@ -321,43 +305,8 @@ func (s *Server) resolveConversation(ctx context.Context, rawID json.RawMessage,
 			}
 		}
 	}
-	if id, err := strconv.ParseInt(idStr, 10, 64); err == nil {
-		conversation, err := s.conversationFor(ctx, id)
-		if err == nil {
-			return conversation, false, nil
-		}
-		if !errors.Is(err, sql.ErrNoRows) && !errors.Is(err, errWrongDirectory) {
-			return repo.Conversation{}, false, err
-		}
-	}
-	conversation, err := s.gateway.AddNewConversation(ctx, titleFor(text))
-	if err != nil {
-		return repo.Conversation{}, false, err
-	}
-	return conversation, true, nil
-}
-
-var errWrongDirectory = errors.New("conversation belongs to another directory")
-
-func (s *Server) conversationFor(ctx context.Context, id int64) (repo.Conversation, error) {
-	conversation, err := s.gateway.GetConversation(ctx, id)
-	if err != nil {
-		return repo.Conversation{}, err
-	}
-	if conversation.Directory != files.CurrentDir() {
-		return repo.Conversation{}, errWrongDirectory
-	}
-	return conversation, nil
-}
-
-func titleFor(text string) string {
-	const max = 80
-	text = strings.TrimSpace(text)
-	if utf8.RuneCountInString(text) <= max {
-		return text
-	}
-	runes := []rune(text)
-	return string(runes[:max])
+	id, _ := strconv.ParseInt(idStr, 10, 64)
+	return s.gateway.ResolveConversation(ctx, id, text)
 }
 
 func newMessageID() string {
@@ -404,7 +353,7 @@ func (s *Server) handleDeleteConversation(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, "a run is active on this conversation")
 		return
 	}
-	if _, err := s.conversationFor(r.Context(), id); err != nil {
+	if _, err := s.gateway.ConversationInDir(r.Context(), id); err != nil {
 		writeError(w, http.StatusNotFound, "conversation not found")
 		return
 	}
@@ -435,7 +384,7 @@ func (s *Server) handleRenameConversation(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, "a run is active on this conversation")
 		return
 	}
-	if _, err := s.conversationFor(r.Context(), id); err != nil {
+	if _, err := s.gateway.ConversationInDir(r.Context(), id); err != nil {
 		writeError(w, http.StatusNotFound, "conversation not found")
 		return
 	}
@@ -449,14 +398,9 @@ func (s *Server) handleRenameConversation(w http.ResponseWriter, r *http.Request
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	activeProvider, activeModel := s.gateway.Active()
-	providers := settingsProviders(s.config.Providers)
+	providers := settingsProviders(s.gateway.Models())
 
-	gitRepo := git.New(s.config.GitDirName)
-	initialized, _ := gitRepo.CheckIfGitInitialized()
-	dirty := false
-	if initialized {
-		dirty, _, _ = gitRepo.CheckIfDirty()
-	}
+	initialized, dirty := s.gateway.GitStatus()
 
 	latest := ""
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
@@ -494,19 +438,10 @@ func (s *Server) handleSkills(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePlugins(w http.ResponseWriter, r *http.Request) {
-	items := make([]pluginItem, 0)
-	data, err := os.ReadFile(s.config.PluginsPath)
-	if err == nil {
-		var manifest []pluginManifest
-		if json.Unmarshal(data, &manifest) == nil {
-			for _, plugin := range manifest {
-				items = append(items, pluginItem{
-					Name:        strings.TrimSuffix(plugin.FileName, filepath.Ext(plugin.FileName)),
-					Description: plugin.Description,
-					Source:      filepath.Join(filepath.Dir(s.config.PluginsPath), plugin.FileName),
-				})
-			}
-		}
+	plugins := s.gateway.Plugins()
+	items := make([]pluginItem, 0, len(plugins))
+	for _, p := range plugins {
+		items = append(items, pluginItem{Name: p.Name, Description: p.Description, Source: p.Path})
 	}
 	writeJSON(w, http.StatusOK, items)
 }
@@ -517,16 +452,11 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid conversation id")
 		return
 	}
-	if _, err := s.conversationFor(r.Context(), id); err != nil {
+	if _, err := s.gateway.ConversationInDir(r.Context(), id); err != nil {
 		writeError(w, http.StatusNotFound, "conversation not found")
 		return
 	}
-	gitRepo := git.New(s.config.GitDirName)
-	if _, err := gitRepo.RunGitCommandContext(r.Context(), "rev-parse", "--verify", "HEAD"); err != nil {
-		writeJSON(w, http.StatusOK, diffResponse{})
-		return
-	}
-	diff, err := gitRepo.RunGitCommandContext(r.Context(), diffArgs...)
+	diff, err := s.gateway.LatestDiff(r.Context())
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return

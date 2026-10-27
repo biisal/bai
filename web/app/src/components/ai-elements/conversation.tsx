@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { UIMessage } from "ai";
 import { ArrowDownIcon, DownloadIcon } from "lucide-react";
@@ -26,13 +27,22 @@ export type ConversationContentProps = ComponentProps<
 
 export const ConversationContent = ({
   className,
+  children,
   ...props
-}: ConversationContentProps) => (
-  <StickToBottom.Content
-    className={cn("flex flex-col gap-8 p-4", className)}
-    {...props}
-  />
-);
+}: ConversationContentProps) => {
+  const { scrollRef, contentRef } = useStickToBottomContext();
+  return (
+    <ScrollArea className="size-full" viewportRef={scrollRef}>
+      <div
+        className={cn("flex flex-col gap-8 p-4", className)}
+        ref={contentRef as React.Ref<HTMLDivElement>}
+        {...props}
+      >
+        {typeof children === "function" ? null : children}
+      </div>
+    </ScrollArea>
+  );
+};
 
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   title?: string;
