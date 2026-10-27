@@ -4,9 +4,10 @@ BINARY_PATH := ./bin/bai
 INSTALL_PATH := ~/.local/bin
 
 FRONTEND_CMD := pnpm
-FRONTEND_PATH := ./frontend
+FRONTEND_PATH := ./web/landing
+APP_PATH := ./web/app
 
-.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate frontend-build frontend-dev
+.PHONY: default build build-linux run dev watch test release lint lint-fix clean install format format-check db-generate frontend-build frontend-dev build-web
 .ONESHELL:
 
 default:
@@ -24,7 +25,10 @@ build-bai:
 	go build -ldflags "-s -w -X github.com/biisal/bai/internal/consts.Version=local" -o ${BINARY_PATH} ./cmd/bai/... 
 	echo "build was successful"
 
-build: deps build-frontend build-bai
+build-web:
+	cd ${APP_PATH} && pnpm install --frozen-lockfile && pnpm build && find dist -type f ! -name '*.gz' ! -name '.gitkeep' -exec gzip -9 {} + && touch dist/.gitkeep
+
+build: deps build-frontend build-web build-bai
 
 install: build
 	@mv ${BINARY_PATH} ${INSTALL_PATH} 
@@ -52,10 +56,12 @@ release-full:
 lint:
 	golangci-lint run
 	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} lint
+	cd ${APP_PATH} && ${FRONTEND_CMD} lint
 
 lint-fix:
 	golangci-lint run --fix
 	cd ${FRONTEND_PATH} && ${FRONTEND_CMD} lint:fix
+	cd ${APP_PATH} && ${FRONTEND_CMD} lint:fix
 
 clean:
 	rm -rf bin/
@@ -63,11 +69,11 @@ clean:
 
 format:
 	gofmt -w .
-	cd frontend && pnpm format
+	cd ${FRONTEND_PATH} && pnpm format
 
 format-check:
 	gofmt -l .
-	cd frontend && pnpm format:check
+	cd ${FRONTEND_PATH} && pnpm format:check
 
 db-generate:
 	@sqlc generate

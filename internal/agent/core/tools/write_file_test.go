@@ -75,3 +75,20 @@ func TestWriteFile_EmptyPath(t *testing.T) {
 		t.Fatal("WriteFile(\"\", ...) expected error")
 	}
 }
+
+// todo 
+func TestWriteFile(t *testing.T){
+	tests := []struct {
+		path string
+	}{
+		{
+			path: "~/Desktop/",
+		},
+	}
+
+	for _, tt := range tests{
+		t.Run(tt.path, func(t *testing.T) {
+
+		})
+	}
+}

@@ -1,12 +1,10 @@
-package commands
+package files
 
 import (
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
-
-	"charm.land/bubbles/v2/list"
 )
 
 func buildTree(t *testing.T, root string, files []string) {
@@ -29,29 +27,25 @@ func writeIgnore(t *testing.T, root, content string) {
 	}
 }
 
-func itemPaths(t *testing.T, items []list.Item) []string {
+func itemPaths(t *testing.T, items []Entry) []string {
 	t.Helper()
 	got := make([]string, 0, len(items))
 	for _, it := range items {
-		fi, ok := it.(FileItem)
-		if !ok {
-			t.Fatalf("unexpected item type %T", it)
-		}
-		got = append(got, fi.RelFilePath)
+		got = append(got, it.RelPath)
 	}
 	slices.Sort(got)
 	return got
 }
 
-func runFileItems(t *testing.T, root string) []string {
+func runList(t *testing.T, root string) []string {
 	t.Helper()
 	t.Chdir(root)
-	return itemPaths(t, FileItems())
+	return itemPaths(t, List())
 }
 
 // wants were verified against real git (git check-ignore): each list is what
 // git would keep visible in the file finder.
-func TestFileItemsGitIgnore(t *testing.T) {
+func TestListGitIgnore(t *testing.T) {
 	t.Run("basic_skip", func(t *testing.T) {
 		root := t.TempDir()
 		writeIgnore(t, root, "dist/\nsecret.txt\n")
@@ -60,7 +54,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			[]string{"keep.txt", "secret.txt", "src/main.go", "dist/deep.txt", ".git/HEAD"},
 		)
 		want := []string{".gitignore", "keep.txt", "src/main.go"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -72,7 +66,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			[]string{"keep.txt", "node_modules/pkg/index.js", ".venv/lib.py", ".git/HEAD"},
 		)
 		want := []string{"keep.txt"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -87,7 +81,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			[]string{"keep.txt", "outdir/out.txt", "tools/outdir"},
 		)
 		want := []string{".gitignore", "keep.txt", "tools/outdir"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -101,7 +95,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			[]string{"keep.txt", "gen/a.txt", "lib/gen/b.txt"},
 		)
 		want := []string{".gitignore", "keep.txt", "lib/gen/b.txt"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -115,7 +109,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			[]string{"top.txt", "cfg/keep.txt"},
 		)
 		want := []string{".gitignore", "cfg/keep.txt", "top.txt"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -129,7 +123,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			[]string{"debug.log", "src/main.go"},
 		)
 		want := []string{".gitignore", "src/main.go"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -143,7 +137,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 			[]string{"docs/private/key.txt", "docs/public/readme.md"},
 		)
 		want := []string{".gitignore", "docs/public/readme.md"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -157,7 +151,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 		)
 		writeIgnore(t, filepath.Join(root, "sub"), "cache/\n")
 		want := []string{"keep.txt", "sub/.gitignore"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -178,7 +172,7 @@ func TestFileItemsGitIgnore(t *testing.T) {
 		t.Cleanup(func() { _ = os.Chmod(bad, 0o755) })
 
 		want := []string{"ok.txt"}
-		if got := runFileItems(t, root); !slices.Equal(got, want) {
+		if got := runList(t, root); !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})

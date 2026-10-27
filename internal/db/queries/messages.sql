@@ -13,3 +13,6 @@ SELECT *
 FROM messages
 WHERE conversation_id = ?1
 ORDER BY id ASC;
+
+-- name: DeleteMessagesByConversation :execrows
+DELETE FROM messages WHERE conversation_id = ?1;
