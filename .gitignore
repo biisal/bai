@@ -8,3 +8,4 @@ node_modules
 !web/app/dist/
 web/app/dist/*
 !web/app/dist/.gitkeep
+vendor

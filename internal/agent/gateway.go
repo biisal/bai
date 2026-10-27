@@ -27,7 +27,7 @@ type Gateway struct {
 	db               repo.Querier
 	conversation     *repo.Conversation
 	notifier         *notifier.Notifier
-	skills           []skills.Skill
+	Skills           []skills.Skill
 	userInstructions []string
 	gitRepo          git.GitRepo
 	agent            *Agent
@@ -74,7 +74,7 @@ func NewGateway(
 		broker:           b,
 		providers:        providers,
 		notifier:         n,
-		skills:           skillList,
+		Skills:           skillList,
 		userInstructions: []string{userInstructions},
 		gitRepo:          gitRepo,
 		agent:            agent,
