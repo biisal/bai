@@ -9,7 +9,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import type { Conversation, Models } from "@/lib/api";
-import type { SettingsTab } from "@/components/settings-dialog";
+import type { SettingsTab } from "@/features/settings/settings-dialog";
 import {
   GitBranchIcon,
   MessageSquareIcon,
