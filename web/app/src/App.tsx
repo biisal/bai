@@ -1,4 +1,5 @@
-import { ChatView, type ChatCommand } from "@/components/chat";
+import { ChatView } from "@/features/chat/chat-view";
+import type { ChatCommand } from "@/features/chat/prompt-composer";
 import { Button } from "@/components/ui/button";
 import {
   ResizableHandle,
@@ -26,7 +27,7 @@ import {
   type Appearance,
 } from "@/lib/theme";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { SettingsTab } from "@/components/settings-dialog";
+import type { SettingsTab } from "@/features/settings/settings-dialog";
 import { FolderIcon, GitBranchIcon } from "lucide-react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import {
@@ -39,17 +40,17 @@ import {
 } from "react";
 
 const SidebarTooltip = lazy(() =>
-  import("@/components/sidebar-tooltip").then((module) => ({
+  import("@/features/sidebar/sidebar-tooltip").then((module) => ({
     default: module.SidebarTooltip,
   }))
 );
 const AppSidebar = lazy(() =>
-  import("@/components/sidebar").then((module) => ({
+  import("@/features/sidebar/sidebar").then((module) => ({
     default: module.AppSidebar,
   }))
 );
 const ModelSelect = lazy(() =>
-  import("@/components/model-select").then((module) => ({
+  import("@/features/models/model-select").then((module) => ({
     default: module.ModelSelect,
   }))
 );
@@ -59,22 +60,22 @@ const Toaster = lazy(() =>
   }))
 );
 const SettingsDialog = lazy(() =>
-  import("@/components/settings-dialog").then((module) => ({
+  import("@/features/settings/settings-dialog").then((module) => ({
     default: module.SettingsDialog,
   }))
 );
 const ChangesPanel = lazy(() =>
-  import("@/components/changes-panel").then((module) => ({
+  import("@/features/changes/changes-panel").then((module) => ({
     default: module.ChangesPanel,
   }))
 );
 const CommandPalette = lazy(() =>
-  import("@/components/command-palette").then((module) => ({
+  import("@/features/palette/command-palette").then((module) => ({
     default: module.CommandPalette,
   }))
 );
 const ShortcutsDialog = lazy(() =>
-  import("@/components/shortcuts-dialog").then((module) => ({
+  import("@/features/palette/shortcuts-dialog").then((module) => ({
     default: module.ShortcutsDialog,
   }))
 );

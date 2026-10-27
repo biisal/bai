@@ -180,7 +180,7 @@ export function AppSidebar({
                         key={conversation.id}
                       >
                         <SidebarMenuButton
-                          className="pr-8"
+                          className="pr-8 text-md"
                           isActive={activeId === String(conversation.id)}
                           onClick={() => {
                             onSelect(conversation.id);
