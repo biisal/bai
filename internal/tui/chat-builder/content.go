@@ -2,6 +2,7 @@ package chatbuilder
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"charm.land/fantasy"
@@ -10,10 +11,6 @@ import (
 	broker "github.com/biisal/bai/internal/pubsub"
 	"github.com/biisal/bai/internal/tui/styles"
 )
-
-func bashWithDollarPrefix(text string) string {
-	return "$ " + text
-}
 
 type Segment struct {
 	Kind broker.EventType
@@ -161,7 +158,10 @@ func renderSegment(seg *Segment, toMarkdown func(string) string) string {
 		style = styles.StyleToolFileWriting
 	case broker.EventToolBash:
 		style = styles.StyleToolBash
-		content = bashWithDollarPrefix(content)
+		content = "$ " + content
+	case broker.EventCustomTool:
+		style = styles.StyleToolBash
+		content = "⬤ " + perseCustomToolToString(content)
 	}
 	return style.MarginBottom(1).Render(content)
 }
@@ -188,6 +188,18 @@ func (c *Content) ReRender() {
 	}
 }
 
+func perseCustomToolToString(text string) string {
+	var inputs map[string]string
+	if err := json.Unmarshal([]byte(text), &inputs); err != nil {
+		return text
+	}
+	var result string
+	for key, value := range inputs {
+		result += fmt.Sprintf("%s : %s ", key, value)
+	}
+	return result
+}
+
 func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {
 	var segments []*Segment
 	for _, msg := range messages {
@@ -209,8 +221,11 @@ func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {
 						kind = broker.EventToolBash
 					case tools.EditFileName, tools.WriteFileName:
 						kind = broker.EventToolFileWriting
-					default:
+					case tools.ReadFileName:
 						kind = broker.EventToolFileReading
+					default:
+						// this should be cutom tools
+						kind = broker.EventCustomTool
 					}
 				default:
 					kind = broker.EventAgentResponse
@@ -222,17 +237,11 @@ func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {
 			case fantasy.ToolResultPart:
 				continue
 			case fantasy.ToolCallPart:
-				var args map[string]any
-				if err := json.Unmarshal([]byte(p.Input), &args); err == nil {
-					if cmd, ok := args["command"].(string); ok && cmd != "" {
-						seg.buf.WriteString(cmd)
-					} else if path, ok := args["path"].(string); ok && path != "" {
-						seg.buf.WriteString(path)
-					} else {
-						seg.buf.WriteString(p.Input)
-					}
-				} else {
-					seg.buf.WriteString(p.Input)
+				switch p.ToolName {
+				case tools.BashName, tools.EditFileName, tools.ReadFileName, tools.WriteFileName:
+					seg.buf.WriteString(bashInputToStr(p.Input))
+				default:
+					seg.buf.WriteString(perseCustomToolToString(p.Input))
 				}
 			case fantasy.TextPart:
 				seg.buf.WriteString(p.Text)

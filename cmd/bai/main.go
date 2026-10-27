@@ -29,7 +29,13 @@ func run() int {
 		return 1
 	}
 
-	if args := flag.Args(); len(args) > 0 && args[0] == "git" {
+	firstArg := ""
+	args := flag.Args()
+	if len(args) > 0 {
+		firstArg = args[0]
+	}
+
+	if firstArg == "git" {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 
@@ -45,6 +51,10 @@ func run() int {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			return 1
 		}
+	}
+
+	if firstArg == "web" {
+		return runWeb(cfg, *dev, args[1:])
 	}
 
 	if err := start(cfg, *dev); err != nil {

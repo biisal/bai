@@ -13,7 +13,6 @@ import (
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
-	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/logger"
 	"github.com/biisal/bai/internal/notifier"
 	audio "github.com/biisal/bai/internal/notifier/player"
@@ -96,14 +95,8 @@ func start(cfg *config.Config, dev bool) error {
 	n := notifier.New(sound)
 	defer n.Close(context.Background())
 
-	// Collect skill paths: config custom paths + standard default paths.
-	skillPaths := append([]string{}, cfg.SkillsPaths...)
-	skillPaths = append(skillPaths, config.DefaultSkillsPaths()...)
-
-	gitRepo := git.New(cfg.GitDirName)
-
 	b := broker.New()
-	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, n, skillPaths, gitRepo)
+	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, n)
 	if err != nil {
 		return err
 	}
@@ -113,7 +106,7 @@ func start(cfg *config.Config, dev bool) error {
 	// Claim the pane in Herdr so it knows bai is active and can restart it.
 	n.SessionStarted(ctx, "")
 
-	p := tea.NewProgram(tui.InitModel(ctx, gateway, dbService, b, cfg.Providers, gitRepo))
+	p := tea.NewProgram(tui.InitModel(ctx, gateway, dbService, b, cfg.Providers, gateway.Git()))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oof: %v\n", err)
 	}

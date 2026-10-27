@@ -39,14 +39,22 @@ func makeNameFromPath(fileName string) string {
 	return name
 }
 
-func parseTooolsByPath(jsonPath string) ([]CustomToolDef, error) {
+// ReadManifest reads the custom tools manifest at jsonPath.
+func ReadManifest(jsonPath string) ([]ReadCustomTool, error) {
 	file, err := os.ReadFile(jsonPath)
 	if err != nil {
 		return nil, err
 	}
-
 	var tools []ReadCustomTool
 	if err = json.Unmarshal(file, &tools); err != nil {
+		return nil, err
+	}
+	return tools, nil
+}
+
+func parseTooolsByPath(jsonPath string) ([]CustomToolDef, error) {
+	tools, err := ReadManifest(jsonPath)
+	if err != nil {
 		return nil, err
 	}
 	describe := func(desc string, args map[string]string) string {
@@ -78,7 +86,7 @@ func (ts *toolSet) makeToolFromCustomTools(tool CustomToolDef) fantasy.AgentTool
 				args = append(args, k+"="+v)
 			}
 			ts.broker.Publish(ctx, broker.Message{
-				Type:       broker.EventToolBash,
+				Type:       broker.EventCustomTool,
 				Text:       strings.Join(args, " "),
 				IsComplete: false,
 			})
