@@ -3,10 +3,13 @@ package agent
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"slices"
 
 	"charm.land/fantasy"
 	"github.com/biisal/bai/internal/agent/core/instruction"
+	"github.com/biisal/bai/internal/config"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/skills"
 )
@@ -51,7 +54,21 @@ func NewFantasyAgent(ctx context.Context, params NewFantasyAgentParams) (*Agent,
 	}, nil
 }
 
+var ErrUnknownModel = errors.New("unknown provider or model")
+
+func (g *Gateway) validModel(providerID, modelID string) bool {
+	for _, p := range g.cfg.Providers {
+		if p.Name == providerID && slices.ContainsFunc(p.Models, func(m config.ModelConfig) bool { return m.ID == modelID }) {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerID, modelId string) error {
+	if !g.validModel(providerID, modelId) {
+		return ErrUnknownModel
+	}
 	g.mu.Lock()
 	provider, ok := g.providers[providerID]
 	g.mu.Unlock()

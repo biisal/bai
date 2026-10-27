@@ -18,7 +18,6 @@ import (
 	"github.com/biisal/bai/internal/config"
 	"github.com/biisal/bai/internal/db"
 	repo "github.com/biisal/bai/internal/db/sqlc"
-	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/notifier"
 	broker "github.com/biisal/bai/internal/pubsub"
 )
@@ -98,11 +97,7 @@ func TestSettingsProviderJSONHasNoSecrets(t *testing.T) {
 	}
 }
 
-func TestDiffUsesFixedArgsAndCaps(t *testing.T) {
-	want := []string{"show", "--format=", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--unified=3", "HEAD", "--"}
-	if strings.Join(diffArgs, " ") != strings.Join(want, " ") {
-		t.Fatalf("diff args = %v", diffArgs)
-	}
+func TestDiffCaps(t *testing.T) {
 	got, truncated := capDiff(strings.Repeat("a", maxDiffBytes+1))
 	if !truncated || len(got) != maxDiffBytes {
 		t.Fatalf("capDiff() len=%d truncated=%v", len(got), truncated)
@@ -115,7 +110,8 @@ func TestDiffShowsLastCommit(t *testing.T) {
 	t.Setenv("GIT_AUTHOR_EMAIL", "bai@example.com")
 	t.Setenv("GIT_COMMITTER_NAME", "bai")
 	t.Setenv("GIT_COMMITTER_EMAIL", "bai@example.com")
-	repo := git.New(filepath.Join(t.TempDir(), "gitdir"))
+	gateway, _, _ := testGateway(t)
+	repo := gateway.Git()
 	ctx := context.Background()
 	if _, err := repo.RunGitCommandContext(ctx, "init"); err != nil {
 		t.Fatal(err)
@@ -134,7 +130,7 @@ func TestDiffShowsLastCommit(t *testing.T) {
 	if _, err := repo.RunGitCommandContext(ctx, "commit", "-m", "last run"); err != nil {
 		t.Fatal(err)
 	}
-	diff, err := repo.RunGitCommandContext(ctx, diffArgs...)
+	diff, err := gateway.LatestDiff(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +162,7 @@ func testGateway(t *testing.T) (*agent.Gateway, repo.Querier, *config.Config) {
 		}},
 	}
 	gateway, err := agent.NewGateway(
-		context.Background(), q, broker.New(), cfg, notifier.New(nil), nil, git.New(cfg.GitDirName),
+		context.Background(), q, broker.New(), cfg, notifier.New(nil),
 	)
 	if err != nil {
 		t.Fatal(err)

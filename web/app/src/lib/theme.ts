@@ -1,9 +1,12 @@
-export type ThemeMode = "light" | "dark" | "system";
+import { z } from "zod";
 
-export type Appearance = {
-  mode: ThemeMode;
-  notify: boolean;
-};
+const appearanceSchema = z.object({
+  mode: z.enum(["light", "dark", "system"]).catch("system"),
+  notify: z.boolean().catch(false),
+});
+
+export type Appearance = z.infer<typeof appearanceSchema>;
+export type ThemeMode = Appearance["mode"];
 
 const storageKey = "bai-appearance";
 
@@ -14,16 +17,9 @@ export const defaultAppearance: Appearance = {
 
 export function readAppearance(): Appearance {
   try {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) {
-      return defaultAppearance;
-    }
-    const value = JSON.parse(raw) as Partial<Appearance>;
-    return {
-      mode:
-        value.mode === "light" || value.mode === "dark" ? value.mode : "system",
-      notify: value.notify === true,
-    };
+    return appearanceSchema.parse(
+      JSON.parse(localStorage.getItem(storageKey) ?? "{}")
+    );
   } catch {
     return defaultAppearance;
   }

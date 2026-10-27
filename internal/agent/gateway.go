@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -29,8 +30,9 @@ type Gateway struct {
 	notifier         *notifier.Notifier
 	Skills           []skills.Skill
 	userInstructions []string
-	gitRepo          git.GitRepo
+	gitRepo          *git.Git
 	agent            *Agent
+	cfg              *config.Config
 }
 
 func NewGateway(
@@ -39,8 +41,6 @@ func NewGateway(
 	b broker.Service,
 	cfg *config.Config,
 	n *notifier.Notifier,
-	skillPaths []string,
-	gitRepo git.GitRepo,
 ) (*Gateway, error) {
 	providers, err := buildProviders(cfg.Providers)
 	if err != nil {
@@ -51,6 +51,8 @@ func NewGateway(
 		return nil, fmt.Errorf("failed to resolve provider: %w", err)
 	}
 
+	skillPaths := append([]string{}, cfg.SkillsPaths...)
+	skillPaths = append(skillPaths, config.DefaultSkillsPaths()...)
 	skillList := skills.LoadSkills(skillPaths...)
 	userInstructions := instruction.ReadAgentMd()
 
@@ -76,10 +78,58 @@ func NewGateway(
 		notifier:         n,
 		Skills:           skillList,
 		userInstructions: []string{userInstructions},
-		gitRepo:          gitRepo,
+		gitRepo:          git.New(cfg.GitDirName),
 		agent:            agent,
+		cfg:              cfg,
 	}
 	return g, nil
+}
+
+type PluginInfo struct {
+	Name        string
+	Description string
+	Path        string
+}
+
+// Plugins lists the custom tools from the plugins manifest; a missing or
+// unreadable manifest yields none.
+func (g *Gateway) Plugins() []PluginInfo {
+	manifest, err := tools.ReadManifest(g.cfg.PluginsPath)
+	if err != nil {
+		return nil
+	}
+	items := make([]PluginInfo, 0, len(manifest))
+	for _, t := range manifest {
+		items = append(items, PluginInfo{
+			Name:        strings.TrimSuffix(t.FileName, filepath.Ext(t.FileName)),
+			Description: t.Description,
+			Path:        filepath.Join(filepath.Dir(g.cfg.PluginsPath), t.FileName),
+		})
+	}
+	return items
+}
+
+func (g *Gateway) Git() *git.Git { return g.gitRepo }
+
+// GitStatus reports whether the shadow repo exists and has uncommitted changes.
+func (g *Gateway) GitStatus() (initialized, dirty bool) {
+	initialized, _ = g.gitRepo.CheckIfGitInitialized()
+	if initialized {
+		dirty, _, _ = g.gitRepo.CheckIfDirty()
+	}
+	return initialized, dirty
+}
+
+var diffArgs = []string{
+	"show", "--format=", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--unified=3", "HEAD", "--",
+}
+
+// LatestDiff returns the diff of the last shadow-repo commit, or "" when there is none.
+func (g *Gateway) LatestDiff(ctx context.Context) (string, error) {
+	if _, err := g.gitRepo.RunGitCommandContext(ctx, "rev-parse", "--verify", "HEAD"); err != nil {
+		return "", nil
+	}
+	return g.gitRepo.RunGitCommandContext(ctx, diffArgs...)
 }
 
 func (g *Gateway) ActiveConversationTitle() string {
