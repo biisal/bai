@@ -8,9 +8,18 @@ const devToken = process.env.VITE_BAI_TOKEN;
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
+    alias: [
+      {
+        find: /^shiki\/langs$/,
+        replacement: fileURLToPath(
+          new URL("./src/lib/shiki-langs.ts", import.meta.url)
+        ),
+      },
+      {
+        find: "@",
+        replacement: fileURLToPath(new URL("./src", import.meta.url)),
+      },
+    ],
   },
   server: {
     port: 5173,

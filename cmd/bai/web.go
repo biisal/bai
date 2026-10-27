@@ -26,7 +26,7 @@ import (
 	"github.com/biisal/bai/internal/notifier"
 	broker "github.com/biisal/bai/internal/pubsub"
 	webui "github.com/biisal/bai/internal/web"
-	bundle "github.com/biisal/bai/web"
+	bundle "github.com/biisal/bai/web/app"
 )
 
 func runWeb(cfg *config.Config, dev bool, args []string) int {
