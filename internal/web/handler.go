@@ -30,29 +30,6 @@ import (
 	"github.com/biisal/bai/internal/update"
 )
 
-func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	if t := r.URL.Query().Get("t"); t != "" {
-		if !s.equal(t) {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		http.SetCookie(w, &http.Cookie{
-			Name:     authCookieName,
-			Value:    string(s.token),
-			Path:     "/",
-			HttpOnly: true,
-			SameSite: http.SameSiteStrictMode,
-		})
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	s.serveStatic(w, r)
-}
-
 func (s *Server) serveStatic(w http.ResponseWriter, r *http.Request) {
 	if s.static == nil {
 		s.unbuilt(w)

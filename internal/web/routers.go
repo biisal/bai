@@ -1,7 +1,6 @@
 package web
 
 import (
-	"crypto/subtle"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,7 +26,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/chat", s.handleChat)
 	s.mux.HandleFunc("GET /api/chat/{id}/stream", s.handleResume)
 	s.mux.HandleFunc("POST /api/chat/{id}/stop", s.handleStop)
-	s.mux.HandleFunc("/", s.handleRoot)
+	s.mux.HandleFunc("/", s.serveStatic)
 }
 
 func (s *Server) guard(next http.Handler) http.Handler {
@@ -59,17 +58,11 @@ func (s *Server) guard(next http.Handler) http.Handler {
 			return
 		}
 
-		if strings.HasPrefix(r.URL.Path, "/api/") {
-			if !s.tokenOK(r) {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
-			}
-			if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
-				if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-					http.Error(w, "content type must be application/json", http.StatusUnsupportedMediaType)
-					return
-				}
-			}
+		if strings.HasPrefix(r.URL.Path, "/api/") &&
+			(r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) &&
+			!strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+			http.Error(w, "content type must be application/json", http.StatusUnsupportedMediaType)
+			return
 		}
 
 		next.ServeHTTP(w, r)
@@ -108,20 +101,4 @@ func (s *Server) originMatchesHost(origin, host string) bool {
 		return false
 	}
 	return strings.EqualFold(u.Host, host)
-}
-
-func (s *Server) tokenOK(r *http.Request) bool {
-	if strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
-		if s.equal(r.Header.Get("Authorization")[len("Bearer "):]) {
-			return true
-		}
-	}
-	if c, err := r.Cookie(authCookieName); err == nil && s.equal(c.Value) {
-		return true
-	}
-	return false
-}
-
-func (s *Server) equal(got string) bool {
-	return subtle.ConstantTimeCompare([]byte(got), s.token) == 1
 }

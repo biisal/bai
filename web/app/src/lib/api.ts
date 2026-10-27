@@ -93,9 +93,6 @@ export function errorText(error: unknown): string {
         ? error.status
         : undefined;
 
-  if (status === 401) {
-    return "Unauthorized. Open the URL printed by bai web.";
-  }
   if (status === 409) {
     return "A run is already active.";
   }
