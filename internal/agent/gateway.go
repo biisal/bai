@@ -12,6 +12,7 @@ import (
 	"github.com/biisal/bai/internal/agent/core/instruction"
 	"github.com/biisal/bai/internal/agent/core/tools"
 	"github.com/biisal/bai/internal/config"
+	"github.com/biisal/bai/internal/consts"
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/git"
 	"github.com/biisal/bai/internal/notifier"
@@ -134,14 +135,13 @@ func (g *Gateway) trySavingMsgToDB(partialReasoning, partialText *strings.Builde
 }
 
 // TODO : write test properly
-func (g *Gateway) syncGitRepo(purpose string) {
+func (g *Gateway) syncGitRepo(purpose string) error {
 	isDirty, output, err := g.gitRepo.CheckIfDirty()
 	if err != nil {
-		slog.Error("failed to check if git repo is dirty", "error", err)
-		return
+		return err
 	}
 	if !isDirty {
-		return
+		return nil
 	}
 	if err := g.gitRepo.Add("."); err != nil {
 		slog.Error("failed to add files to git", "error", err)
@@ -159,18 +159,16 @@ func (g *Gateway) syncGitRepo(purpose string) {
 
 		msg = fmt.Sprintf("auto-commit: %s\n%s", time.Now().Format(time.RFC3339), linesStr)
 	}
-	if err := g.gitRepo.Commit(msg); err != nil {
-		slog.Error("failed to commit files", "error", err)
-	}
+	return g.gitRepo.Commit(msg)
 }
 
 func (g *Gateway) StreamChat(ctx context.Context, message string) error {
-	g.notifier.Working(ctx)
+	g.notifier.Working()
 	if err := g.streamChat(ctx, message); err != nil {
-		g.notifier.Failed(ctx, err)
+		g.notifier.Failed()
 		return err
 	}
-	g.notifier.Done(ctx)
+	g.notifier.Done()
 	return nil
 }
 
@@ -201,6 +199,8 @@ func (g *Gateway) streamChat(ctx context.Context, message string) error {
 	g.mu.Lock()
 	client := g.agent.client
 	g.mu.Unlock()
+
+	rounds := 0
 	_, err = client.Stream(ctx, fantasy.AgentStreamCall{
 		Messages: history,
 		OnRetry:  fantasy.DefaultRetryOptions().OnRetry,
@@ -233,13 +233,24 @@ func (g *Gateway) streamChat(ctx context.Context, message string) error {
 		},
 
 		OnStepFinish: func(step fantasy.StepResult) error {
-			partialReasoning.Reset()
 			partialText.Reset()
+			partialReasoning.Reset()
 			for _, fm := range step.Messages {
 				if saveErr := g.AddMessageToDB(ctx, fm); saveErr != nil {
 					slog.Error("failed to save step message", "error", saveErr)
 				}
 			}
+
+			if rounds < consts.CommitOnRoundNumber {
+				rounds++
+				return nil
+			}
+			if err := g.syncGitRepo(purpose.String()); err != nil {
+				slog.Error("failed to sync git repo", "error", err)
+				return nil
+			}
+			purpose.Reset()
+			rounds = 0
 			return nil
 		},
 	})
@@ -249,7 +260,9 @@ func (g *Gateway) streamChat(ctx context.Context, message string) error {
 		return err
 	}
 
-	g.syncGitRepo(purpose.String())
+	if err := g.syncGitRepo(purpose.String()); err != nil {
+		slog.Error("failed to sync git repo", "error", err)
+	}
 
 	return nil
 }

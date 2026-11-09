@@ -39,7 +39,6 @@ type ModelConfig struct {
 type Config struct {
 	DatabasePath string           `json:"database_path"`
 	LogFilePath  string           `json:"log_file_path"`
-	SoundPath    string           `json:"sound_path"`
 	SkillsPaths  []string         `json:"skills_paths"`
 	Providers    []ProviderConfig `json:"providers"`
 	GitDirName   string           `json:"git_dir_name"`
