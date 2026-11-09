@@ -31,6 +31,18 @@ func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversation
 	return i, err
 }
 
+const deleteConversation = `-- name: DeleteConversation :execrows
+DELETE FROM conversations WHERE id = ?1
+`
+
+func (q *Queries) DeleteConversation(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteConversation, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getConversation = `-- name: GetConversation :one
 SELECT id, title, directory, created_at, updated_at FROM conversations WHERE id = ?1
 `
@@ -79,4 +91,26 @@ func (q *Queries) GetConversationsByDirectory(ctx context.Context, directory str
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateConversationTitle = `-- name: UpdateConversationTitle :one
+UPDATE conversations SET title = ?2, updated_at = CURRENT_TIMESTAMP WHERE id = ?1 RETURNING id, title, directory, created_at, updated_at
+`
+
+type UpdateConversationTitleParams struct {
+	ID    int64
+	Title string
+}
+
+func (q *Queries) UpdateConversationTitle(ctx context.Context, arg UpdateConversationTitleParams) (Conversation, error) {
+	row := q.db.QueryRowContext(ctx, updateConversationTitle, arg.ID, arg.Title)
+	var i Conversation
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Directory,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

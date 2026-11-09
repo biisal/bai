@@ -5,3 +5,9 @@ bin
 dist
 .bai_git
 node_modules
+!web/app/dist/
+web/app/dist/*
+!web/app/dist/.gitkeep
+vendor
+web/app/.env.local
+web/app/.vite/
