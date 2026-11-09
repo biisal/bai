@@ -175,9 +175,11 @@ func TestLoad(t *testing.T) {
 			},
 		},
 		{
-			name:    "should throw error of list of missing base_url and format",
-			path:    "/tmp/tempfile.json",
-			wantErr: fmt.Errorf("invalid config:\nbase_url can't be empty for provider: test\nformat can't be empty for provider: test"),
+			name: "should throw error of list of missing base_url and format",
+			path: "/tmp/tempfile.json",
+			wantErr: fmt.Errorf(
+				"invalid config:\nbase_url can't be empty for provider: test\nformat can't be empty for provider: test",
+			),
 			setupFN: func(t *testing.T) {
 				path := "/tmp/tempfile.json"
 				createTempFile(t, path, Config{
@@ -190,9 +192,11 @@ func TestLoad(t *testing.T) {
 			},
 		},
 		{
-			name:    "should throw error of list of missing base_url and format for different config file",
-			path:    "/tmp/tempfile.json",
-			wantErr: fmt.Errorf("invalid config:\nformat can't be empty for provider: test-2\nbase_url can't be empty for provider: test-3"),
+			name: "should throw error of list of missing base_url and format for different config file",
+			path: "/tmp/tempfile.json",
+			wantErr: fmt.Errorf(
+				"invalid config:\nformat can't be empty for provider: test-2\nbase_url can't be empty for provider: test-3",
+			),
 			setupFN: func(t *testing.T) {
 				path := "/tmp/tempfile.json"
 				createTempFile(t, path, Config{

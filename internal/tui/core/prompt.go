@@ -124,8 +124,11 @@ func newGitPrompt(repo git.GitRepo) *Prompt {
 				cmds := []tea.Cmd{
 					func() tea.Msg {
 						return broker.Message{
-							Type:       broker.EventSystemNotice,
-							Text:       fmt.Sprintf("we won't ask again for this Directory :! but still you can re-enable it using %s", commands.GitInitCommand),
+							Type: broker.EventSystemNotice,
+							Text: fmt.Sprintf(
+								"we won't ask again for this Directory :! but still you can re-enable it using %s",
+								commands.GitInitCommand,
+							),
 							IsComplete: true,
 						}
 					},

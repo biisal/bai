@@ -98,7 +98,11 @@ func (g *Gateway) GetConversationsByCurrentDir(ctx context.Context) ([]repo.Conv
 	return g.db.GetConversationsByDirectory(ctx, files.CurrentDir())
 }
 
-func (g *Gateway) SetActiveConversation(ctx context.Context, conversationID int64, conversation *repo.Conversation) error {
+func (g *Gateway) SetActiveConversation(
+	ctx context.Context,
+	conversationID int64,
+	conversation *repo.Conversation,
+) error {
 	if conversation == nil {
 		conv, err := g.db.GetConversation(ctx, conversationID)
 		if err != nil {

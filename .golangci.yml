@@ -13,6 +13,14 @@ linters:
       tab-width: 4
   exclusions:
     generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - lll
+      # unsplittable string literals / prompt text
+      - linters:
+          - lll
+        source: '^\s*("|You are an expert)'
     paths:
       - ^web/
 

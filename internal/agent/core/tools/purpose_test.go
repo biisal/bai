@@ -8,8 +8,16 @@ func TestPurposeFromToolCall(t *testing.T) {
 		input string
 		want  string
 	}{
-		{name: WriteFileName, input: `{"path":"a.txt","purpose":"add hello world","content":"x"}`, want: "add hello world"},
-		{name: EditFileName, input: `{"path":"a.txt","purpose":"rename var","edits":[{"old_text":"a","purpose":"nested","new_text":"b"}]}`, want: "rename var"},
+		{
+			name:  WriteFileName,
+			input: `{"path":"a.txt","purpose":"add hello world","content":"x"}`,
+			want:  "add hello world",
+		},
+		{
+			name:  EditFileName,
+			input: `{"path":"a.txt","purpose":"rename var","edits":[{"old_text":"a","purpose":"nested","new_text":"b"}]}`,
+			want:  "rename var",
+		},
 		{name: BashName, input: `{"command":"go test ./...","purpose":"run tests"}`, want: "run tests"},
 		{name: ReadFileName, input: `{"path":"a.txt"}`, want: ""},
 		{name: BashName, input: `not json`, want: ""},

@@ -194,22 +194,42 @@ func TestConversationMutations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := mutationStatus(server.handleDeleteConversation, http.MethodDelete, conversation.ID, ""); got != http.StatusConflict {
+	if got := mutationStatus(
+		server.handleDeleteConversation,
+		http.MethodDelete,
+		conversation.ID,
+		"",
+	); got != http.StatusConflict {
 		t.Fatalf("delete while running = %d", got)
 	}
-	if got := mutationStatus(server.handleRenameConversation, http.MethodPatch, conversation.ID, `{"title":"after"}`); got != http.StatusConflict {
+	if got := mutationStatus(
+		server.handleRenameConversation,
+		http.MethodPatch,
+		conversation.ID,
+		`{"title":"after"}`,
+	); got != http.StatusConflict {
 		t.Fatalf("rename while running = %d", got)
 	}
 	run.finish()
 
-	if got := mutationStatus(server.handleRenameConversation, http.MethodPatch, conversation.ID, `{"title":"after"}`); got != http.StatusOK {
+	if got := mutationStatus(
+		server.handleRenameConversation,
+		http.MethodPatch,
+		conversation.ID,
+		`{"title":"after"}`,
+	); got != http.StatusOK {
 		t.Fatalf("rename = %d", got)
 	}
 	renamed, err := q.GetConversation(ctx, conversation.ID)
 	if err != nil || renamed.Title != "after" {
 		t.Fatalf("renamed conversation = %+v, err=%v", renamed, err)
 	}
-	if got := mutationStatus(server.handleDeleteConversation, http.MethodDelete, conversation.ID, ""); got != http.StatusNoContent {
+	if got := mutationStatus(
+		server.handleDeleteConversation,
+		http.MethodDelete,
+		conversation.ID,
+		"",
+	); got != http.StatusNoContent {
 		t.Fatalf("delete = %d", got)
 	}
 	if _, err := q.GetConversation(ctx, conversation.ID); !errors.Is(err, sql.ErrNoRows) {
@@ -223,7 +243,12 @@ func TestConversationMutations(t *testing.T) {
 	if got := mutationStatus(server.handleDeleteConversation, http.MethodDelete, 9999, ""); got != http.StatusNotFound {
 		t.Fatalf("delete missing = %d", got)
 	}
-	if got := mutationStatus(server.handleRenameConversation, http.MethodPatch, 9999, `{"title":"x"}`); got != http.StatusNotFound {
+	if got := mutationStatus(
+		server.handleRenameConversation,
+		http.MethodPatch,
+		9999,
+		`{"title":"x"}`,
+	); got != http.StatusNotFound {
 		t.Fatalf("rename missing = %d", got)
 	}
 }

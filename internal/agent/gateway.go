@@ -216,7 +216,11 @@ func (g *Gateway) StreamChat(ctx context.Context, message string) error {
 	return g.StreamChatDecorated(ctx, message, nil)
 }
 
-func (g *Gateway) StreamChatDecorated(ctx context.Context, message string, decorator func(*fantasy.AgentStreamCall)) error {
+func (g *Gateway) StreamChatDecorated(
+	ctx context.Context,
+	message string,
+	decorator func(*fantasy.AgentStreamCall),
+) error {
 	g.notifier.Working()
 	if err := g.streamChat(ctx, message, decorator); err != nil {
 		g.notifier.Failed()

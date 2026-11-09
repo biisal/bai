@@ -15,6 +15,10 @@ func TestBuildProvider(t *testing.T) {
 			Format: "unknown-format",
 		}
 		_, err := buildProvider(cfg)
-		test_utils.AssertError(t, err, fmt.Errorf("unknown provider format: unknown-format, hint use one of: [openai-compatible anthropic]"))
+		test_utils.AssertError(
+			t,
+			err,
+			fmt.Errorf("unknown provider format: unknown-format, hint use one of: [openai-compatible anthropic]"),
+		)
 	})
 }

@@ -43,7 +43,11 @@ func internalToolSkills() string {
 	for i, skill := range internal {
 		ids[i] = skill.Location
 	}
-	return fmt.Sprintf("Internal tools (can't read with bash, use %s to read):\n%s", tools.ReadFileName, strings.Join(ids, "\n"))
+	return fmt.Sprintf(
+		"Internal tools (can't read with bash, use %s to read):\n%s",
+		tools.ReadFileName,
+		strings.Join(ids, "\n"),
+	)
 }
 
 func BuildSystemPrompt(usersInstructions []string, skillList []skills.Skill, agentTools []fantasy.AgentTool) string {

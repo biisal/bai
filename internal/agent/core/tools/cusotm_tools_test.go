@@ -14,7 +14,11 @@ import (
 func TestCustomPluginParseAndRun(t *testing.T) {
 	dir := t.TempDir()
 	script := filepath.Join(dir, "echo.sh")
-	if err := os.WriteFile(script, []byte("#!/usr/bin/env bash\nprintf 'echo.sh got: %s\\n' \"$0 $*\"\n"), 0o755); err != nil {
+	if err := os.WriteFile(
+		script,
+		[]byte("#!/usr/bin/env bash\nprintf 'echo.sh got: %s\\n' \"$0 $*\"\n"),
+		0o755,
+	); err != nil {
 		t.Fatal(err)
 	}
 	manifest := filepath.Join(dir, "tools.json")

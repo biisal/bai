@@ -24,7 +24,10 @@ func (ls ConversationItem) FilterValue() string {
 	return ls.Conversation.Title
 }
 
-func parseConversations(ctx context.Context, getconversations func(ctx context.Context) ([]repo.Conversation, error)) []list.Item {
+func parseConversations(
+	ctx context.Context,
+	getconversations func(ctx context.Context) ([]repo.Conversation, error),
+) []list.Item {
 	var items []list.Item
 	conversations, err := getconversations(ctx)
 	if err != nil {

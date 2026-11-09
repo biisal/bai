@@ -32,7 +32,10 @@ func (s *Server) routes() {
 func (s *Server) guard(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
-		h.Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'")
+		h.Set(
+			"Content-Security-Policy",
+			"default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'",
+		)
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("X-Frame-Options", "DENY")
@@ -84,11 +87,11 @@ func allowedHosts(addr string) map[string]bool {
 }
 
 func splitHostPort(addr string) (string, string, error) {
-	i := strings.LastIndex(addr, ":")
-	if i < 0 {
+	before, after, ok := strings.CutLast(addr, ":")
+	if !ok {
 		return addr, "", nil
 	}
-	return addr[:i], addr[i+1:], nil
+	return before, after, nil
 }
 
 func (s *Server) hostOK(host string) bool {

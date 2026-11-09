@@ -28,8 +28,22 @@ func TestOpenCodeVariantHeadersAgainstCapture(t *testing.T) {
 		w.Header().Set("content-type", "text/event-stream")
 		w.WriteHeader(200)
 		chunks := []map[string]any{
-			{"id": "c1", "object": "chat.completion.chunk", "created": time.Now().Unix(), "model": "m", "choices": []map[string]any{{"index": 0, "delta": map[string]any{"role": "assistant", "content": "pong"}, "finish_reason": nil}}},
-			{"id": "c1", "object": "chat.completion.chunk", "created": time.Now().Unix(), "model": "m", "choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}}},
+			{
+				"id":      "c1",
+				"object":  "chat.completion.chunk",
+				"created": time.Now().Unix(),
+				"model":   "m",
+				"choices": []map[string]any{
+					{"index": 0, "delta": map[string]any{"role": "assistant", "content": "pong"}, "finish_reason": nil},
+				},
+			},
+			{
+				"id":      "c1",
+				"object":  "chat.completion.chunk",
+				"created": time.Now().Unix(),
+				"model":   "m",
+				"choices": []map[string]any{{"index": 0, "delta": map[string]any{}, "finish_reason": "stop"}},
+			},
 		}
 		for _, c := range chunks {
 			b, _ := json.Marshal(c)

@@ -83,7 +83,11 @@ func runWeb(cfg *config.Config, dev bool, args []string) int {
 		return 1
 	}
 	if !isLoopback(listenAddr) {
-		fmt.Fprintf(os.Stderr, "WARNING: bai web is listening on a non-loopback address %s. Anyone who can reach it can run commands as you.\n", listenAddr)
+		fmt.Fprintf(
+			os.Stderr,
+			"WARNING: bai web is listening on a non-loopback address %s. Anyone who can reach it can run commands as you.\n",
+			listenAddr,
+		)
 	}
 
 	static, err := bundle.Dist()
@@ -218,9 +222,17 @@ func openBrowser(url string) {
 	default:
 		if isWSL() {
 			time.Sleep(500 * time.Millisecond)
-			cmds = append(cmds,
+			cmds = append(
+				cmds,
 				exec.Command("wslview", url),
-				exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "Start-Process", fmt.Sprintf(`"%s"`, url)),
+				exec.Command(
+					"powershell.exe",
+					"-NoProfile",
+					"-NonInteractive",
+					"-Command",
+					"Start-Process",
+					fmt.Sprintf(`"%s"`, url),
+				),
 				exec.Command("cmd.exe", "/c", "start", "", url),
 			)
 		}

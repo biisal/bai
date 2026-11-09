@@ -42,7 +42,10 @@ func findTool(t *testing.T, ts []fantasy.AgentTool, name string) fantasy.AgentTo
 }
 
 func TestNewTools_BuiltinsAndCustom(t *testing.T) {
-	manifest := writeManifest(t, `[{"file_name":"echo.sh","description":"Echo test plugin.","input_schema":{"text":"text to echo"}}]`)
+	manifest := writeManifest(
+		t,
+		`[{"file_name":"echo.sh","description":"Echo test plugin.","input_schema":{"text":"text to echo"}}]`,
+	)
 
 	got := tools.NewTools(broker.New(), manifest)
 	want := []string{

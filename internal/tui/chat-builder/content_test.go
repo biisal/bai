@@ -431,7 +431,15 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 						buf:  getSb("test content"),
 					},
 				}
-				want = Intro(0) + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
+				want = Intro(
+					0,
+				) + renderSegment(
+					expectedSegments[0],
+					content.textToMarkdown,
+				) + "\n" + renderSegment(
+					expectedSegments[1],
+					content.textToMarkdown,
+				) + "\n"
 
 				return
 			},
@@ -453,7 +461,15 @@ func TestContent_RerenderFromDbConversation(t *testing.T) {
 					{Kind: broker.EventAgentThinking, buf: getSb("let me think")},
 					{Kind: broker.EventAgentResponse, buf: getSb("the answer")},
 				}
-				want = Intro(0) + renderSegment(expectedSegments[0], content.textToMarkdown) + "\n" + renderSegment(expectedSegments[1], content.textToMarkdown) + "\n"
+				want = Intro(
+					0,
+				) + renderSegment(
+					expectedSegments[0],
+					content.textToMarkdown,
+				) + "\n" + renderSegment(
+					expectedSegments[1],
+					content.textToMarkdown,
+				) + "\n"
 
 				return
 			},

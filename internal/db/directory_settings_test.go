@@ -21,7 +21,10 @@ func TestUpsertDirectorySettings(t *testing.T) {
 	q := repo.New(conn)
 
 	for _, enabled := range []bool{true, false} {
-		if err := q.UpsertDirectorySettings(ctx, repo.UpsertDirectorySettingsParams{Directory: "/x", AutoGitInit: enabled}); err != nil {
+		if err := q.UpsertDirectorySettings(
+			ctx,
+			repo.UpsertDirectorySettingsParams{Directory: "/x", AutoGitInit: enabled},
+		); err != nil {
 			t.Fatalf("upsert(%v) failed: %v", enabled, err)
 		}
 	}

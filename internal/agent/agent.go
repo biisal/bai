@@ -39,7 +39,9 @@ func NewFantasyAgent(ctx context.Context, params NewFantasyAgentParams) (*Agent,
 
 	ag := fantasy.NewAgent(
 		model,
-		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt(params.UserInstructions, params.Skills, params.AgentTools)),
+		fantasy.WithSystemPrompt(
+			instruction.BuildSystemPrompt(params.UserInstructions, params.Skills, params.AgentTools),
+		),
 		fantasy.WithTools(params.AgentTools...),
 		fantasy.WithMaxRetries(3),
 	)
@@ -58,7 +60,8 @@ var ErrUnknownModel = errors.New("unknown provider or model")
 
 func (g *Gateway) validModel(providerID, modelID string) bool {
 	for _, p := range g.cfg.Providers {
-		if p.Name == providerID && slices.ContainsFunc(p.Models, func(m config.ModelConfig) bool { return m.ID == modelID }) {
+		if p.Name == providerID &&
+			slices.ContainsFunc(p.Models, func(m config.ModelConfig) bool { return m.ID == modelID }) {
 			return true
 		}
 	}
@@ -90,7 +93,9 @@ func (g *Gateway) AddOrUpdateProvider(ctx context.Context, providerID, modelId s
 	}
 	ag := fantasy.NewAgent(
 		model,
-		fantasy.WithSystemPrompt(instruction.BuildSystemPrompt(g.agent.userInstructions, g.agent.skills, g.agent.agentTools)),
+		fantasy.WithSystemPrompt(
+			instruction.BuildSystemPrompt(g.agent.userInstructions, g.agent.skills, g.agent.agentTools),
+		),
 		fantasy.WithTools(g.agent.agentTools...),
 		fantasy.WithMaxRetries(3),
 	)
