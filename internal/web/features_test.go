@@ -162,7 +162,7 @@ func testGateway(t *testing.T) (*agent.Gateway, repo.Querier, *config.Config) {
 		}},
 	}
 	gateway, err := agent.NewGateway(
-		context.Background(), q, broker.New(), cfg, notifier.New(nil),
+		context.Background(), q, broker.New(), cfg, notifier.New(),
 	)
 	if err != nil {
 		t.Fatal(err)

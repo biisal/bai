@@ -60,8 +60,8 @@ func runWeb(cfg *config.Config, dev bool, args []string) int {
 		return 1
 	}
 
-	n := notifier.New(nil)
-	defer n.Close(context.Background())
+	n := notifier.New()
+	defer n.Close()
 
 	b := broker.New()
 	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, n)

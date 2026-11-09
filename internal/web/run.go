@@ -151,21 +151,21 @@ func (r *Run) Emit(frame []byte) {
 	}
 }
 
+// Execute runs fn in its own goroutine so Registry.Shutdown can wait for it.
 func (r *Run) Execute(fn func(context.Context, *Run) error) {
-	r.registry.wg.Add(1)
-	defer r.registry.wg.Done()
-
-	err := fn(r.ctx, r)
-	if err != nil {
-		if r.isStopped() {
-			r.Emit(fAbort("user cancelled"))
-		} else {
-			r.Emit(fError(err.Error()))
+	r.registry.wg.Go(func() {
+		err := fn(r.ctx, r)
+		if err != nil {
+			if r.isStopped() {
+				r.Emit(fAbort("user cancelled"))
+			} else {
+				r.Emit(fError(err.Error()))
+			}
 		}
-	}
-	r.Emit(fFinish())
-	r.Emit([]byte(frameDone))
-	r.finish()
+		r.Emit(fFinish())
+		r.Emit([]byte(frameDone))
+		r.finish()
+	})
 }
 
 func (r *Run) stop() {

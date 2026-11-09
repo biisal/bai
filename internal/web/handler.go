@@ -207,7 +207,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		run.Emit(fConversation(conversation.ID, conversation.Title))
 	}
 
-	go run.Execute(func(ctx context.Context, run *Run) error {
+	run.Execute(func(ctx context.Context, run *Run) error {
 		return s.gateway.StreamChatDecorated(ctx, text, decorate(run))
 	})
 

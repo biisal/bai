@@ -11,6 +11,7 @@ const (
 	stateIdle    = "idle"
 	stateWorking = "working"
 	stateBlocked = "blocked"
+	stateCleared = "clear"
 )
 
 type Notifier struct {
@@ -18,7 +19,7 @@ type Notifier struct {
 }
 
 func New() *Notifier {
-	tty, err := os.OpenFile("/dev/tty", os.O_WRONLY, 0)
+	tty, err := openTTY()
 	if err != nil {
 		return &Notifier{}
 	}
@@ -56,5 +57,6 @@ func (n *Notifier) Close() {
 	if n == nil || n.tty == nil {
 		return
 	}
+	n.report(stateCleared)
 	_ = n.tty.Close()
 }

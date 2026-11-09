@@ -107,15 +107,11 @@ func TestRunExecuteFinishesAndClears(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	done := make(chan struct{})
-	go func() {
-		run.Execute(func(_ context.Context, r *Run) error {
-			r.Emit([]byte("x"))
-			return nil
-		})
-		close(done)
-	}()
-	<-done
+	run.Execute(func(_ context.Context, r *Run) error {
+		r.Emit([]byte("x"))
+		return nil
+	})
+	registry.wg.Wait()
 
 	if registry.Active() != nil {
 		t.Fatal("registry still has an active run")
@@ -130,6 +126,7 @@ func TestRunErrorAndAbortFrames(t *testing.T) {
 		t.Fatal(err)
 	}
 	run.Execute(func(context.Context, *Run) error { return errors.New("boom") })
+	registry.wg.Wait()
 	got := collect(t, sub)
 	want := []string{`{"type":"error","errorText":"boom"}`, `{"type":"finish"}`, "[DONE]"}
 	test_utils.AssertSliceEqual(t, got, want)
@@ -140,6 +137,7 @@ func TestRunErrorAndAbortFrames(t *testing.T) {
 	}
 	run2.stop()
 	run2.Execute(func(context.Context, *Run) error { return context.Canceled })
+	registry.wg.Wait()
 	got = collect(t, sub2)
 	want = []string{`{"type":"abort","reason":"user cancelled"}`, `{"type":"finish"}`, "[DONE]"}
 	test_utils.AssertSliceEqual(t, got, want)
