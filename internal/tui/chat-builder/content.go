@@ -193,11 +193,11 @@ func perseCustomToolToString(text string) string {
 	if err := json.Unmarshal([]byte(text), &inputs); err != nil {
 		return text
 	}
-	var result string
+	var result strings.Builder
 	for key, value := range inputs {
-		result += fmt.Sprintf("%s : %s ", key, value)
+		fmt.Fprintf(&result, "%s : %s ", key, value)
 	}
-	return result
+	return result.String()
 }
 
 func (c *Content) ReRenderFromDbConversation(messages []fantasy.Message) {

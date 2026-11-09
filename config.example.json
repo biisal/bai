@@ -1,7 +1,6 @@
 {
   "database_path": "~/.config/bai/bai.db",
   "log_file_path": "~/.config/bai/bai.log",
-  "sound_path": "",
   "skills_paths": [],
   "git_dir_name": ".bai_git",
   "providers": [

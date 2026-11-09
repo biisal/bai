@@ -22,7 +22,11 @@ var (
 	ErrModelNotFound    = errors.New("model not found in config")
 )
 
-func getOrSetProvider(ctx context.Context, svc repo.Querier, providers []config.ProviderConfig) (providerID, modelID string, err error) {
+func getOrSetProvider(
+	ctx context.Context,
+	svc repo.Querier,
+	providers []config.ProviderConfig,
+) (providerID, modelID string, err error) {
 	if len(providers) == 0 {
 		return "", "", ErrProviderNotFound
 	}
@@ -40,7 +44,11 @@ func getOrSetProvider(ctx context.Context, svc repo.Querier, providers []config.
 	return name, modelId, nil
 }
 
-func resolveProvider(ctx context.Context, svc repo.Querier, providers []config.ProviderConfig) (providerID, modelID string, err error) {
+func resolveProvider(
+	ctx context.Context,
+	svc repo.Querier,
+	providers []config.ProviderConfig,
+) (providerID, modelID string, err error) {
 	provider, err := svc.GetProvider(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -83,7 +91,11 @@ func buildProvider(cfg config.ProviderConfig) (fantasy.Provider, error) {
 	case config.FormatAnthropic:
 		return buildAnthropicProvider(cfg)
 	default:
-		return nil, fmt.Errorf("unknown provider format: %s, hint use one of: %v", cfg.Format, []string{string(config.FormatOpenAI), string(config.FormatAnthropic)})
+		return nil, fmt.Errorf(
+			"unknown provider format: %s, hint use one of: %v",
+			cfg.Format,
+			[]string{string(config.FormatOpenAI), string(config.FormatAnthropic)},
+		)
 	}
 }
 

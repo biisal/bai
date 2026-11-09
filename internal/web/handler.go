@@ -101,7 +101,11 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 		}
 		providers = append(providers, providerModels{ID: p.Name, Name: p.Name, Models: models})
 	}
-	writeJSON(w, http.StatusOK, modelsResponse{Providers: providers, Provider: activeProvider.Name(), Model: activeModel})
+	writeJSON(
+		w,
+		http.StatusOK,
+		modelsResponse{Providers: providers, Provider: activeProvider.Name(), Model: activeModel},
+	)
 }
 
 func (s *Server) handleSetModel(w http.ResponseWriter, r *http.Request) {
@@ -207,7 +211,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		run.Emit(fConversation(conversation.ID, conversation.Title))
 	}
 
-	go run.Execute(func(ctx context.Context, run *Run) error {
+	run.Execute(func(ctx context.Context, run *Run) error {
 		return s.gateway.StreamChatDecorated(ctx, text, decorate(run))
 	})
 
@@ -295,7 +299,11 @@ func writeFrame(w http.ResponseWriter, rc *http.ResponseController, frame []byte
 	return rc.Flush() == nil
 }
 
-func (s *Server) resolveConversation(ctx context.Context, rawID json.RawMessage, text string) (repo.Conversation, bool, error) {
+func (s *Server) resolveConversation(
+	ctx context.Context,
+	rawID json.RawMessage,
+	text string,
+) (repo.Conversation, bool, error) {
 	var idStr string
 	if len(rawID) > 0 {
 		if err := json.Unmarshal(rawID, &idStr); err != nil {

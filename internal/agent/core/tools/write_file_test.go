@@ -76,8 +76,8 @@ func TestWriteFile_EmptyPath(t *testing.T) {
 	}
 }
 
-// todo 
-func TestWriteFile(t *testing.T){
+// todo
+func TestWriteFile(t *testing.T) {
 	tests := []struct {
 		path string
 	}{
@@ -86,7 +86,7 @@ func TestWriteFile(t *testing.T){
 		},
 	}
 
-	for _, tt := range tests{
+	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 
 		})

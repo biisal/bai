@@ -107,7 +107,6 @@ cp config.example.json ~/.config/bai/config.json
 {
   "database_path": "~/.config/bai/bai.db",
   "log_file_path": "~/.config/bai/bai.log",
-  "sound_path": "",
   "skills_paths": [],
   "git_dir_name": ".bai_git",
   "plugins_path": "~/.config/bai/tools/tools.json",
@@ -129,7 +128,6 @@ cp config.example.json ~/.config/bai/config.json
 
 - \`format\` — \`anthropic\` or \`openai-compatible\`
 - \`variant\` — optional, e.g. \`opencode\`
-- \`sound_path\` — audio file played when a turn finishes (see Notifications)
 - \`skills_paths\` — extra skill folders, on top of the default ones (see Tools & Skills)
 - \`git_dir_name\` — shadow git directory, default \`.bai_git\`
 - \`plugins_path\` — custom tools manifest, default \`~/.config/bai/tools/tools.json\`
@@ -259,13 +257,9 @@ bai git show
         title: "Notifications",
         body: `bAI reports turn state (working / done / failed / blocked) so you can look away from the terminal.
 
-## Sound
-
-Set \`sound_path\` to an audio file. It plays when a turn completes successfully (errors are silent). A bad path is logged and skipped, never fatal.
-
 ## Herdr
 
-When running inside a Herdr pane (\`HERDR_ENV=1\`), bAI claims the pane on startup and reports state transitions to the Herdr server instead of playing a sound — Herdr raises its own notification when the turn goes idle. Outside Herdr every call is a no-op, so nothing changes if you don't use it.`,
+bAI writes its state to the controlling terminal using Herdr's escape sequence. Inside a Herdr pane, Herdr shows it in the sidebar and raises its own notification when the turn goes idle. Outside Herdr the sequence is ignored, so nothing changes if you don't use it.`,
       },
     ],
   },

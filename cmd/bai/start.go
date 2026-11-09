@@ -15,7 +15,6 @@ import (
 	repo "github.com/biisal/bai/internal/db/sqlc"
 	"github.com/biisal/bai/internal/logger"
 	"github.com/biisal/bai/internal/notifier"
-	audio "github.com/biisal/bai/internal/notifier/player"
 	broker "github.com/biisal/bai/internal/pubsub"
 	tui "github.com/biisal/bai/internal/tui/core"
 	"github.com/biisal/bai/internal/tui/styles"
@@ -80,20 +79,8 @@ func start(cfg *config.Config, dev bool) error {
 		return err
 	}
 
-	// Notification sound is only the fallback when not running inside Herdr.
-	var sound notifier.Sound
-	if cfg.SoundPath != "" {
-		audioPlayer, err := audio.NewAudioPlayer(cfg.SoundPath)
-		if err != nil {
-			slog.Error("failed to load audio player", "error", err, "path", cfg.SoundPath)
-			// Continue without audio
-		} else {
-			slog.Info("audio player loaded", "path", cfg.SoundPath)
-			sound = audioPlayer
-		}
-	}
-	n := notifier.New(sound)
-	defer n.Close(context.Background())
+	n := notifier.New()
+	defer n.Close()
 
 	b := broker.New()
 	gateway, err := agent.NewGateway(ctx, dbService, b, cfg, n)
@@ -104,7 +91,7 @@ func start(cfg *config.Config, dev bool) error {
 	SetTheme(ctx, dbService, b)
 
 	// Claim the pane in Herdr so it knows bai is active and can restart it.
-	n.SessionStarted(ctx, "")
+	n.SessionStarted()
 
 	p := tea.NewProgram(tui.InitModel(ctx, gateway, dbService, b, cfg.Providers, gateway.Git()))
 	if _, err := p.Run(); err != nil {

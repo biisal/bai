@@ -96,7 +96,11 @@ func (t *toolSet) readFile(ctx context.Context, input readFileInput, _ fantasy.T
 	return fantasy.NewTextResponse(content), nil
 }
 
-func (t *toolSet) writeFile(ctx context.Context, input writeFileInput, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+func (t *toolSet) writeFile(
+	ctx context.Context,
+	input writeFileInput,
+	_ fantasy.ToolCall,
+) (fantasy.ToolResponse, error) {
 	t.broker.Publish(ctx, broker.Message{
 		Type:       broker.EventToolFileWriting,
 		Text:       fmt.Sprintf("write:%s", input.Path),
@@ -105,7 +109,9 @@ func (t *toolSet) writeFile(ctx context.Context, input writeFileInput, _ fantasy
 	if err := WriteFile(ctx, input.Path, input.Content); err != nil {
 		return fantasy.NewTextErrorResponse(err.Error()), nil
 	}
-	return fantasy.NewTextResponse(fmt.Sprintf("Successfully wrote %d bytes to %s", len(input.Content), input.Path)), nil
+	return fantasy.NewTextResponse(
+		fmt.Sprintf("Successfully wrote %d bytes to %s", len(input.Content), input.Path),
+	), nil
 }
 
 func (t *toolSet) editFile(ctx context.Context, input editFileInput, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
@@ -165,10 +171,26 @@ func PurposeFromToolCall(name, input string) string {
 func NewTools(b broker.Service, customToolsFilePath string) []fantasy.AgentTool {
 	ts := &toolSet{broker: b, toolsPath: customToolsFilePath}
 	tools := []fantasy.AgentTool{
-		fantasy.NewAgentTool(ReadFileName, "Read a file from the filesystem using path, offset, and limit", ts.readFile),
-		fantasy.NewAgentTool(WriteFileName, "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.", ts.writeFile),
-		fantasy.NewAgentTool(EditFileName, "Edit a file using exact text replacement. Each edit's old_text must be a unique, non-overlapping match in the original file and is replaced with new_text. Provide multiple edits in one call to change several locations at once.", ts.editFile),
-		fantasy.NewAgentTool(BashName, "Execute a bash command in the current working directory. Returns combined stdout and stderr, and the exit code when non-zero. Output is truncated to the last 2000 lines or 256KB. Optionally provide a timeout in seconds, after which the command is killed.", ts.bash),
+		fantasy.NewAgentTool(
+			ReadFileName,
+			"Read a file from the filesystem using path, offset, and limit",
+			ts.readFile,
+		),
+		fantasy.NewAgentTool(
+			WriteFileName,
+			"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+			ts.writeFile,
+		),
+		fantasy.NewAgentTool(
+			EditFileName,
+			"Edit a file using exact text replacement. Each edit's old_text must be a unique, non-overlapping match in the original file and is replaced with new_text. Provide multiple edits in one call to change several locations at once.",
+			ts.editFile,
+		),
+		fantasy.NewAgentTool(
+			BashName,
+			"Execute a bash command in the current working directory. Returns combined stdout and stderr, and the exit code when non-zero. Output is truncated to the last 2000 lines or 256KB. Optionally provide a timeout in seconds, after which the command is killed.",
+			ts.bash,
+		),
 	}
 	customTools, err := parseTooolsByPath(customToolsFilePath)
 	if err != nil {

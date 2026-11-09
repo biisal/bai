@@ -133,7 +133,13 @@ func FormatSkills(skills []Skill) string {
 	sb.WriteString("<available_skills>")
 	for _, skill := range skills {
 		sb.WriteString("<skill>")
-		fmt.Fprintf(&sb, "\t\t<name>%s</name>\n\t\t<description>%s</description>\n\t\t<location>%s</location>\n", skill.Name, skill.Description, skill.Location)
+		fmt.Fprintf(
+			&sb,
+			"\t\t<name>%s</name>\n\t\t<description>%s</description>\n\t\t<location>%s</location>\n",
+			skill.Name,
+			skill.Description,
+			skill.Location,
+		)
 	}
 	sb.WriteString("</available_skills>")
 

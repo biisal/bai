@@ -23,11 +23,17 @@ var (
 	StyleIntroHelpKey  = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	StyleIntroHelpVal  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("7"))
 	StyleIntroHelpLine = lipgloss.NewStyle().PaddingLeft(1)
-	StyleNotification  = lipgloss.NewStyle().Padding(0, 1).Bold(true).Foreground(lipgloss.Color("0")).Background(lipgloss.Color("10"))
-	StyleFooter        = lipgloss.NewStyle().Padding(0, 1).Foreground(lipgloss.Color("244"))
+	StyleNotification  = lipgloss.NewStyle().
+				Padding(0, 1).
+				Bold(true).
+				Foreground(lipgloss.Color("0")).
+				Background(lipgloss.Color("10"))
+	StyleFooter = lipgloss.NewStyle().Padding(0, 1).Foreground(lipgloss.Color("244"))
 
 	StyleViewportSelectedHighlight = lipgloss.NewStyle().Background(lipgloss.Color("236"))
-	StyleInput                     = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false).BorderTopForeground(lipgloss.Color("6"))
+	StyleInput                     = lipgloss.NewStyle().
+					Border(lipgloss.NormalBorder(), true, false).
+					BorderTopForeground(lipgloss.Color("6"))
 
 	StyleCursorFocusedColor = lipgloss.Color("7")
 	StyleCursorBlurredColor = lipgloss.Color("240")
@@ -37,8 +43,11 @@ var (
 	StyleQueueMessage = lipgloss.NewStyle().Padding(0, 1).MaxHeight(1).Foreground(lipgloss.Color("90"))
 	StyleQueueCounter = lipgloss.NewStyle().Background(lipgloss.Color("90"))
 
-	StylePromptText    = lipgloss.NewStyle().Padding(0, 1)
-	StylePromptButton  = lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("236")).Foreground(lipgloss.Color("250"))
+	StylePromptText   = lipgloss.NewStyle().Padding(0, 1)
+	StylePromptButton = lipgloss.NewStyle().
+				Padding(0, 1).
+				Background(lipgloss.Color("236")).
+				Foreground(lipgloss.Color("250"))
 	StylePromptSuccess = StylePromptButton.Background(lipgloss.Color("10")).Foreground(lipgloss.Color("0"))
 	StylePromptError   = StylePromptButton.Background(lipgloss.Color("1")).Foreground(lipgloss.Color("7"))
 )
@@ -79,7 +88,8 @@ func UpdateStylesUsingConfigTheme(theme *config.Theme) {
 	StyleIntroHelpVal = StyleIntroHelpVal.Foreground(lipgloss.Color(theme.Foreground))
 
 	StyleFooter = StyleFooter.Foreground(lipgloss.Color(theme.MutedForeground))
-	StyleNotification = StyleNotification.Foreground(lipgloss.Color(theme.SuccessForeground)).Background(lipgloss.Color(theme.Success))
+	StyleNotification = StyleNotification.Foreground(lipgloss.Color(theme.SuccessForeground)).
+		Background(lipgloss.Color(theme.Success))
 
 	StyleViewportSelectedHighlight = StyleViewportSelectedHighlight.Background(lipgloss.Color(theme.Accent))
 
@@ -88,13 +98,18 @@ func UpdateStylesUsingConfigTheme(theme *config.Theme) {
 	StyleCursorFocusedColor = lipgloss.Color(theme.Primary)
 	StyleCursorBlurredColor = lipgloss.Color(theme.Muted)
 
-	StyleQueueMessage = StyleQueueMessage.Background(lipgloss.Color(theme.Muted)).Foreground(lipgloss.Color(theme.MutedForeground))
+	StyleQueueMessage = StyleQueueMessage.Background(lipgloss.Color(theme.Muted)).
+		Foreground(lipgloss.Color(theme.MutedForeground))
 
 	StylePromptText = StylePromptText.Foreground(lipgloss.Color(theme.Foreground))
-	StylePromptButton = StylePromptButton.Background(lipgloss.Color(theme.Muted)).Foreground(lipgloss.Color(theme.Foreground))
-	StylePromptSuccess = StylePromptButton.Background(lipgloss.Color(theme.Success)).Foreground(lipgloss.Color(theme.SuccessForeground))
-	StylePromptError = StylePromptButton.Background(lipgloss.Color(theme.Destructive)).Foreground(lipgloss.Color(theme.DestructiveForeground))
-	// StyleQueueCounter = StyleQueueCounter.Background(lipgloss.Color(theme.Muted)) // TODO: add better styling
+	StylePromptButton = StylePromptButton.Background(lipgloss.Color(theme.Muted)).
+		Foreground(lipgloss.Color(theme.Foreground))
+	StylePromptSuccess = StylePromptButton.Background(lipgloss.Color(theme.Success)).
+		Foreground(lipgloss.Color(theme.SuccessForeground))
+	StylePromptError = StylePromptButton.Background(lipgloss.Color(theme.Destructive)).
+		Foreground(lipgloss.Color(theme.DestructiveForeground))
+
+		// StyleQueueCounter = StyleQueueCounter.Background(lipgloss.Color(theme.Muted)) // TODO: add better styling
 
 	if theme.Background != "" {
 		StyleColorBackground = lipgloss.Color(theme.Background)

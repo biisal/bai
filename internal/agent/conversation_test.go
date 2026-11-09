@@ -41,7 +41,10 @@ func TestResolveConversationAndModels(t *testing.T) {
 	}
 
 	// Conversation from another directory: ErrWrongDirectory, and resolve starts a new one.
-	other, err := q.CreateConversation(ctx, repo.CreateConversationParams{Title: "x", Directory: files.CurrentDir() + "-other"})
+	other, err := q.CreateConversation(
+		ctx,
+		repo.CreateConversationParams{Title: "x", Directory: files.CurrentDir() + "-other"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
